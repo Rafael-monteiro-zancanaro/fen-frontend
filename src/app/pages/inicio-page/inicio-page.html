@@ -1,0 +1,129 @@
+<main data-page="inicio" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="mb-2 text-sm font-semibold text-uem-700">Inicio</p>
+        <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">
+          Painel de atendimentos
+        </h1>
+        <p class="mt-2 max-w-2xl text-sm leading-6 text-app-muted-foreground">
+          Acompanhe o volume, status e distribuicao dos atendimentos farmaceuticos da equipe.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <select class="native-select min-w-36" aria-label="Periodo do dashboard">
+          <option>Este mes</option>
+          <option>Ultimos 90 dias</option>
+          <option>Este ano</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      @for (card of summaryCards; track card.label) {
+        <article data-dashboard-card class="card p-5">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-xs font-bold uppercase text-uem-700">{{ card.label }}</p>
+              <strong class="mt-3 block text-3xl font-semibold text-app-foreground">
+                {{ card.value }}
+              </strong>
+              <p class="mt-2 text-sm text-app-muted-foreground">{{ card.detail }}</p>
+            </div>
+            <span class="grid size-10 place-items-center rounded-md bg-uem-50 text-uem-700">
+              <ng-icon [name]="card.icon" size="1.15rem" />
+            </span>
+          </div>
+        </article>
+      }
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
+      <section data-chart="atendimentos-mes" class="card p-5">
+        <div class="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h2 class="text-base font-semibold text-app-foreground">Atendimentos por mes</h2>
+            <p class="mt-1 text-sm text-app-muted-foreground">Volume mensal consolidado</p>
+          </div>
+          <span class="badge badge-success">+12%</span>
+        </div>
+
+        <div class="h-72">
+          <canvas
+            baseChart
+            type="line"
+            [data]="attendanceByMonthData"
+            [options]="lineChartOptions"
+            aria-label="Grafico de atendimentos por mes"
+          ></canvas>
+        </div>
+      </section>
+
+      <section data-chart="tipos-atendimento" class="card p-5">
+        <h2 class="text-base font-semibold text-app-foreground">Tipos de atendimento</h2>
+        <p class="mt-1 text-sm text-app-muted-foreground">Distribuicao no periodo selecionado</p>
+
+        <div class="mt-6 grid gap-6 md:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-1">
+          <div class="mx-auto h-52 w-52">
+            <canvas
+              baseChart
+              type="doughnut"
+              [data]="attendanceTypeData"
+              [options]="doughnutChartOptions"
+              aria-label="Grafico de tipos de atendimento"
+            ></canvas>
+          </div>
+
+          <div class="grid content-center gap-3">
+            @for (segment of typeSegments; track segment.label) {
+              <div class="flex items-center justify-between gap-3 text-sm">
+                <span class="flex items-center gap-2 text-app-muted-foreground">
+                  <span class="size-2.5 rounded-full" [style.background]="segment.color"></span>
+                  {{ segment.label }}
+                </span>
+                <strong class="text-app-foreground">{{ segment.value }}%</strong>
+              </div>
+            }
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section data-chart="status-atendimentos" class="card p-5">
+      <div class="mb-5">
+        <h2 class="text-base font-semibold text-app-foreground">Evolucao por status</h2>
+        <p class="mt-1 text-sm text-app-muted-foreground">Comparativo mensal de atendimentos finalizados e pendentes</p>
+      </div>
+
+      <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div class="h-64">
+          <canvas
+            baseChart
+            type="line"
+            [data]="statusData"
+            [options]="lineChartOptions"
+            aria-label="Grafico de evolucao por status"
+          ></canvas>
+        </div>
+
+        <div class="grid content-center gap-3">
+          <div class="alert alert-success">
+            <span class="marker marker-success"></span>
+            <div>
+              <p class="alert-title">Finalizados</p>
+              <p class="alert-description">Mantem crescimento constante no periodo.</p>
+            </div>
+          </div>
+          <div class="alert alert-danger">
+            <span class="marker marker-danger"></span>
+            <div>
+              <p class="alert-title">Pendentes</p>
+              <p class="alert-description">Acompanhar filas com retorno em aberto.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </section>
+</main>

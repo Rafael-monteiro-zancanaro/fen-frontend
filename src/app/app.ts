@@ -1,12 +1,16 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component } from '@angular/core';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterLink, RouterOutlet],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrl: './app.css',
 })
 export class App {
-  protected readonly title = signal('fen-frontend');
+  constructor(private readonly router: Router) {}
+
+  protected isInternalNavigation(): boolean {
+    return this.router.url.startsWith('/inicio') || this.router.url.startsWith('/atendimentos');
+  }
 }

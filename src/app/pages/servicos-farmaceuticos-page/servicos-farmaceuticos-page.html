@@ -1,0 +1,505 @@
+<main data-page="servicos-farmaceuticos" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
+      <div>
+        <p class="mb-2 text-sm font-semibold text-uem-700">Atendimentos</p>
+        <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">
+          Serviços farmacêuticos
+        </h1>
+        <p class="mt-2 max-w-3xl text-sm leading-6 text-app-muted-foreground">
+          Registre a declaração de serviços em etapas contínuas. Cada seção fica em um card próprio
+          e os avanços apenas rolam a tela para o próximo bloco.
+        </p>
+      </div>
+
+      <nav class="card p-3" aria-label="Seções do formulário">
+        <div class="grid gap-1">
+          @for (step of steps; track step.id) {
+          <button
+            class="rounded-md px-3 py-2 text-left text-sm font-semibold text-app-muted-foreground hover:bg-app-surface-muted hover:text-app-foreground"
+            type="button"
+            [attr.data-scroll-target]="step.id"
+            (click)="scrollToStep(step.id)"
+          >
+            <span class="mr-2 text-uem-700">{{ step.number }}</span>{{ step.title }}
+          </button>
+          }
+        </div>
+      </nav>
+    </div>
+
+    <form class="grid gap-5">
+      <section id="identificacao-usuario" data-service-step class="card scroll-mt-24">
+        <div class="card-header">
+          <div class="flex items-center gap-3">
+            <span class="grid size-10 place-items-center rounded-md bg-uem-50 text-uem-700">
+              <ng-icon name="bootstrapClipboard" size="1.15rem" />
+            </span>
+            <div>
+              <p class="text-xs font-bold uppercase text-uem-700">01</p>
+              <h2 class="card-title">Identificação do usuário</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-content grid gap-4">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div class="field md:col-span-2">
+              <label for="nomeUsuario" class="label label-required">Nome</label>
+              <input id="nomeUsuario" class="input" type="text" autocomplete="name" required />
+            </div>
+
+            <fieldset class="field">
+              <legend class="label">Gênero</legend>
+              <div class="flex flex-wrap gap-4 text-sm text-app-muted-foreground">
+                <label class="flex items-center gap-2">
+                  <input class="radio-item" type="radio" name="genero" value="masculino" />
+                  Masculino
+                </label>
+                <label class="flex items-center gap-2">
+                  <input class="radio-item" type="radio" name="genero" value="feminino" />
+                  Feminino
+                </label>
+              </div>
+            </fieldset>
+
+            <div class="field">
+              <label for="idadeUsuario" class="label">Idade</label>
+              <input id="idadeUsuario" class="input" type="number" min="0" />
+            </div>
+
+            <div class="field md:col-span-2">
+              <label for="enderecoUsuario" class="label">Endereço</label>
+              <input id="enderecoUsuario" class="input" type="text" autocomplete="street-address" />
+            </div>
+
+            <div class="field">
+              <label for="cidadeUsuario" class="label">Cidade</label>
+              <input id="cidadeUsuario" class="input" type="text" />
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-[8rem_minmax(0,1fr)]">
+              <div class="field">
+                <label for="estadoUsuario" class="label">Estado</label>
+                <input
+                  id="estadoUsuario"
+                  class="input"
+                  type="text"
+                  maxlength="2"
+                  placeholder="PR"
+                />
+              </div>
+              <div class="field">
+                <label for="telefoneUsuario" class="label">Telefone</label>
+                <input id="telefoneUsuario" class="input" type="tel" autocomplete="tel" />
+              </div>
+            </div>
+
+            <div class="field md:col-span-2">
+              <label for="responsavelUsuario" class="label"
+                >Nome do responsável em caso de menor</label
+              >
+              <input id="responsavelUsuario" class="input" type="text" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer justify-end">
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-scroll-target="cuidados-farmaceuticos"
+            (click)="scrollToStep('cuidados-farmaceuticos')"
+          >
+            Avançar
+            <ng-icon name="bootstrapArrowDownCircle" size="1rem" />
+          </button>
+        </div>
+      </section>
+
+      <section id="cuidados-farmaceuticos" data-service-step class="card scroll-mt-24">
+        <div class="card-header">
+          <div class="flex items-center gap-3">
+            <span class="grid size-10 place-items-center rounded-md bg-uem-50 text-uem-700">
+              <ng-icon name="bootstrapClipboardPulse" size="1.15rem" />
+            </span>
+            <div>
+              <p class="text-xs font-bold uppercase text-uem-700">02</p>
+              <h2 class="card-title">Cuidados farmacêuticos</h2>
+            </div>
+          </div>
+          <p class="card-description">
+            Estes procedimentos não substituem consulta médica ou exames laboratoriais.
+          </p>
+        </div>
+
+        <div class="card-content grid gap-4">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <label class="field rounded-lg border bg-app-surface-subtle p-4" for="glicemiaCapilar">
+              <span class="label">Glicemia capilar</span>
+              <span class="input-group">
+                <input id="glicemiaCapilar" class="input" type="number" />
+                <span class="input-group-addon">mg/dl</span>
+              </span>
+              <span class="field-description">Valor normal: 80 a 110 mg/dl</span>
+            </label>
+
+            <label class="field rounded-lg border bg-app-surface-subtle p-4">
+              <span class="label">Pressão arterial</span>
+              <span class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                <input id="pressaoSistolica" class="input" type="number" />
+                <span class="text-sm font-semibold text-app-muted-foreground">x</span>
+                <input id="pressaoDiastolica" class="input" type="number" />
+              </span>
+              <span class="field-description">Valor normal: &lt;120 x &lt;80 mmHg</span>
+            </label>
+
+            <label class="field rounded-lg border bg-app-surface-subtle p-4">
+              <span class="label">Temperatura corporal axilar</span>
+              <span class="input-group">
+                <input id="temperaturaCorporal" class="input" type="number" step="0.1" />
+                <span class="input-group-addon">°C</span>
+              </span>
+              <span class="field-description">Valor normal: 36 a 37 °C</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card-footer justify-between">
+          <button
+            class="btn btn-secondary"
+            type="button"
+            data-scroll-target="identificacao-usuario"
+            (click)="scrollToStep('identificacao-usuario')"
+          >
+            Voltar
+          </button>
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-scroll-target="aplicacao-injetaveis"
+            (click)="scrollToStep('aplicacao-injetaveis')"
+          >
+            Avançar
+            <ng-icon name="bootstrapArrowDownCircle" size="1rem" />
+          </button>
+        </div>
+      </section>
+
+      <section id="aplicacao-injetaveis" data-service-step class="card scroll-mt-24">
+        <div class="card-header">
+          <div class="flex items-center gap-3">
+            <span class="grid size-10 place-items-center rounded-md bg-uem-50 text-uem-700">
+              <ng-icon name="bootstrapDroplet" size="1.15rem" />
+            </span>
+            <div>
+              <p class="text-xs font-bold uppercase text-uem-700">03</p>
+              <h2 class="card-title">Aplicação de injetáveis</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-content grid gap-4">
+          <label class="flex items-center gap-2 text-sm text-app-muted-foreground">
+            <input class="checkbox" type="checkbox" />
+            Serviço realizado neste atendimento
+          </label>
+
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div class="field md:col-span-2">
+              <label for="medicamentoInjetavel" class="label">Medicamento/concentração</label>
+              <input id="medicamentoInjetavel" class="input" type="text" />
+            </div>
+            <div class="field">
+              <label for="loteInjetavel" class="label">Lote</label>
+              <input id="loteInjetavel" class="input" type="text" />
+            </div>
+            <div class="field">
+              <label for="validadeInjetavel" class="label">Validade</label>
+              <input id="validadeInjetavel" class="input" type="date" />
+            </div>
+            <div class="field">
+              <label for="posologiaInjetavel" class="label">Posologia</label>
+              <input id="posologiaInjetavel" class="input" type="text" />
+            </div>
+            <div class="field">
+              <label for="viaAdministracao" class="label">Via de administração</label>
+              <select id="viaAdministracao" class="native-select">
+                <option value="">Selecione</option>
+                <option>Intramuscular</option>
+                <option>Subcutânea</option>
+                <option>Intradérmica</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="prescritorInjetavel" class="label">Nome do prescritor</label>
+              <input id="prescritorInjetavel" class="input" type="text" />
+            </div>
+            <div class="field">
+              <label for="crmCroInjetavel" class="label">CRM/CRO</label>
+              <input id="crmCroInjetavel" class="input" type="text" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer justify-between">
+          <button
+            class="btn btn-secondary"
+            type="button"
+            data-scroll-target="cuidados-farmaceuticos"
+            (click)="scrollToStep('cuidados-farmaceuticos')"
+          >
+            Voltar
+          </button>
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-scroll-target="inaloterapia"
+            (click)="scrollToStep('inaloterapia')"
+          >
+            Avançar
+            <ng-icon name="bootstrapArrowDownCircle" size="1rem" />
+          </button>
+        </div>
+      </section>
+
+      <section id="inaloterapia" data-service-step class="card scroll-mt-24">
+        <div class="card-header">
+          <div class="flex items-center gap-3">
+            <span class="grid size-10 place-items-center rounded-md bg-uem-50 text-uem-700">
+              <ng-icon name="bootstrapLungs" size="1.15rem" />
+            </span>
+            <div>
+              <p class="text-xs font-bold uppercase text-uem-700">04</p>
+              <h2 class="card-title">Inaloterapia</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-content grid gap-4">
+          <label class="flex items-center gap-2 text-sm text-app-muted-foreground">
+            <input class="checkbox" type="checkbox" />
+            Serviço realizado neste atendimento
+          </label>
+
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div class="field md:col-span-2">
+              <label for="medicamentoInaloterapia" class="label">Medicamento/concentração</label>
+              <input id="medicamentoInaloterapia" class="input" type="text" />
+            </div>
+            <div class="field">
+              <label for="loteInaloterapia" class="label">Lote</label>
+              <input id="loteInaloterapia" class="input" type="text" />
+            </div>
+            <div class="field">
+              <label for="validadeInaloterapia" class="label">Validade</label>
+              <input id="validadeInaloterapia" class="input" type="date" />
+            </div>
+            <div class="field">
+              <label for="posologiaInaloterapia" class="label">Posologia</label>
+              <input id="posologiaInaloterapia" class="input" type="text" />
+            </div>
+            <div class="field md:col-span-2">
+              <label for="prescritorInaloterapia" class="label">Nome do prescritor</label>
+              <input id="prescritorInaloterapia" class="input" type="text" />
+            </div>
+            <div class="field">
+              <label for="crmCroInaloterapia" class="label">CRM/CRO</label>
+              <input id="crmCroInaloterapia" class="input" type="text" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer justify-between">
+          <button
+            class="btn btn-secondary"
+            type="button"
+            data-scroll-target="aplicacao-injetaveis"
+            (click)="scrollToStep('aplicacao-injetaveis')"
+          >
+            Voltar
+          </button>
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-scroll-target="servicos-acompanhamento"
+            (click)="scrollToStep('servicos-acompanhamento')"
+          >
+            Avançar
+            <ng-icon name="bootstrapArrowDownCircle" size="1rem" />
+          </button>
+        </div>
+      </section>
+
+      <section id="servicos-acompanhamento" data-service-step class="card scroll-mt-24">
+        <div class="card-header">
+          <div class="flex items-center gap-3">
+            <span class="grid size-10 place-items-center rounded-md bg-uem-50 text-uem-700">
+              <ng-icon name="bootstrapHouseHeart" size="1.15rem" />
+            </span>
+            <div>
+              <p class="text-xs font-bold uppercase text-uem-700">05</p>
+              <h2 class="card-title">Serviços e acompanhamento</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-content grid gap-4">
+          <div class="grid gap-3 sm:grid-cols-2">
+            <label
+              class="flex items-center gap-2 rounded-lg border bg-app-surface-subtle p-3 text-sm text-app-muted-foreground"
+            >
+              <input class="checkbox" type="checkbox" />
+              Assistência farmacêutica domiciliar
+            </label>
+            <label
+              class="flex items-center gap-2 rounded-lg border bg-app-surface-subtle p-3 text-sm text-app-muted-foreground"
+            >
+              <input class="checkbox" type="checkbox" />
+              Acompanhamento farmacoterapêutico
+            </label>
+            <label
+              class="flex items-center gap-2 rounded-lg border bg-app-surface-subtle p-3 text-sm text-app-muted-foreground sm:col-span-2"
+            >
+              <input class="checkbox" type="checkbox" />
+              Indicação farmacêutica em transtornos menores
+            </label>
+          </div>
+
+          <div class="field">
+            <label for="sinaisSintomas" class="label">Sinais e sintomas</label>
+            <textarea id="sinaisSintomas" class="textarea" rows="4"></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div class="field md:col-span-2">
+              <label for="medicamentoAcompanhamento" class="label">Medicamento/concentração</label>
+              <input id="medicamentoAcompanhamento" class="input" type="text" />
+            </div>
+            <div class="field">
+              <label for="loteAcompanhamento" class="label">Lote</label>
+              <input id="loteAcompanhamento" class="input" type="text" />
+            </div>
+            <div class="field">
+              <label for="validadeAcompanhamento" class="label">Validade</label>
+              <input id="validadeAcompanhamento" class="input" type="date" />
+            </div>
+            <div class="field">
+              <label for="posologiaAcompanhamento" class="label">Posologia</label>
+              <input id="posologiaAcompanhamento" class="input" type="text" />
+            </div>
+            <div class="field">
+              <label for="numeroFicha" class="label">Nº ficha</label>
+              <input id="numeroFicha" class="input" type="text" />
+            </div>
+          </div>
+
+          <fieldset class="field">
+            <legend class="label">Plano de acompanhamento</legend>
+            <div class="flex flex-wrap gap-4 text-sm text-app-muted-foreground">
+              <label class="flex items-center gap-2"
+                ><input class="radio-item" name="plano" type="radio" />2 dias</label
+              >
+              <label class="flex items-center gap-2"
+                ><input class="radio-item" name="plano" type="radio" />4 dias</label
+              >
+              <label class="flex items-center gap-2"
+                ><input class="radio-item" name="plano" type="radio" />6 dias</label
+              >
+            </div>
+          </fieldset>
+
+          <div class="field max-w-sm">
+            <label for="dataAtendimento" class="label">Data</label>
+            <input id="dataAtendimento" class="input" type="date" />
+          </div>
+        </div>
+
+        <div class="card-footer justify-between">
+          <button
+            class="btn btn-secondary"
+            type="button"
+            data-scroll-target="inaloterapia"
+            (click)="scrollToStep('inaloterapia')"
+          >
+            Voltar
+          </button>
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-scroll-target="revisao-assinatura"
+            (click)="scrollToStep('revisao-assinatura')"
+          >
+            Avançar
+            <ng-icon name="bootstrapArrowDownCircle" size="1rem" />
+          </button>
+        </div>
+      </section>
+
+      <section id="revisao-assinatura" data-service-step class="card scroll-mt-24">
+        <div class="card-header">
+          <div class="flex items-center gap-3">
+            <span class="grid size-10 place-items-center rounded-md bg-uem-50 text-uem-700">
+              <ng-icon name="bootstrapSave" size="1.15rem" />
+            </span>
+            <div>
+              <p class="text-xs font-bold uppercase text-uem-700">06</p>
+              <h2 class="card-title">Revisão e assinatura</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-content grid gap-4">
+          <div class="alert alert-info">
+            <ng-icon name="bootstrapClipboard" size="1.15rem" />
+            <div>
+              <p class="alert-title">Declaração de serviços farmacêuticos</p>
+              <p class="alert-description">
+                Revise os dados preenchidos antes de salvar. A versão final deve registrar a
+                assinatura do usuário/responsável e do farmacêutico.
+              </p>
+            </div>
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="field">
+              <label for="assinaturaUsuario" class="label">Assinatura usuário/responsável</label>
+              <input
+                id="assinaturaUsuario"
+                class="input"
+                type="text"
+                placeholder="Nome para assinatura"
+              />
+            </div>
+            <div class="field">
+              <label for="assinaturaFarmaceutico" class="label"
+                >Carimbo e assinatura farmacêutico</label
+              >
+              <input
+                id="assinaturaFarmaceutico"
+                class="input"
+                type="text"
+                placeholder="Farmacêutico responsável"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer justify-between">
+          <button
+            class="btn btn-secondary"
+            type="button"
+            data-scroll-target="servicos-acompanhamento"
+            (click)="scrollToStep('servicos-acompanhamento')"
+          >
+            Voltar
+          </button>
+          <button class="btn btn-primary" type="submit">
+            <ng-icon name="bootstrapSave" size="1rem" />
+            Salvar atendimento
+          </button>
+        </div>
+      </section>
+    </form>
+  </section>
+</main>

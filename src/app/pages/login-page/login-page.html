@@ -1,0 +1,60 @@
+<main data-page="login" class="flex flex-1 items-center justify-center px-4 py-8 md:py-10">
+  <section class="grid w-full max-w-5xl grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_26rem]">
+    <div class="flex flex-col justify-start gap-6">
+      <div class="max-w-2xl">
+        <p class="mb-3 text-sm font-semibold text-uem-700">Login</p>
+        <h1 class="text-3xl font-semibold leading-tight text-app-foreground md:text-4xl">
+          Seja bem-vindo(a)
+        </h1>
+        <p class="mt-4 max-w-xl text-base leading-7 text-app-muted-foreground">
+          Digite as credenciais para acesso ao sistema. Caso não tenha um registro, acesse a aba
+          "cadastro" para realizar uma conta.
+        </p>
+      </div>
+    </div>
+
+    <form class="card w-full" aria-labelledby="login-title">
+      <div class="card-content flex flex-col gap-4">
+        <div class="field">
+          <label for="email" class="label label-required">E-mail</label>
+          <input
+            id="email"
+            class="input"
+            type="email"
+            autocomplete="email"
+            placeholder="seu.email@uem.br"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <div class="flex items-center justify-between gap-3">
+            <label for="senha" class="label label-required">Senha</label>
+            <a class="btn btn-link text-sm" href="#">Esqueci minha senha</a>
+          </div>
+
+          <input
+            id="senha"
+            class="input"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Digite sua senha"
+            required
+          />
+        </div>
+
+        <label class="flex items-center gap-2 text-sm text-app-muted-foreground">
+          <input class="checkbox" type="checkbox" />
+          Manter meu acesso neste dispositivo
+        </label>
+      </div>
+
+      <div class="card-footer flex-col items-stretch sm:flex-row sm:justify-between">
+        <a class="btn btn-link text-sm" routerLink="/cadastro">Cadastrar novo usuario</a>
+        <button class="btn btn-primary w-full sm:w-auto" type="submit" routerLink="/inicio">
+          Entrar
+        </button>
+      </div>
+    </form>
+  </section>
+</main>

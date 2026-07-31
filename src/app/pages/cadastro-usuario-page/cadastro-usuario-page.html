@@ -1,0 +1,171 @@
+<main data-page="cadastro" class="flex flex-1 items-start px-4 py-8 md:py-10">
+  <section
+    class="mx-auto grid w-full max-w-6xl grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]"
+  >
+    <div class="flex flex-col justify-start gap-6 lg:pt-6">
+      <div class="max-w-2xl">
+        <p class="mb-3 text-sm font-semibold text-uem-700">Cadastro</p>
+        <h1 class="text-3xl font-semibold leading-tight text-app-foreground md:text-4xl">
+          Novo por aqui?
+        </h1>
+        <p class="mt-4 max-w-xl text-base leading-7 text-app-muted-foreground">
+          Cadastre-se de acordo com sua designação profissional para acessar o sistema. Os dados do
+          usuário serão validados conforme as regras internas da farmácia.
+        </p>
+      </div>
+    </div>
+
+    <form id="cadastro" class="card w-full" aria-labelledby="cadastro-title">
+      <div class="card-content flex flex-col gap-6">
+        <fieldset class="grid gap-4">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div class="field">
+              <label for="nome" class="label label-required">Nome completo</label>
+              <input
+                id="nome"
+                class="input"
+                type="text"
+                autocomplete="name"
+                placeholder="Nome do usuario"
+                required
+              />
+            </div>
+
+            <div class="field">
+              <label for="cpf" class="label label-required">CPF</label>
+              <input
+                id="cpf"
+                class="input"
+                type="text"
+                inputmode="numeric"
+                maxlength="11"
+                placeholder="Somente numeros"
+                required
+              />
+            </div>
+
+            <div class="field">
+              <label for="dataNascimento" class="label">Data de nascimento</label>
+              <input id="dataNascimento" class="input" type="date" />
+            </div>
+
+            <div class="field">
+              <label for="email" class="label label-required">E-mail</label>
+              <input
+                id="email"
+                class="input"
+                type="email"
+                autocomplete="email"
+                placeholder="seu.email@uem.br"
+                required
+              />
+            </div>
+
+            <div class="field">
+              <label for="senha" class="label label-required">Senha</label>
+              <input
+                id="senha"
+                class="input"
+                type="password"
+                autocomplete="new-password"
+                placeholder="Crie uma senha"
+                required
+              />
+            </div>
+
+            <div class="field">
+              <label for="confirmarSenha" class="label label-required">Confirmar senha</label>
+              <input
+                id="confirmarSenha"
+                class="input"
+                type="password"
+                autocomplete="new-password"
+                placeholder="Repita a senha"
+                required
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="grid gap-4">
+          <legend class="mb-1 text-sm font-semibold text-app-foreground">Perfil da equipe</legend>
+
+          <div class="toggle-group w-full sm:w-auto" role="group" aria-label="Tipo de usuario">
+            <button
+              class="toggle flex-1 sm:flex-none"
+              type="button"
+              data-profile="farmaceutico"
+              [attr.aria-pressed]="selectedProfile() === 'farmaceutico'"
+              [attr.data-state]="selectedProfile() === 'farmaceutico' ? 'on' : 'off'"
+              (click)="selectProfile('farmaceutico')"
+            >
+              Farmacêutico
+            </button>
+            <button
+              class="toggle flex-1 sm:flex-none"
+              type="button"
+              data-profile="estagiario"
+              [attr.aria-pressed]="selectedProfile() === 'estagiario'"
+              [attr.data-state]="selectedProfile() === 'estagiario' ? 'on' : 'off'"
+              (click)="selectProfile('estagiario')"
+            >
+              Estagiário
+            </button>
+          </div>
+
+          @if (selectedProfile() === 'farmaceutico') {
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div class="field">
+              <label for="crf" class="label label-required">CRF</label>
+              <input id="crf" class="input" type="text" placeholder="Ex.: PR-00000" required />
+              <p class="field-description">Registro profissional unico do farmacêutico.</p>
+            </div>
+
+            <div class="field justify-end">
+              <label
+                class="flex min-h-10 items-center gap-2 rounded-md border bg-app-surface px-3 text-sm text-app-muted-foreground"
+                for="responsavelTecnico"
+              >
+                <input id="responsavelTecnico" class="checkbox" type="checkbox" />
+                <span class="font-semibold text-app-foreground">Responsável técnico</span>
+              </label>
+            </div>
+          </div>
+          } @else {
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div class="field">
+              <label for="tipoEstagio" class="label label-required">Tipo de estágio</label>
+              <select id="tipoEstagio" class="native-select" required>
+                <option value="">Selecione</option>
+                <option value="obrigatorio">Obrigatório</option>
+                <option value="nao-obrigatorio">Não obrigatório</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="supervisor" class="label label-required">Supervisor</label>
+              <select id="supervisor" class="native-select" required>
+                <option value="">Selecione um farmacêutico</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="inicioVigencia" class="label label-required">Inicio da vigência</label>
+              <input id="inicioVigencia" class="input" type="date" required />
+            </div>
+
+            <div class="field">
+              <label for="fimVigencia" class="label label-required">Fim da vigência</label>
+              <input id="fimVigencia" class="input" type="date" required />
+            </div>
+          </div>
+          }
+        </fieldset>
+      </div>
+
+      <div class="card-footer flex-col items-stretch sm:flex-row sm:justify-end">
+        <button class="btn btn-primary w-full sm:w-auto" type="submit">Cadastrar usuario</button>
+      </div>
+    </form>
+  </section>
+</main>

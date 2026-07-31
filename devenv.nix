@@ -16,7 +16,7 @@
 
   # https://devenv.sh/packages/
   packages = [
-    pkgs.tailwindcss
+#    pkgs.tailwindcss
 #    pkgs.nodePackages.angular-cli
   ];
 
