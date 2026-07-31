@@ -39,6 +39,11 @@ testem.log
 /typings
 __screenshots__/
 
+# Local tooling
+.superpowers/
+.devenv/
+devenv.lock
+
 # System files
 .DS_Store
 Thumbs.db

@@ -1,9 +1,0 @@
-/home/zancanaro/dev/tcc/fen-frontend/.devenv/bootstrap/bootstrapLib.nix
-/home/zancanaro/dev/tcc/fen-frontend/.devenv/bootstrap/default.nix
-/home/zancanaro/dev/tcc/fen-frontend/.devenv/bootstrap/resolve-lock.nix
-/home/zancanaro/dev/tcc/fen-frontend/devenv.local.nix
-/home/zancanaro/dev/tcc/fen-frontend/devenv.lock
-/home/zancanaro/dev/tcc/fen-frontend/devenv.nix
-/home/zancanaro/.config/nixpkgs/overlays
-/home/zancanaro/.config/nixpkgs/overlays.nix
-/home/zancanaro/dev/tcc/fen-frontend/.env
