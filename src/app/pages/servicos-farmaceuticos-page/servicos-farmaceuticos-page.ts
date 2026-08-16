@@ -12,17 +12,26 @@ import {
   bootstrapLungs,
   bootstrapSave,
 } from '@ng-icons/bootstrap-icons';
+import { MedicationAutocomplete } from '../../components/medication-autocomplete/medication-autocomplete';
+import { PatientForm } from '../../components/patient-form/patient-form';
 import {
   CareServiceData,
   ComplementaryServicesData,
   FollowUpData,
   InjectableServiceData,
   InhalotherapyServiceData,
+  Medication,
+  Patient,
   PatientInput,
   PharmaceuticalServiceKey,
   ServiceMedicationItem,
 } from '../../domain/clinical-records';
-import { TemporaryPharmaceuticalServiceStore } from '../../domain/temporary-pharmaceutical-service-store';
+import { onlyDigits } from '../../domain/text-masks';
+import { TemporaryClinicalRecordsStore } from '../../domain/temporary-clinical-records-store';
+import {
+  PatientMedicationInteraction,
+  TemporaryPharmaceuticalServiceStore,
+} from '../../domain/temporary-pharmaceutical-service-store';
 
 type OptionalStep =
   | 'cuidados-farmaceuticos'
@@ -34,6 +43,7 @@ type OptionalStep =
 type MedicationSection = 'injectable' | 'inhalotherapy' | 'complementary';
 
 interface MedicationDraft {
+  medicationId: string;
   medicationConcentration: string;
   batch: string;
   expirationDate: string;
@@ -42,7 +52,7 @@ interface MedicationDraft {
 
 @Component({
   selector: 'app-servicos-farmaceuticos-page',
-  imports: [FormsModule, NgIcon, RouterLink],
+  imports: [FormsModule, MedicationAutocomplete, NgIcon, PatientForm, RouterLink],
   providers: [
     provideIcons({
       bootstrapArrowDownCircle,
@@ -79,7 +89,9 @@ export class ServicosFarmaceuticosPage {
     birthDate: '',
     cellPhone: '',
     gender: '',
+    cep: '',
     address: '',
+    neighborhood: '',
     city: '',
     state: '',
     phone: '',
@@ -123,16 +135,19 @@ export class ServicosFarmaceuticosPage {
     complementary: [],
   };
   protected readonly errors: Record<string, string> = {};
-  protected readonly medicationErrors: Record<MedicationSection, Partial<Record<keyof MedicationDraft, string>>> = {
+  protected readonly medicationErrors: Record<
+    MedicationSection,
+    Partial<Record<keyof MedicationDraft, string>>
+  > = {
     injectable: {},
     inhalotherapy: {},
     complementary: {},
   };
-  protected patientLookupMessage = '';
-  protected patientLookupVariant: 'info' | 'success' = 'info';
+  protected selectedPatientId = '';
 
   constructor(
     private readonly store: TemporaryPharmaceuticalServiceStore,
+    private readonly clinicalRecordsStore: TemporaryClinicalRecordsStore,
     private readonly router: Router,
   ) {}
 
@@ -148,46 +163,75 @@ export class ServicosFarmaceuticosPage {
     return this.enabledSteps[step];
   }
 
-  protected consultPatientByCpf(): void {
-    const cpfInput = document.getElementById('cpfUsuario') as HTMLInputElement | null;
-    const cpf = this.onlyDigits(this.patient.cpf || cpfInput?.value || '');
-    this.patient.cpf = cpf;
-
-    if (cpf.length !== 11) {
-      this.errors['patient.cpf'] = 'Informe um CPF com 11 dígitos para consultar.';
-      this.patientLookupMessage = '';
-      return;
-    }
-
-    delete this.errors['patient.cpf'];
-    const existingPatient = this.store.findPatientByCpf(cpf);
-
-    if (existingPatient) {
-      this.patient.name = existingPatient.name;
-      this.patient.birthDate = existingPatient.birthDate;
-      this.patient.cellPhone = existingPatient.cellPhone;
-      this.patient.gender = existingPatient.gender;
-      this.patient.address = existingPatient.address;
-      this.patient.city = existingPatient.city;
-      this.patient.state = existingPatient.state;
-      this.patient.phone = existingPatient.phone;
-      this.patient.responsibleName = existingPatient.responsibleName;
-      this.syncPatientInputs();
-      this.patientLookupVariant = 'info';
-      this.patientLookupMessage = 'Paciente encontrado. Os dados foram preenchidos automaticamente.';
-      return;
-    }
-
-    this.patientLookupVariant = 'success';
-    this.patientLookupMessage = 'CPF não encontrado. Preencha os dados para cadastrar um novo paciente.';
+  protected selectPatient(patient: Patient | null): void {
+    this.selectedPatientId = patient?.id ?? '';
   }
 
-  protected updateCpf(value: string): void {
-    this.patient.cpf = this.onlyDigits(value);
+  protected selectMedication(section: MedicationSection, medication: Medication): void {
+    this.medicationDrafts[section].medicationId = medication.id;
+    this.medicationDrafts[section].medicationConcentration = this.formatMedication(medication);
+    delete this.medicationErrors[section].medicationConcentration;
+  }
 
-    if (this.patient.cpf.length === 11) {
-      this.consultPatientByCpf();
+  protected updateMedicationQuery(section: MedicationSection, value: string): void {
+    const draft = this.medicationDrafts[section];
+    draft.medicationConcentration = value;
+    const selectedMedication = draft.medicationId
+      ? this.clinicalRecordsStore.getMedication(draft.medicationId)
+      : null;
+
+    if (
+      selectedMedication &&
+      draft.medicationConcentration === this.formatMedication(selectedMedication)
+    ) {
+      return;
     }
+
+    draft.medicationId = '';
+  }
+
+  protected medicationInteractionWarnings(section: MedicationSection): PatientMedicationInteraction[] {
+    const medicationId = this.medicationDrafts[section].medicationId;
+
+    if (!this.selectedPatientId || !medicationId) {
+      return [];
+    }
+
+    return this.store.getPatientMedicationInteractions(this.selectedPatientId, medicationId);
+  }
+
+  protected hasBloodGlucoseWarning(): boolean {
+    const value = this.parseNumericValue(this.care.bloodGlucose);
+
+    return value !== null && value > 110;
+  }
+
+  protected systolicPressureWarning(): string {
+    return this.referenceWarningMessage(
+      this.care.systolicPressure,
+      120,
+      'A pressão sistólica',
+      '120 mmHg',
+    );
+  }
+
+  protected diastolicPressureWarning(): string {
+    return this.referenceWarningMessage(
+      this.care.diastolicPressure,
+      80,
+      'A pressão diastólica',
+      '80 mmHg',
+    );
+  }
+
+  protected hasBodyTemperatureWarning(): boolean {
+    const value = this.parseNumericValue(this.care.bodyTemperature);
+
+    return value !== null && value > 37;
+  }
+
+  protected updateCareField(field: keyof CareServiceData, value: string): void {
+    this.care[field] = value;
   }
 
   protected addMedication(section: MedicationSection): void {
@@ -200,6 +244,7 @@ export class ServicosFarmaceuticosPage {
       ...this.medicationItems[section],
       {
         id: this.createId(),
+        medicationId: draft.medicationId,
         medicationConcentration: draft.medicationConcentration.trim(),
         batch: draft.batch.trim(),
         expirationDate: draft.expirationDate,
@@ -233,9 +278,10 @@ export class ServicosFarmaceuticosPage {
     this.store.createAttendance({
       patient: {
         ...this.patient,
-        cpf: this.onlyDigits(this.patient.cpf),
-        cellPhone: this.onlyDigits(this.patient.cellPhone),
-        phone: this.onlyDigits(this.patient.phone),
+        cpf: onlyDigits(this.patient.cpf),
+        cellPhone: onlyDigits(this.patient.cellPhone),
+        cep: onlyDigits(this.patient.cep ?? ''),
+        phone: onlyDigits(this.patient.phone),
       },
       selectedServices: this.selectedServices(),
       care: this.enabledSteps['cuidados-farmaceuticos'] ? { ...this.care } : null,
@@ -310,9 +356,9 @@ export class ServicosFarmaceuticosPage {
 
   private validateForm(): boolean {
     this.clearErrors();
-    this.patient.cpf = this.onlyDigits(this.patient.cpf);
+    const cpf = onlyDigits(this.patient.cpf);
 
-    if (this.patient.cpf.length !== 11) {
+    if (cpf.length !== 11) {
       this.errors['patient.cpf'] = 'Informe um CPF com 11 dígitos.';
     }
 
@@ -324,7 +370,7 @@ export class ServicosFarmaceuticosPage {
       this.errors['patient.birthDate'] = 'Data de nascimento é obrigatória.';
     }
 
-    if (this.onlyDigits(this.patient.cellPhone).length < 10) {
+    if (onlyDigits(this.patient.cellPhone).length < 10) {
       this.errors['patient.cellPhone'] = 'Telefone celular é obrigatório.';
     }
 
@@ -363,8 +409,8 @@ export class ServicosFarmaceuticosPage {
     const draft = this.medicationDrafts[section];
     const errors: Partial<Record<keyof MedicationDraft, string>> = {};
 
-    if (!draft.medicationConcentration.trim()) {
-      errors.medicationConcentration = 'Informe o medicamento/concentração.';
+    if (!draft.medicationId) {
+      errors.medicationConcentration = 'Selecione um medicamento cadastrado.';
     }
 
     if (!draft.batch.trim()) {
@@ -392,6 +438,7 @@ export class ServicosFarmaceuticosPage {
 
   private createEmptyMedicationDraft(): MedicationDraft {
     return {
+      medicationId: '',
       medicationConcentration: '',
       batch: '',
       expirationDate: '',
@@ -399,29 +446,39 @@ export class ServicosFarmaceuticosPage {
     };
   }
 
-  private onlyDigits(value: string): string {
-    return value.replace(/\D/g, '');
+  private formatMedication(medication: Medication): string {
+    return medication.measurementUnit
+      ? `${medication.name} — ${medication.measurementUnit}`
+      : medication.name;
   }
 
-  private syncPatientInputs(): void {
-    const values: Record<string, string> = {
-      nomeUsuario: this.patient.name,
-      dataNascimentoUsuario: this.patient.birthDate,
-      celularUsuario: this.patient.cellPhone,
-      telefoneUsuario: this.patient.phone,
-      enderecoUsuario: this.patient.address,
-      cidadeUsuario: this.patient.city,
-      estadoUsuario: this.patient.state,
-      responsavelUsuario: this.patient.responsibleName,
-    };
+  private parseNumericValue(value: string): number | null {
+    const normalizedValue = String(value).trim().replace(',', '.');
 
-    for (const [id, value] of Object.entries(values)) {
-      const input = document.getElementById(id) as HTMLInputElement | null;
-
-      if (input) {
-        input.value = value;
-      }
+    if (!normalizedValue) {
+      return null;
     }
+
+    const parsed = Number(normalizedValue);
+
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private referenceWarningMessage(
+    value: string,
+    reference: number,
+    label: string,
+    referenceLabel: string,
+  ): string {
+    const parsed = this.parseNumericValue(value);
+
+    if (parsed === null || parsed === reference) {
+      return '';
+    }
+
+    const direction = parsed > reference ? 'maior' : 'menor';
+
+    return `${label} está ${direction} que o valor de referência (${referenceLabel}).`;
   }
 
   private createId(): string {

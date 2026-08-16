@@ -1,0 +1,171 @@
+<main [attr.data-page]="isEditMode() ? 'editar-paciente' : 'novo-paciente'" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    @if (recordNotFound()) {
+      <div class="alert alert-warning">
+        <span class="marker marker-warning"></span>
+        <div>
+          <p class="alert-title">Paciente não encontrado</p>
+          <p class="alert-description">Retorne para a listagem e selecione outro paciente.</p>
+        </div>
+      </div>
+      <a class="btn btn-secondary w-fit" routerLink="/pacientes">Voltar para listagem</a>
+    } @else {
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="mb-2 text-sm font-semibold text-uem-700">Pacientes</p>
+          <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">
+            {{ isEditMode() ? 'Editar paciente' : 'Novo paciente' }}
+          </h1>
+          <p class="mt-2 max-w-2xl text-sm leading-6 text-app-muted-foreground">
+            {{
+              isEditMode()
+                ? 'Atualize os dados cadastrais e as comorbidades associadas.'
+                : 'Cadastre os dados pessoais do paciente. As comorbidades podem ser gerenciadas após salvar o registro.'
+            }}
+          </p>
+        </div>
+
+        <a class="btn btn-secondary" routerLink="/pacientes">Voltar</a>
+      </div>
+
+      @if (saveError) {
+        <div class="alert alert-danger">
+          <span class="marker marker-danger"></span>
+          <div>
+            <p class="alert-title">{{ saveError }}</p>
+          </div>
+        </div>
+      }
+
+      <form class="grid gap-5" (submit)="savePatient(); $event.preventDefault()">
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">Dados do paciente</h2>
+          </div>
+          <div class="card-content">
+            <app-patient-form
+              [patient]="patient"
+              [errors]="errors"
+              [cpfLookupEnabled]="!isEditMode()"
+            />
+          </div>
+        </section>
+
+        @if (isEditMode()) {
+          <section class="card">
+            <div class="card-header">
+              <h2 class="card-title">Comorbidades do paciente</h2>
+              <p class="card-description">
+                Pesquise comorbidades cadastradas e associe quantas forem necessárias.
+              </p>
+            </div>
+
+            <div class="card-content grid gap-5">
+              @if (clinicalStore.comorbidities().length === 0) {
+                <div class="alert alert-info">
+                  <span class="marker marker-info"></span>
+                  <div>
+                    <p class="alert-title">Nenhuma comorbidade cadastrada</p>
+                    <p class="alert-description">
+                      Cadastre comorbidades no módulo correspondente antes de associá-las a pacientes.
+                    </p>
+                  </div>
+                </div>
+              } @else {
+                <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.75fr)]">
+                  <div class="grid gap-3">
+                    <div class="field">
+                      <label for="patientComorbiditySearch" class="label">Pesquisar comorbidades</label>
+                      <input
+                        id="patientComorbiditySearch"
+                        class="input"
+                        type="search"
+                        [ngModel]="comorbiditySearchTerm()"
+                        (ngModelChange)="updateComorbiditySearch($event)"
+                        name="patientComorbiditySearch"
+                        placeholder="Buscar comorbidade cadastrada"
+                      />
+                    </div>
+
+                    @if (comorbidityResults().length === 0) {
+                      <div class="empty min-h-40">
+                        <h3 class="empty-title">Nenhuma comorbidade encontrada.</h3>
+                        <p class="empty-description">Ajuste a busca para localizar outra comorbidade.</p>
+                      </div>
+                    } @else {
+                      <div class="grid gap-2">
+                        @for (comorbidity of comorbidityResults(); track comorbidity.id) {
+                          <div class="item border bg-app-surface-subtle">
+                            <div class="item-content">
+                              <p class="item-title">{{ comorbidity.name }}</p>
+                              <p class="item-description">
+                                {{ comorbidity.medicationInteractionIds.length }} interação(ões)
+                              </p>
+                            </div>
+                            <button
+                              class="btn btn-secondary btn-sm"
+                              type="button"
+                              [disabled]="isSelected(comorbidity.id)"
+                              [attr.data-add-patient-comorbidity-id]="comorbidity.id"
+                              (click)="addComorbidity(comorbidity)"
+                            >
+                              {{ isSelected(comorbidity.id) ? 'Adicionada' : 'Adicionar' }}
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+
+                  <aside class="grid content-start gap-3">
+                    <h3 class="text-sm font-semibold text-app-foreground">Comorbidades associadas</h3>
+
+                    @if (selectedComorbidities().length === 0) {
+                      <div class="empty min-h-40">
+                        <p class="empty-title">Nenhuma comorbidade associada</p>
+                        <p class="empty-description">
+                          O paciente pode permanecer sem comorbidades cadastradas.
+                        </p>
+                      </div>
+                    } @else {
+                      <div class="grid gap-2">
+                        @for (comorbidity of selectedComorbidities(); track comorbidity.id) {
+                          <div
+                            class="attachment"
+                            [attr.data-selected-patient-comorbidity-id]="comorbidity.id"
+                          >
+                            <div class="attachment-content">
+                              <p class="attachment-name">{{ comorbidity.name }}</p>
+                              <p class="attachment-meta">
+                                {{ comorbidity.medicationInteractionIds.length }} interação(ões)
+                              </p>
+                            </div>
+                            <button
+                              class="btn btn-ghost btn-sm"
+                              type="button"
+                              [attr.data-remove-patient-comorbidity-id]="comorbidity.id"
+                              (click)="removeComorbidity(comorbidity.id)"
+                            >
+                              Remover
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </aside>
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+        <div class="card-footer flex-col items-stretch rounded-xl border sm:flex-row sm:justify-end">
+          <a class="btn btn-secondary w-full sm:w-auto" routerLink="/pacientes">Cancelar</a>
+          <button class="btn btn-primary w-full sm:w-auto" type="submit">
+            {{ isEditMode() ? 'Salvar alterações' : 'Salvar paciente' }}
+          </button>
+        </div>
+      </form>
+    }
+  </section>
+</main>

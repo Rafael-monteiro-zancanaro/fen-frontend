@@ -20,6 +20,7 @@ export class App {
       this.router.url.startsWith('/atendimentos') ||
       this.router.url.startsWith('/medicamentos') ||
       this.router.url.startsWith('/comorbidades') ||
+      this.router.url.startsWith('/pacientes') ||
       this.router.url.startsWith('/admin')
     );
   }

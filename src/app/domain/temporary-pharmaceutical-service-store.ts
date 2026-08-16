@@ -2,12 +2,15 @@ import { Injectable, computed, signal } from '@angular/core';
 import {
   AttendanceStatus,
   AttendanceStatusFilter,
+  Comorbidity,
   CreatePharmaceuticalServiceAttendanceInput,
+  Medication,
   Patient,
   PatientInput,
   PharmaceuticalServiceAttendance,
   PharmaceuticalServiceKey,
 } from './clinical-records';
+import { TemporaryClinicalRecordsStore } from './temporary-clinical-records-store';
 
 interface TemporaryPharmaceuticalServiceState {
   patients: Patient[];
@@ -29,6 +32,11 @@ export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
   EXPIRADO: 'Expirado',
 };
 
+export interface PatientMedicationInteraction {
+  medication: Medication;
+  comorbidity: Comorbidity;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TemporaryPharmaceuticalServiceStore {
   private readonly state = signal<TemporaryPharmaceuticalServiceState>(this.readInitialState());
@@ -36,10 +44,105 @@ export class TemporaryPharmaceuticalServiceStore {
   readonly patients = computed(() => this.state().patients);
   readonly attendances = computed(() => this.state().attendances);
 
+  constructor(private readonly clinicalRecordsStore: TemporaryClinicalRecordsStore) {}
+
   findPatientByCpf(cpf: string): Patient | undefined {
     const normalizedCpf = this.onlyDigits(cpf);
 
     return this.state().patients.find((patient) => patient.cpf === normalizedCpf);
+  }
+
+  getPatient(id: string): Patient | undefined {
+    return this.state().patients.find((patient) => patient.id === id);
+  }
+
+  createPatient(input: PatientInput): Patient {
+    return this.upsertPatient(input);
+  }
+
+  updatePatient(id: string, input: PatientInput): Patient | undefined {
+    const existingPatient = this.getPatient(id);
+
+    if (!existingPatient) {
+      return undefined;
+    }
+
+    const normalizedCpf = this.onlyDigits(input.cpf);
+    const patientWithCpf = this.findPatientByCpf(normalizedCpf);
+
+    if (patientWithCpf && patientWithCpf.id !== id) {
+      return undefined;
+    }
+
+    const patient = this.buildPatient(input, existingPatient);
+
+    this.updateState({
+      ...this.state(),
+      patients: this.state().patients.map((currentPatient) =>
+        currentPatient.id === id ? patient : currentPatient,
+      ),
+      attendances: this.state().attendances.map((attendance) =>
+        attendance.patient.id === id ? { ...attendance, patient } : attendance,
+      ),
+    });
+
+    return patient;
+  }
+
+  updatePatientComorbidities(id: string, comorbidityIds: string[]): Patient | undefined {
+    const patient = this.getPatient(id);
+
+    if (!patient) {
+      return undefined;
+    }
+
+    return this.updatePatient(id, {
+      ...patient,
+      comorbidityIds,
+    });
+  }
+
+  searchPatients(term: string): Patient[] {
+    const query = this.normalize(term);
+
+    if (!query) {
+      return this.state().patients;
+    }
+
+    return this.state().patients.filter((patient) =>
+      this.normalize(`${patient.name} ${patient.cpf}`).includes(query),
+    );
+  }
+
+  getPatientComorbidities(id: string): Comorbidity[] {
+    const patient = this.getPatient(id);
+
+    if (!patient) {
+      return [];
+    }
+
+    return patient.comorbidityIds.flatMap((comorbidityId) => {
+      const comorbidity = this.clinicalRecordsStore.getComorbidity(comorbidityId);
+      return comorbidity ? [comorbidity] : [];
+    });
+  }
+
+  getPatientMedicationInteractions(
+    patientId: string,
+    medicationId: string,
+  ): PatientMedicationInteraction[] {
+    const medication = this.clinicalRecordsStore.getMedication(medicationId);
+
+    if (!medication) {
+      return [];
+    }
+
+    return this.getPatientComorbidities(patientId)
+      .filter((comorbidity) => comorbidity.medicationInteractionIds.includes(medication.id))
+      .map((comorbidity) => ({
+        medication,
+        comorbidity,
+      }));
   }
 
   createAttendance(
@@ -90,9 +193,9 @@ export class TemporaryPharmaceuticalServiceStore {
         .map((service) => PHARMACEUTICAL_SERVICE_LABELS[service])
         .join(' ');
 
-      return this.normalize(`${attendance.patient.name} ${attendance.patient.cpf} ${services}`).includes(
-        query,
-      );
+      return this.normalize(
+        `${attendance.patient.name} ${attendance.patient.cpf} ${services}`,
+      ).includes(query);
     });
   }
 
@@ -113,20 +216,7 @@ export class TemporaryPharmaceuticalServiceStore {
   private upsertPatient(input: PatientInput): Patient {
     const normalizedCpf = this.onlyDigits(input.cpf);
     const existingPatient = this.findPatientByCpf(normalizedCpf);
-    const patient: Patient = {
-      id: existingPatient?.id ?? this.createId(),
-      name: input.name.trim(),
-      cpf: normalizedCpf,
-      birthDate: input.birthDate,
-      cellPhone: this.onlyDigits(input.cellPhone),
-      gender: input.gender,
-      address: input.address.trim(),
-      city: input.city.trim(),
-      state: input.state.trim().toLocaleUpperCase('pt-BR'),
-      phone: this.onlyDigits(input.phone),
-      responsibleName: input.responsibleName.trim(),
-      createdAt: existingPatient?.createdAt ?? new Date().toISOString(),
-    };
+    const patient = this.buildPatient(input, existingPatient);
 
     const nextPatients = existingPatient
       ? this.state().patients.map((currentPatient) =>
@@ -140,6 +230,40 @@ export class TemporaryPharmaceuticalServiceStore {
     });
 
     return patient;
+  }
+
+  private buildPatient(input: PatientInput, existingPatient?: Patient): Patient {
+    return {
+      id: existingPatient?.id ?? this.createId(),
+      name: input.name.trim(),
+      cpf: this.onlyDigits(input.cpf),
+      birthDate: input.birthDate,
+      cellPhone: this.onlyDigits(input.cellPhone),
+      gender: input.gender,
+      cep: this.onlyDigits(input.cep ?? ''),
+      address: input.address.trim(),
+      neighborhood: input.neighborhood?.trim() ?? '',
+      city: input.city.trim(),
+      state: input.state.trim().toLocaleUpperCase('pt-BR'),
+      phone: this.onlyDigits(input.phone),
+      responsibleName: input.responsibleName.trim(),
+      comorbidityIds: this.uniqueComorbidityIds(
+        input.comorbidityIds ?? existingPatient?.comorbidityIds ?? [],
+      ),
+      createdAt: existingPatient?.createdAt ?? new Date().toISOString(),
+    };
+  }
+
+  private uniqueComorbidityIds(ids: string[]): string[] {
+    const uniqueIds: string[] = [];
+
+    for (const id of ids) {
+      if (this.clinicalRecordsStore.getComorbidity(id) && !uniqueIds.includes(id)) {
+        uniqueIds.push(id);
+      }
+    }
+
+    return uniqueIds;
   }
 
   private updateAttendanceStatus(id: string, status: AttendanceStatus): boolean {
@@ -180,7 +304,14 @@ export class TemporaryPharmaceuticalServiceStore {
       const parsedState = JSON.parse(rawState) as Partial<TemporaryPharmaceuticalServiceState>;
 
       return {
-        patients: Array.isArray(parsedState.patients) ? parsedState.patients : [],
+        patients: Array.isArray(parsedState.patients)
+          ? parsedState.patients.map((patient) => ({
+              ...patient,
+              comorbidityIds: Array.isArray(patient.comorbidityIds)
+                ? this.uniqueComorbidityIds(patient.comorbidityIds)
+                : [],
+            }))
+          : [],
         attendances: Array.isArray(parsedState.attendances) ? parsedState.attendances : [],
       };
     } catch {

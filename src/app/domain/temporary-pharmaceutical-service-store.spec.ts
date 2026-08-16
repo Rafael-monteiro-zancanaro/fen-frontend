@@ -1,17 +1,20 @@
 import { TestBed } from '@angular/core/testing';
+import { TemporaryClinicalRecordsStore } from './temporary-clinical-records-store';
 import { TemporaryPharmaceuticalServiceStore } from './temporary-pharmaceutical-service-store';
 
 describe('TemporaryPharmaceuticalServiceStore', () => {
   let store: TemporaryPharmaceuticalServiceStore;
+  let clinicalStore: TemporaryClinicalRecordsStore;
 
   beforeEach(() => {
     localStorage.clear();
 
     TestBed.configureTestingModule({
-      providers: [TemporaryPharmaceuticalServiceStore],
+      providers: [TemporaryClinicalRecordsStore, TemporaryPharmaceuticalServiceStore],
     });
 
     store = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    clinicalStore = TestBed.inject(TemporaryClinicalRecordsStore);
   });
 
   afterEach(() => {
@@ -81,6 +84,92 @@ describe('TemporaryPharmaceuticalServiceStore', () => {
     expect(store.patients()).toHaveLength(1);
     expect(firstAttendance.patient.id).toBe(secondAttendance.patient.id);
     expect(store.findPatientByCpf('12345678901')?.name).toBe('Maria Souza Atualizada');
+  });
+
+  it('creates, searches and updates patients without duplicating CPF records', () => {
+    const patient = store.createPatient({
+      name: 'Maria Souza',
+      cpf: '123.456.789-01',
+      birthDate: '1988-04-10',
+      cellPhone: '(44) 99999-9999',
+      gender: 'feminino',
+      cep: '87020-025',
+      address: 'Rua das Flores',
+      neighborhood: 'Zona 7',
+      city: 'Maringá',
+      state: 'pr',
+      phone: '',
+      responsibleName: '',
+    });
+
+    expect(patient.cpf).toBe('12345678901');
+    expect(patient.cellPhone).toBe('44999999999');
+    expect(patient.cep).toBe('87020025');
+    expect(patient.comorbidityIds).toEqual([]);
+    expect(store.searchPatients('maria')).toEqual([patient]);
+    expect(store.searchPatients('12345678901')).toEqual([patient]);
+
+    const updatedPatient = store.updatePatient(patient.id, {
+      ...patient,
+      name: 'Maria Souza Atualizada',
+      cpf: '12345678901',
+      cellPhone: '44888888888',
+      cep: '87030000',
+      state: 'PR',
+    });
+
+    expect(updatedPatient?.id).toBe(patient.id);
+    expect(store.patients()).toHaveLength(1);
+    expect(store.getPatient(patient.id)?.name).toBe('Maria Souza Atualizada');
+    expect(store.findPatientByCpf('123.456.789-01')?.cellPhone).toBe('44888888888');
+  });
+
+  it('keeps patient comorbidity associations unique and resolves medication interactions', () => {
+    const dipirona = clinicalStore.createMedication({
+      name: 'Dipirona',
+      measurementUnit: '500 mg',
+      administrationRoute: 'Oral',
+    });
+    const insulina = clinicalStore.createMedication({
+      name: 'Insulina',
+      measurementUnit: 'dose',
+      administrationRoute: 'Subcutânea',
+    });
+    const diabetes = clinicalStore.createComorbidity({
+      name: 'Diabetes mellitus',
+      medicationInteractionIds: [dipirona.id],
+    });
+    const hipertensao = clinicalStore.createComorbidity({
+      name: 'Hipertensão',
+      medicationInteractionIds: [insulina.id],
+    });
+    const patient = store.createPatient({
+      name: 'João Pereira',
+      cpf: '98765432100',
+      birthDate: '1970-09-20',
+      cellPhone: '44977777777',
+      gender: 'masculino',
+      address: '',
+      city: 'Maringá',
+      state: 'PR',
+      phone: '',
+      responsibleName: '',
+      comorbidityIds: [diabetes.id, diabetes.id, 'inexistente'],
+    });
+
+    expect(patient.comorbidityIds).toEqual([diabetes.id]);
+
+    store.updatePatientComorbidities(patient.id, [diabetes.id, hipertensao.id, diabetes.id]);
+
+    expect(store.getPatient(patient.id)?.comorbidityIds).toEqual([diabetes.id, hipertensao.id]);
+    expect(store.getPatientComorbidities(patient.id).map((comorbidity) => comorbidity.name)).toEqual(
+      ['Diabetes mellitus', 'Hipertensão'],
+    );
+    expect(
+      store
+        .getPatientMedicationInteractions(patient.id, dipirona.id)
+        .map((interaction) => interaction.comorbidity.name),
+    ).toEqual(['Diabetes mellitus']);
   });
 
   it('sets attendance status from follow-up and closes expired attendances', () => {

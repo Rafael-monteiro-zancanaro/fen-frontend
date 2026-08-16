@@ -1,0 +1,49 @@
+<div class="relative">
+  <input
+    [id]="inputId"
+    [name]="inputName"
+    class="input"
+    type="text"
+    autocomplete="off"
+    role="combobox"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-controls]="inputId + '-options'"
+    [attr.aria-invalid]="invalid ? 'true' : null"
+    [attr.aria-describedby]="describedBy"
+    [ngModel]="value"
+    (ngModelChange)="updateValue($event)"
+    (focus)="isOpen.set(!!value.trim())"
+  />
+
+  @if (isOpen()) {
+    <div
+      class="combobox-content absolute left-0 right-0 top-[calc(100%+0.25rem)] max-h-64 overflow-y-auto"
+      [id]="inputId + '-options'"
+      role="listbox"
+      [attr.data-medication-options]="section"
+    >
+      @if (results().length > 0) {
+        @for (medication of results(); track medication.id) {
+          <button
+            class="combobox-item w-full text-left"
+            type="button"
+            role="option"
+            [attr.aria-selected]="selectedMedicationId === medication.id ? 'true' : null"
+            [attr.data-select-medication-id]="medication.id"
+            (mousedown)="$event.preventDefault(); selectMedication(medication)"
+            (click)="selectMedication(medication)"
+          >
+            <span class="min-w-0">
+              <span class="block font-semibold">{{ medication.name }}</span>
+              <span class="block text-xs text-app-muted-foreground">
+                {{ medication.measurementUnit }} · {{ medication.administrationRoute }}
+              </span>
+            </span>
+          </button>
+        }
+      } @else {
+        <p class="px-2 py-2 text-sm text-app-muted-foreground">Nenhum medicamento encontrado.</p>
+      }
+    </div>
+  }
+</div>

@@ -29,10 +29,7 @@ export type AttendanceStatus = 'CONCLUIDO' | 'AGUARDANDO_RETORNO' | 'EXPIRADO';
 export type AttendanceStatusFilter = AttendanceStatus | 'TODOS';
 
 export type PharmaceuticalServiceKey =
-  | 'cuidados-farmaceuticos'
-  | 'aplicacao-injetaveis'
-  | 'inaloterapia'
-  | 'servicos-farmaceuticos';
+  'cuidados-farmaceuticos' | 'aplicacao-injetaveis' | 'inaloterapia' | 'servicos-farmaceuticos';
 
 export interface Patient {
   id: string;
@@ -41,11 +38,14 @@ export interface Patient {
   birthDate: string;
   cellPhone: string;
   gender: string;
+  cep?: string;
   address: string;
+  neighborhood?: string;
   city: string;
   state: string;
   phone: string;
   responsibleName: string;
+  comorbidityIds: string[];
   createdAt: string;
 }
 
@@ -55,11 +55,14 @@ export interface PatientInput {
   birthDate: string;
   cellPhone: string;
   gender: string;
+  cep?: string;
   address: string;
+  neighborhood?: string;
   city: string;
   state: string;
   phone: string;
   responsibleName: string;
+  comorbidityIds?: string[];
 }
 
 export interface CareServiceData {
@@ -71,6 +74,7 @@ export interface CareServiceData {
 
 export interface ServiceMedicationItem {
   id: string;
+  medicationId?: string;
   medicationConcentration: string;
   batch: string;
   expirationDate: string;

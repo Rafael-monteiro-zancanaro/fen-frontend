@@ -1,0 +1,113 @@
+<main data-page="pacientes" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="mb-2 text-sm font-semibold text-uem-700">Pacientes</p>
+        <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">Pacientes</h1>
+        <p class="mt-2 max-w-2xl text-sm leading-6 text-app-muted-foreground">
+          Consulte pacientes cadastrados e mantenha suas informações clínicas relevantes.
+        </p>
+      </div>
+
+      <a class="btn btn-primary" routerLink="/pacientes/novo">Cadastrar paciente</a>
+    </div>
+
+    @if (patients().length === 0) {
+      <section class="empty">
+        <div class="empty-icon" aria-hidden="true">+</div>
+        <h2 class="empty-title">Nenhum paciente cadastrado.</h2>
+        <p class="empty-description">
+          Cadastre o primeiro paciente para reutilizá-lo nos atendimentos farmacêuticos.
+        </p>
+        <a class="btn btn-primary" routerLink="/pacientes/novo">Cadastrar paciente</a>
+      </section>
+    } @else {
+      <section class="card">
+        <div class="card-content">
+          <div class="data-table-toolbar">
+            <div class="field min-w-64 flex-1">
+              <label for="patientSearch" class="label">Pesquisar pacientes</label>
+              <input
+                id="patientSearch"
+                class="input"
+                type="search"
+                [ngModel]="searchTerm()"
+                (ngModelChange)="updateSearchTerm($event)"
+                placeholder="Buscar por nome ou CPF"
+              />
+            </div>
+          </div>
+
+          @if (filteredPatients().length === 0) {
+            <div class="empty">
+              <h2 class="empty-title">Nenhum resultado encontrado</h2>
+              <p class="empty-description">
+                Ajuste os termos da busca para localizar outro paciente cadastrado.
+              </p>
+            </div>
+          } @else {
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>CPF</th>
+                    <th>Celular</th>
+                    <th>Data de nascimento</th>
+                    <th>Comorbidades</th>
+                    <th class="w-32">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (patient of paginatedPatients(); track patient.id) {
+                    <tr>
+                      <td class="font-semibold text-app-foreground">{{ patient.name }}</td>
+                      <td>{{ formatCpf(patient.cpf) }}</td>
+                      <td>{{ formatPhone(patient.cellPhone) }}</td>
+                      <td>{{ formatDate(patient.birthDate) }}</td>
+                      <td>
+                        <span class="badge badge-secondary">
+                          {{ comorbidityCount(patient) }} comorbidade(s)
+                        </span>
+                      </td>
+                      <td>
+                        <div class="flex flex-nowrap gap-2" data-patient-actions>
+                          <a
+                            class="btn btn-secondary btn-icon btn-sm"
+                            [routerLink]="['/pacientes', patient.id]"
+                            aria-label="Visualizar paciente"
+                            title="Visualizar paciente"
+                          >
+                            <ng-icon name="bootstrapEye" size="1rem" />
+                          </a>
+                          <a
+                            class="btn btn-secondary btn-icon btn-sm"
+                            [routerLink]="['/pacientes', patient.id, 'editar']"
+                            aria-label="Editar paciente"
+                            title="Editar paciente"
+                          >
+                            <ng-icon name="bootstrapPencil" size="1rem" />
+                          </a>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <app-pagination-controls
+              [pagination]="pagination()"
+              summaryId="patients"
+              pageSizeSelectId="patientPageSize"
+              itemLabel="paciente(s)"
+              (previousPage)="goToPreviousPage()"
+              (nextPage)="goToNextPage()"
+              (pageSizeChange)="updatePageSize($event)"
+            />
+          }
+        </div>
+      </section>
+    }
+  </section>
+</main>

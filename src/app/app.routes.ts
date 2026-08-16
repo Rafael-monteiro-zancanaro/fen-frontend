@@ -10,11 +10,14 @@ import { LoginPage } from './pages/login-page/login-page';
 import { MedicamentosPage } from './pages/medicamentos-page/medicamentos-page';
 import { NovaComorbidadePage } from './pages/nova-comorbidade-page/nova-comorbidade-page';
 import { NovoMedicamentoPage } from './pages/novo-medicamento-page/novo-medicamento-page';
+import { NovoPacientePage } from './pages/novo-paciente-page/novo-paciente-page';
+import { PacientesPage } from './pages/pacientes-page/pacientes-page';
 import { RecuperarSenhaPage } from './pages/recuperar-senha-page/recuperar-senha-page';
 import { ServicosFarmaceuticosPage } from './pages/servicos-farmaceuticos-page/servicos-farmaceuticos-page';
 import { VisualizarComorbidadePage } from './pages/visualizar-comorbidade-page/visualizar-comorbidade-page';
 import { VisualizarFuncionarioPage } from './pages/visualizar-funcionario-page/visualizar-funcionario-page';
 import { VisualizarMedicamentoPage } from './pages/visualizar-medicamento-page/visualizar-medicamento-page';
+import { VisualizarPacientePage } from './pages/visualizar-paciente-page/visualizar-paciente-page';
 import { VisualizarRecuperacaoSenhaPage } from './pages/visualizar-recuperacao-senha-page/visualizar-recuperacao-senha-page';
 import { VisualizarAtendimentoPage } from './pages/visualizar-atendimento-page/visualizar-atendimento-page';
 
@@ -83,6 +86,22 @@ export const routes: Routes = [
   {
     path: 'comorbidades/:id',
     component: VisualizarComorbidadePage,
+  },
+  {
+    path: 'pacientes',
+    component: PacientesPage,
+  },
+  {
+    path: 'pacientes/novo',
+    component: NovoPacientePage,
+  },
+  {
+    path: 'pacientes/:id/editar',
+    component: NovoPacientePage,
+  },
+  {
+    path: 'pacientes/:id',
+    component: VisualizarPacientePage,
   },
   {
     path: 'admin/recuperacoes-senha',

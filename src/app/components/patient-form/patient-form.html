@@ -1,0 +1,220 @@
+<div class="grid gap-4">
+  @if (patientLookupMessage) {
+    <div [class]="patientLookupVariant === 'info' ? 'alert alert-info' : 'alert alert-success'">
+      <span class="marker marker-success"></span>
+      <div>
+        <p class="alert-title">{{ patientLookupMessage }}</p>
+      </div>
+    </div>
+  }
+
+  <div class="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+    <div class="field">
+      <label for="cpfUsuario" class="label label-required">CPF</label>
+      <input
+        id="cpfUsuario"
+        name="cpfUsuario"
+        class="input"
+        type="text"
+        inputmode="numeric"
+        maxlength="14"
+        [value]="patient.cpf"
+        (input)="updateCpf($any($event.target))"
+        [attr.aria-invalid]="errors['patient.cpf'] ? 'true' : null"
+      />
+      @if (errors['patient.cpf']) {
+        <p class="field-error">{{ errors['patient.cpf'] }}</p>
+      }
+    </div>
+    @if (cpfLookupEnabled) {
+      <button
+        class="btn btn-secondary"
+        type="button"
+        data-consult-patient
+        (click)="consultPatientByCpf()"
+      >
+        Consultar CPF
+      </button>
+    }
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div class="field md:col-span-2">
+      <label for="nomeUsuario" class="label label-required">Nome</label>
+      <input
+        id="nomeUsuario"
+        name="nomeUsuario"
+        class="input"
+        type="text"
+        autocomplete="name"
+        [(ngModel)]="patient.name"
+        (input)="patient.name = $any($event.target).value"
+        [attr.aria-invalid]="errors['patient.name'] ? 'true' : null"
+      />
+      @if (errors['patient.name']) {
+        <p class="field-error">{{ errors['patient.name'] }}</p>
+      }
+    </div>
+
+    <fieldset class="field">
+      <legend class="label">Gênero</legend>
+      <div class="flex flex-wrap gap-4 text-sm text-app-muted-foreground">
+        <label class="flex items-center gap-2">
+          <input
+            class="radio-item"
+            type="radio"
+            name="genero"
+            value="masculino"
+            [(ngModel)]="patient.gender"
+          />
+          Masculino
+        </label>
+        <label class="flex items-center gap-2">
+          <input
+            class="radio-item"
+            type="radio"
+            name="genero"
+            value="feminino"
+            [(ngModel)]="patient.gender"
+          />
+          Feminino
+        </label>
+      </div>
+    </fieldset>
+
+    <div class="field">
+      <label for="dataNascimentoUsuario" class="label label-required">Data de nascimento</label>
+      <input
+        id="dataNascimentoUsuario"
+        name="dataNascimentoUsuario"
+        class="input"
+        type="date"
+        [(ngModel)]="patient.birthDate"
+        (input)="patient.birthDate = $any($event.target).value"
+        [attr.aria-invalid]="errors['patient.birthDate'] ? 'true' : null"
+      />
+      @if (errors['patient.birthDate']) {
+        <p class="field-error">{{ errors['patient.birthDate'] }}</p>
+      }
+    </div>
+
+    <div class="field">
+      <label for="celularUsuario" class="label label-required">Telefone celular</label>
+      <input
+        id="celularUsuario"
+        name="celularUsuario"
+        class="input"
+        type="tel"
+        autocomplete="tel"
+        maxlength="15"
+        [value]="patient.cellPhone"
+        (input)="updateCellPhone($any($event.target))"
+        [attr.aria-invalid]="errors['patient.cellPhone'] ? 'true' : null"
+      />
+      @if (errors['patient.cellPhone']) {
+        <p class="field-error">{{ errors['patient.cellPhone'] }}</p>
+      }
+    </div>
+
+    <div class="field">
+      <label for="telefoneUsuario" class="label">Telefone</label>
+      <input
+        id="telefoneUsuario"
+        name="telefoneUsuario"
+        class="input"
+        type="tel"
+        maxlength="15"
+        [value]="patient.phone"
+        (input)="updatePhone($any($event.target))"
+      />
+    </div>
+
+    <div class="field">
+      <label for="cepUsuario" class="label">CEP</label>
+      <input
+        id="cepUsuario"
+        name="cepUsuario"
+        class="input"
+        type="text"
+        inputmode="numeric"
+        maxlength="9"
+        autocomplete="postal-code"
+        [value]="patient.cep"
+        (input)="updateCep($any($event.target))"
+        aria-describedby="cepUsuarioFeedback"
+      />
+      @if (cepLookupMessage) {
+        <div
+          id="cepUsuarioFeedback"
+          data-cep-feedback
+          [class]="cepLookupVariant === 'warning' ? 'alert alert-warning' : 'alert alert-info'"
+        >
+          <span
+            [class]="
+              cepLookupVariant === 'warning' ? 'marker marker-warning' : 'marker marker-info'
+            "
+          ></span>
+          <div>
+            <p class="alert-title">{{ cepLookupMessage }}</p>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="field md:col-span-2">
+      <label for="enderecoUsuario" class="label">Endereço</label>
+      <input
+        id="enderecoUsuario"
+        name="enderecoUsuario"
+        class="input"
+        type="text"
+        autocomplete="street-address"
+        [(ngModel)]="patient.address"
+      />
+    </div>
+
+    <div class="field">
+      <label for="bairroUsuario" class="label">Bairro</label>
+      <input
+        id="bairroUsuario"
+        name="bairroUsuario"
+        class="input"
+        type="text"
+        [(ngModel)]="patient.neighborhood"
+      />
+    </div>
+
+    <div class="field">
+      <label for="cidadeUsuario" class="label">Cidade</label>
+      <input
+        id="cidadeUsuario"
+        name="cidadeUsuario"
+        class="input"
+        type="text"
+        [(ngModel)]="patient.city"
+        (input)="patient.city = $any($event.target).value"
+      />
+    </div>
+
+    <div class="field">
+      <label for="estadoUsuario" class="label">Estado</label>
+      <select id="estadoUsuario" name="estadoUsuario" class="native-select" [(ngModel)]="patient.state">
+        <option value="">Selecione</option>
+        @for (state of brazilianStates; track state.value) {
+          <option [value]="state.value">{{ state.label }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="field md:col-span-2">
+      <label for="responsavelUsuario" class="label">Nome do responsável em caso de menor</label>
+      <input
+        id="responsavelUsuario"
+        name="responsavelUsuario"
+        class="input"
+        type="text"
+        [(ngModel)]="patient.responsibleName"
+      />
+    </div>
+  </div>
+</div>

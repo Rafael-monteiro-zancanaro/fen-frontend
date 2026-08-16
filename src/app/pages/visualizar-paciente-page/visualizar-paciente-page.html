@@ -1,0 +1,125 @@
+<main data-page="visualizar-paciente" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    @if (patient(); as currentPatient) {
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="mb-2 text-sm font-semibold text-uem-700">Pacientes</p>
+          <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">
+            {{ currentPatient.name }}
+          </h1>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <a class="btn btn-secondary" routerLink="/pacientes">Voltar para listagem</a>
+          <a class="btn btn-primary" [routerLink]="['/pacientes', currentPatient.id, 'editar']">
+            Editar paciente
+          </a>
+        </div>
+      </div>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Dados pessoais</h2>
+          <p class="card-description">Informações cadastradas para consulta.</p>
+        </div>
+
+        <div class="card-content grid gap-4 sm:grid-cols-2">
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Nome</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ currentPatient.name }}</p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">CPF</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ formatCpf(currentPatient.cpf) }}</p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Telefone celular</p>
+            <p class="mt-1 font-semibold text-app-foreground">
+              {{ formatPhone(currentPatient.cellPhone) }}
+            </p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Data de nascimento</p>
+            <p class="mt-1 font-semibold text-app-foreground">
+              {{ formatDate(currentPatient.birthDate) }}
+            </p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Gênero</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ currentPatient.gender || '-' }}</p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Telefone</p>
+            <p class="mt-1 font-semibold text-app-foreground">
+              {{ formatPhone(currentPatient.phone) || '-' }}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Endereço</h2>
+        </div>
+        <div class="card-content grid gap-4 sm:grid-cols-2">
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">CEP</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ formatCep(currentPatient.cep) || '-' }}</p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Estado</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ currentPatient.state || '-' }}</p>
+          </div>
+          <div class="sm:col-span-2">
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Endereço</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ currentPatient.address || '-' }}</p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Bairro</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ currentPatient.neighborhood || '-' }}</p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Cidade</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ currentPatient.city || '-' }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Comorbidades associadas</h2>
+        </div>
+        <div class="card-content">
+          @if (comorbidities().length === 0) {
+            <div class="empty">
+              <h3 class="empty-title">Nenhuma comorbidade associada</h3>
+              <p class="empty-description">Este paciente não possui comorbidades cadastradas.</p>
+            </div>
+          } @else {
+            <div class="grid gap-3 md:grid-cols-2">
+              @for (comorbidity of comorbidities(); track comorbidity.id) {
+                <article class="attachment">
+                  <div class="attachment-content">
+                    <h3 class="attachment-name">{{ comorbidity.name }}</h3>
+                    <p class="attachment-meta">
+                      {{ comorbidity.medicationInteractionIds.length }} interação(ões)
+                    </p>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    } @else {
+      <div class="alert alert-warning">
+        <span class="marker marker-warning"></span>
+        <div>
+          <p class="alert-title">Paciente não encontrado</p>
+          <p class="alert-description">Retorne para a listagem e selecione outro paciente.</p>
+        </div>
+      </div>
+      <a class="btn btn-secondary w-fit" routerLink="/pacientes">Voltar para listagem</a>
+    }
+  </section>
+</main>

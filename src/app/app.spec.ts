@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+import { vi } from 'vitest';
 import { App } from './app';
 import { routes } from './app.routes';
 import { TemporaryAccessControl } from './domain/temporary-access-control';
@@ -93,9 +94,9 @@ describe('App', () => {
     compiled.querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
     fixture.detectChanges();
 
-    expect(compiled.querySelector('[data-field-error="password-confirmation"]')?.textContent).toContain(
-      'As senhas devem ser iguais',
-    );
+    expect(
+      compiled.querySelector('[data-field-error="password-confirmation"]')?.textContent,
+    ).toContain('As senhas devem ser iguais');
 
     confirmation.value = '__FORM_PASSWORD_VALUE__';
     confirmation.dispatchEvent(new Event('input'));
@@ -122,12 +123,12 @@ describe('App', () => {
     expect(compiled.querySelector('h1')?.textContent).toContain('Novo por aqui?');
     expect(compiled.querySelector('label[for="nome"]')?.textContent).toContain('Nome completo');
     expect(compiled.querySelector('input#cpf')?.getAttribute('maxlength')).toBe('11');
-    expect(compiled.querySelector('main[data-page="cadastro"]')?.classList.contains('items-start')).toBe(
-      true,
-    );
-    expect(compiled.querySelector('main[data-page="cadastro"]')?.classList.contains('items-center')).toBe(
-      false,
-    );
+    expect(
+      compiled.querySelector('main[data-page="cadastro"]')?.classList.contains('items-start'),
+    ).toBe(true);
+    expect(
+      compiled.querySelector('main[data-page="cadastro"]')?.classList.contains('items-center'),
+    ).toBe(false);
     expect(compiled.querySelector('button[data-profile="farmaceutico"]')).toBeTruthy();
     expect(compiled.querySelector('label[for="crf"]')?.textContent).toContain('CRF');
   });
@@ -152,9 +153,7 @@ describe('App', () => {
     expect(compiled.querySelector('label[for="inicioVigencia"]')?.textContent).toContain(
       'Inicio da vig',
     );
-    expect(compiled.querySelector('label[for="fimVigencia"]')?.textContent).toContain(
-      'Fim da vig',
-    );
+    expect(compiled.querySelector('label[for="fimVigencia"]')?.textContent).toContain('Fim da vig');
     expect(compiled.querySelector('label[for="supervisor"]')?.textContent).toContain('Supervisor');
     expect(compiled.querySelector('label[for="crf"]')).toBeNull();
   });
@@ -183,8 +182,12 @@ describe('App', () => {
     );
     expect(compiled.querySelectorAll('[data-dashboard-card]').length).toBe(4);
     expect(compiled.querySelectorAll('ng-icon').length).toBeGreaterThanOrEqual(4);
-    expect(compiled.querySelector('[data-chart="atendimentos-mes"] canvas[baseChart]')).toBeTruthy();
-    expect(compiled.querySelector('[data-chart="tipos-atendimento"] canvas[baseChart]')).toBeTruthy();
+    expect(
+      compiled.querySelector('[data-chart="atendimentos-mes"] canvas[baseChart]'),
+    ).toBeTruthy();
+    expect(
+      compiled.querySelector('[data-chart="tipos-atendimento"] canvas[baseChart]'),
+    ).toBeTruthy();
     expect(
       compiled.querySelector('[data-chart="status-atendimentos"] canvas[baseChart]'),
     ).toBeTruthy();
@@ -236,15 +239,15 @@ describe('App', () => {
     const search = compiled.querySelector<HTMLInputElement>('#employeeSearch');
 
     expect(compiled.querySelector('header nav')?.textContent).toContain('Funcionários');
-    expect(compiled.querySelector('main[data-page="admin-funcionarios"] h1')?.textContent).toContain(
-      'Funcionários',
-    );
+    expect(
+      compiled.querySelector('main[data-page="admin-funcionarios"] h1')?.textContent,
+    ).toContain('Funcionários');
     expect(compiled.querySelector('tbody')?.textContent).toContain('Marina Almeida');
     expect(compiled.querySelector('tbody')?.textContent).toContain('Responsável técnico');
     expect(compiled.textContent).not.toContain('12345678901');
-    expect(compiled.querySelector('[data-employee-actions]')?.querySelectorAll('ng-icon').length).toBe(
-      1,
-    );
+    expect(
+      compiled.querySelector('[data-employee-actions]')?.querySelectorAll('ng-icon').length,
+    ).toBe(1);
     expect(compiled.querySelector('[data-employee-actions]')?.textContent).not.toContain('Editar');
 
     if (!search) {
@@ -298,18 +301,18 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.querySelector('main[data-page="visualizar-funcionario"] h1')?.textContent).toContain(
-      pharmacist.name,
-    );
-    expect(compiled.querySelector('main[data-page="visualizar-funcionario"]')?.textContent).toContain(
-      'CRF',
-    );
-    expect(compiled.querySelector('main[data-page="visualizar-funcionario"]')?.textContent).toContain(
-      'Responsável técnico',
-    );
-    expect(compiled.querySelector('main[data-page="visualizar-funcionario"]')?.textContent).not.toContain(
-      'Tipo do estágio',
-    );
+    expect(
+      compiled.querySelector('main[data-page="visualizar-funcionario"] h1')?.textContent,
+    ).toContain(pharmacist.name);
+    expect(
+      compiled.querySelector('main[data-page="visualizar-funcionario"]')?.textContent,
+    ).toContain('CRF');
+    expect(
+      compiled.querySelector('main[data-page="visualizar-funcionario"]')?.textContent,
+    ).toContain('Responsável técnico');
+    expect(
+      compiled.querySelector('main[data-page="visualizar-funcionario"]')?.textContent,
+    ).not.toContain('Tipo do estágio');
 
     compiled.querySelector<HTMLButtonElement>('button[data-toggle-technical-responsible]')?.click();
     fixture.detectChanges();
@@ -318,7 +321,9 @@ describe('App', () => {
       'Definir como responsável técnico',
     );
 
-    compiled.querySelector<HTMLButtonElement>('button[data-confirm-technical-responsible]')?.click();
+    compiled
+      .querySelector<HTMLButtonElement>('button[data-confirm-technical-responsible]')
+      ?.click();
     fixture.detectChanges();
 
     const updatedPharmacist = employeeStore.getEmployee(pharmacist.id);
@@ -351,18 +356,18 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.querySelector('main[data-page="visualizar-funcionario"] h1')?.textContent).toContain(
-      intern.name,
-    );
-    expect(compiled.querySelector('main[data-page="visualizar-funcionario"]')?.textContent).toContain(
-      'Tipo do estágio',
-    );
-    expect(compiled.querySelector('main[data-page="visualizar-funcionario"]')?.textContent).toContain(
-      'Supervisor',
-    );
-    expect(compiled.querySelector('main[data-page="visualizar-funcionario"]')?.textContent).not.toContain(
-      'CRF',
-    );
+    expect(
+      compiled.querySelector('main[data-page="visualizar-funcionario"] h1')?.textContent,
+    ).toContain(intern.name);
+    expect(
+      compiled.querySelector('main[data-page="visualizar-funcionario"]')?.textContent,
+    ).toContain('Tipo do estágio');
+    expect(
+      compiled.querySelector('main[data-page="visualizar-funcionario"]')?.textContent,
+    ).toContain('Supervisor');
+    expect(
+      compiled.querySelector('main[data-page="visualizar-funcionario"]')?.textContent,
+    ).not.toContain('CRF');
     expect(compiled.querySelector('button[data-toggle-technical-responsible]')).toBeNull();
   });
 
@@ -382,24 +387,22 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
     expect(compiled.querySelector('header nav')?.textContent).toContain('Recuperações de senha');
-    expect(compiled.querySelector('main[data-page="admin-recuperacoes-senha"] h1')?.textContent).toContain(
-      'Solicitações de recuperação de senha',
-    );
+    expect(
+      compiled.querySelector('main[data-page="admin-recuperacoes-senha"] h1')?.textContent,
+    ).toContain('Solicitações de recuperação de senha');
     expect(compiled.querySelector('tbody')?.textContent).toContain('aprovar@uem.br');
     expect(compiled.querySelector('tbody')?.textContent).toContain('PENDENTE');
     expect(compiled.textContent).not.toContain('__FORM_PASSWORD_VALUE__');
     expect(
       compiled.querySelector('[data-recovery-actions]')?.classList.contains('flex-nowrap'),
     ).toBe(true);
-    expect(compiled.querySelector('[data-recovery-actions]')?.querySelectorAll('ng-icon').length).toBe(
-      3,
-    );
+    expect(
+      compiled.querySelector('[data-recovery-actions]')?.querySelectorAll('ng-icon').length,
+    ).toBe(3);
     expect(compiled.querySelector('[data-recovery-actions]')?.textContent).not.toContain(
       'Analisar',
     );
-    expect(compiled.querySelector('[data-recovery-actions]')?.textContent).not.toContain(
-      'Aprovar',
-    );
+    expect(compiled.querySelector('[data-recovery-actions]')?.textContent).not.toContain('Aprovar');
     expect(compiled.querySelector('[data-recovery-actions]')?.textContent).not.toContain(
       'Rejeitar',
     );
@@ -409,12 +412,12 @@ describe('App', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(compiled.querySelector('main[data-page="visualizar-recuperacao-senha"] h1')?.textContent).toContain(
-      'aprovar@uem.br',
-    );
-    expect(compiled.querySelector('main[data-page="visualizar-recuperacao-senha"]')?.textContent).not.toContain(
-      'Nova senha',
-    );
+    expect(
+      compiled.querySelector('main[data-page="visualizar-recuperacao-senha"] h1')?.textContent,
+    ).toContain('aprovar@uem.br');
+    expect(
+      compiled.querySelector('main[data-page="visualizar-recuperacao-senha"]')?.textContent,
+    ).not.toContain('Nova senha');
 
     await router.navigateByUrl('/admin/recuperacoes-senha');
     fixture.detectChanges();
@@ -432,9 +435,7 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(recoveryStore.getRequest(requestToApprove.id)?.status).toBe('APROVADA');
-    expect(compiled.querySelector('.alert-success')?.textContent).toContain(
-      'Solicitação aprovada',
-    );
+    expect(compiled.querySelector('.alert-success')?.textContent).toContain('Solicitação aprovada');
 
     compiled
       .querySelector<HTMLButtonElement>(`button[data-reject-recovery-id="${requestToReject.id}"]`)
@@ -563,9 +564,9 @@ describe('App', () => {
     expect(compiled.querySelector('tbody')?.textContent).toContain('123.456.789-01');
     expect(compiled.querySelector('tbody')?.textContent).toContain('Expirado');
     expect(compiled.querySelector<HTMLSelectElement>('#attendancePageSize')?.value).toBe('10');
-    expect(compiled.querySelector('[data-pagination-summary="attendances"]')?.textContent).toContain(
-      'Exibindo 1-2 de 2',
-    );
+    expect(
+      compiled.querySelector('[data-pagination-summary="attendances"]')?.textContent,
+    ).toContain('Exibindo 1-2 de 2');
 
     compiled.querySelector<HTMLButtonElement>('button[data-status-filter="EXPIRADO"]')?.click();
     fixture.detectChanges();
@@ -573,7 +574,9 @@ describe('App', () => {
     expect(compiled.querySelector('tbody')?.textContent).toContain('João Pereira');
     expect(compiled.querySelector('tbody')?.textContent).not.toContain('Maria Souza');
     expect(
-      compiled.querySelector('button[data-status-filter="EXPIRADO"]')?.getAttribute('aria-selected'),
+      compiled
+        .querySelector('button[data-status-filter="EXPIRADO"]')
+        ?.getAttribute('aria-selected'),
     ).toBe('true');
   });
 
@@ -693,21 +696,21 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.querySelector('main[data-page="visualizar-atendimento"] h1')?.textContent).toContain(
-      'Bruna Santos',
-    );
-    expect(compiled.querySelector('main[data-page="visualizar-atendimento"]')?.textContent).toContain(
-      'Aguardando retorno',
-    );
-    expect(compiled.querySelector('main[data-page="visualizar-atendimento"]')?.textContent).toContain(
-      'Inaloterapia',
-    );
-    expect(compiled.querySelector('main[data-page="visualizar-atendimento"]')?.textContent).toContain(
-      'Soro fisiológico',
-    );
-    expect(compiled.querySelector('main[data-page="visualizar-atendimento"]')?.textContent).toContain(
-      'Retornar a cada 7 dias, 3 vezes',
-    );
+    expect(
+      compiled.querySelector('main[data-page="visualizar-atendimento"] h1')?.textContent,
+    ).toContain('Bruna Santos');
+    expect(
+      compiled.querySelector('main[data-page="visualizar-atendimento"]')?.textContent,
+    ).toContain('Aguardando retorno');
+    expect(
+      compiled.querySelector('main[data-page="visualizar-atendimento"]')?.textContent,
+    ).toContain('Inaloterapia');
+    expect(
+      compiled.querySelector('main[data-page="visualizar-atendimento"]')?.textContent,
+    ).toContain('Soro fisiológico');
+    expect(
+      compiled.querySelector('main[data-page="visualizar-atendimento"]')?.textContent,
+    ).toContain('Retornar a cada 7 dias, 3 vezes');
     expect(compiled.querySelector('form')).toBeNull();
   });
 
@@ -747,9 +750,12 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.querySelector('main[data-page="servicos-farmaceuticos"] h1')?.textContent).toContain(
-      'Novo atendimento',
-    );
+    expect(
+      compiled.querySelector('main[data-page="servicos-farmaceuticos"] h1')?.textContent,
+    ).toContain('Novo atendimento');
+    expect(
+      compiled.querySelector('main[data-page="servicos-farmaceuticos"] p.leading-6')?.textContent,
+    ).toContain('Estes procedimentos não substituem consulta médica ou exames laboratoriais.');
     expect(compiled.querySelectorAll('[data-service-step]').length).toBe(6);
     expect(compiled.querySelector('#identificacao-usuario')).toBeTruthy();
     expect(compiled.querySelector('#cuidados-farmaceuticos')).toBeTruthy();
@@ -758,6 +764,7 @@ describe('App', () => {
     expect(compiled.querySelector('#servicos-acompanhamento')).toBeTruthy();
     expect(compiled.querySelector('#acompanhamento')).toBeTruthy();
     expect(compiled.querySelector('#revisao-assinatura')).toBeNull();
+    expect(compiled.querySelector('#cuidados-farmaceuticos .card-description')).toBeNull();
     expect(compiled.querySelector('label[for="nomeUsuario"]')?.textContent).toContain('Nome');
     expect(compiled.querySelector('label[for="cpfUsuario"]')?.textContent).toContain('CPF');
     expect(compiled.querySelector('label[for="dataNascimentoUsuario"]')?.textContent).toContain(
@@ -803,6 +810,17 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
     const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const clinicalStore = TestBed.inject(TemporaryClinicalRecordsStore);
+    const soro = clinicalStore.createMedication({
+      name: 'Soro fisiológico',
+      measurementUnit: '0,9%',
+      administrationRoute: 'Inalatória',
+    });
+    const broncodilatador = clinicalStore.createMedication({
+      name: 'Broncodilatador',
+      measurementUnit: '2,5 mg',
+      administrationRoute: 'Inalatória',
+    });
 
     await router.navigateByUrl('/atendimentos/novo');
     fixture.detectChanges();
@@ -827,23 +845,44 @@ describe('App', () => {
     setInput('#dataNascimentoUsuario', '1985-08-08');
     setInput('#celularUsuario', '44900000000');
     setInput('#cidadeUsuario', 'Maringá');
-    setInput('#estadoUsuario', 'PR');
+    const state = compiled.querySelector<HTMLSelectElement>('#estadoUsuario');
+
+    if (!state) {
+      throw new Error('State select was not rendered.');
+    }
+
+    state.value = 'PR';
+    state.dispatchEvent(new Event('change'));
 
     compiled.querySelector<HTMLInputElement>('#enableInaloterapia')?.click();
     fixture.detectChanges();
 
-    setInput('#medicamentoInaloterapia', 'Soro fisiológico');
+    setInput('#medicamentoInaloterapia', 'soro');
+    fixture.detectChanges();
+    compiled
+      .querySelector<HTMLButtonElement>(`button[data-select-medication-id="${soro.id}"]`)
+      ?.click();
+    fixture.detectChanges();
     setInput('#loteInaloterapia', 'L1');
     setInput('#validadeInaloterapia', '2027-01-01');
     setInput('#posologiaInaloterapia', 'Nebulização');
-    compiled.querySelector<HTMLButtonElement>('button[data-add-medication="inaloterapia"]')?.click();
+    compiled
+      .querySelector<HTMLButtonElement>('button[data-add-medication="inaloterapia"]')
+      ?.click();
     fixture.detectChanges();
 
-    setInput('#medicamentoInaloterapia', 'Broncodilatador');
+    setInput('#medicamentoInaloterapia', 'bronco');
+    fixture.detectChanges();
+    compiled
+      .querySelector<HTMLButtonElement>(`button[data-select-medication-id="${broncodilatador.id}"]`)
+      ?.click();
+    fixture.detectChanges();
     setInput('#loteInaloterapia', 'L2');
     setInput('#validadeInaloterapia', '2027-02-02');
     setInput('#posologiaInaloterapia', 'Conforme prescrição');
-    compiled.querySelector<HTMLButtonElement>('button[data-add-medication="inaloterapia"]')?.click();
+    compiled
+      .querySelector<HTMLButtonElement>('button[data-add-medication="inaloterapia"]')
+      ?.click();
     fixture.detectChanges();
 
     expect(compiled.querySelectorAll('[data-medication-item="inaloterapia"]').length).toBe(2);
@@ -872,7 +911,253 @@ describe('App', () => {
     expect(attendance.patient.name).toBe('Novo Paciente');
     expect(attendance.status).toBe('AGUARDANDO_RETORNO');
     expect(attendance.inhalotherapy?.medications).toHaveLength(2);
+    expect(attendance.inhalotherapy?.medications[0].medicationId).toBe(soro.id);
     expect(attendance.followUp?.returnIntervalDays).toBe(7);
+  });
+
+  it('should mask CPF, phone and CEP while storing normalized patient data', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+
+    await router.navigateByUrl('/atendimentos/novo');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    const setInput = (selector: string, value: string): HTMLInputElement => {
+      const input = compiled.querySelector<HTMLInputElement>(selector);
+
+      if (!input) {
+        throw new Error(`${selector} was not rendered.`);
+      }
+
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      return input;
+    };
+
+    expect(setInput('#cpfUsuario', '77788899900').value).toBe('777.888.999-00');
+    expect(setInput('#celularUsuario', '44900000000').value).toBe('(44) 90000-0000');
+    expect(setInput('#cepUsuario', '87020025').value).toBe('87020-025');
+
+    setInput('#nomeUsuario', 'Paciente Máscara');
+    setInput('#dataNascimentoUsuario', '1985-08-08');
+
+    compiled.querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const attendance = attendanceStore.attendances()[0];
+
+    expect(attendance.patient.cpf).toBe('77788899900');
+    expect(attendance.patient.cellPhone).toBe('44900000000');
+    expect(attendance.patient.cep).toBe('87020025');
+  });
+
+  it('should fill address from ViaCEP and keep manual filling available when CEP is not found', async () => {
+    const originalFetch = globalThis.fetch;
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes('87020025')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              cep: '87020-025',
+              logradouro: 'Avenida Colombo',
+              bairro: 'Zona 7',
+              localidade: 'Maringá',
+              uf: 'PR',
+            }),
+        } as Response);
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ erro: true }),
+      } as Response);
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      const fixture = TestBed.createComponent(App);
+      const router = TestBed.inject(Router);
+
+      await router.navigateByUrl('/atendimentos/novo');
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const compiled = fixture.nativeElement as HTMLElement;
+      const cep = compiled.querySelector<HTMLInputElement>('#cepUsuario');
+
+      if (!cep) {
+        throw new Error('CEP input was not rendered.');
+      }
+
+      cep.value = '87020025';
+      cep.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      await fixture.whenStable();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      fixture.detectChanges();
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(compiled.querySelector<HTMLInputElement>('#enderecoUsuario')?.value).toBe(
+        'Avenida Colombo',
+      );
+      expect(compiled.querySelector<HTMLInputElement>('#bairroUsuario')?.value).toBe('Zona 7');
+      expect(compiled.querySelector<HTMLInputElement>('#cidadeUsuario')?.value).toBe('Maringá');
+      expect(compiled.querySelector<HTMLSelectElement>('#estadoUsuario')?.value).toBe('PR');
+      expect(compiled.querySelector('[data-cep-feedback]')?.textContent ?? '').not.toContain(
+        'não pôde ser preenchido automaticamente',
+      );
+
+      const unknownCep = compiled.querySelector<HTMLInputElement>('#cepUsuario');
+      unknownCep!.value = '99999999';
+      unknownCep!.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      await fixture.whenStable();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      fixture.detectChanges();
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(String(fetchMock.mock.calls[1][0])).toContain('99999999');
+      expect(compiled.querySelector('[data-cep-feedback]')?.textContent).toContain(
+        'não pôde ser preenchido automaticamente',
+      );
+
+      const address = compiled.querySelector<HTMLInputElement>('#enderecoUsuario');
+      address!.value = 'Rua Manual';
+      address!.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      expect(address?.value).toBe('Rua Manual');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('should require selecting registered medications in service medication fields', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const clinicalStore = TestBed.inject(TemporaryClinicalRecordsStore);
+    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    clinicalStore.createMedication({
+      name: 'Dipirona',
+      measurementUnit: '500 mg',
+      administrationRoute: 'Oral',
+    });
+
+    await router.navigateByUrl('/atendimentos/novo');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    const setInput = (selector: string, value: string): void => {
+      const input = compiled.querySelector<HTMLInputElement>(selector);
+
+      if (!input) {
+        throw new Error(`${selector} was not rendered.`);
+      }
+
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    };
+
+    compiled.querySelector<HTMLInputElement>('#enableAplicacaoInjetaveis')?.click();
+    fixture.detectChanges();
+
+    setInput('#medicamentoInjetavel', 'texto livre');
+    setInput('#loteInjetavel', 'L1');
+    setInput('#validadeInjetavel', '2027-01-01');
+    setInput('#posologiaInjetavel', 'Dose única');
+    compiled.querySelector<HTMLButtonElement>('button[data-add-medication="injectable"]')?.click();
+    fixture.detectChanges();
+
+    expect(
+      compiled.querySelector('[data-field-error="injectable-medication"]')?.textContent,
+    ).toContain('Selecione um medicamento cadastrado.');
+    expect(compiled.querySelectorAll('[data-medication-item="injectable"]').length).toBe(0);
+
+    setInput('#medicamentoInjetavel', 'dipi');
+
+    expect(compiled.querySelector('[data-medication-options="injectable"]')?.textContent).toContain(
+      'Dipirona',
+    );
+    expect(attendanceStore.attendances()).toHaveLength(0);
+  });
+
+  it('should show non-blocking warnings for values above reference ranges', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+
+    await router.navigateByUrl('/atendimentos/novo');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    const setInput = (selector: string, value: string): void => {
+      const input = compiled.querySelector<HTMLInputElement>(selector);
+
+      if (!input) {
+        throw new Error(`${selector} was not rendered.`);
+      }
+
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    };
+
+    compiled.querySelector<HTMLInputElement>('#enableCuidadosFarmaceuticos')?.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('[data-field-warning="systolic-pressure"]')).toBeNull();
+    expect(compiled.querySelector('[data-field-warning="diastolic-pressure"]')).toBeNull();
+    expect(compiled.querySelector('[data-vital-signs-grid]')?.className).toContain('items-start');
+
+    setInput('#glicemiaCapilar', '111');
+    setInput('#pressaoSistolica', '121');
+    setInput('#pressaoDiastolica', '81');
+    setInput('#temperaturaCorporal', '37.1');
+
+    expect(compiled.querySelector('[data-field-warning="blood-glucose"]')?.textContent).toContain(
+      '80 a 110 mg/dL',
+    );
+    expect(
+      compiled.querySelector('[data-field-warning="systolic-pressure"]')?.textContent,
+    ).toContain('A pressão sistólica está maior que o valor de referência (120 mmHg)');
+    expect(
+      compiled.querySelector('[data-field-warning="diastolic-pressure"]')?.textContent,
+    ).toContain('A pressão diastólica está maior que o valor de referência (80 mmHg)');
+    expect(
+      compiled.querySelector('[data-field-warning="body-temperature"]')?.textContent,
+    ).toContain('36 °C a 37 °C');
+
+    setInput('#glicemiaCapilar', '110');
+    setInput('#pressaoSistolica', '120');
+    setInput('#pressaoDiastolica', '80');
+    setInput('#temperaturaCorporal', '37');
+
+    expect(compiled.querySelector('[data-field-warning="blood-glucose"]')).toBeNull();
+    expect(compiled.querySelector('[data-field-warning="systolic-pressure"]')).toBeNull();
+    expect(compiled.querySelector('[data-field-warning="diastolic-pressure"]')).toBeNull();
+    expect(compiled.querySelector('[data-field-warning="body-temperature"]')).toBeNull();
+
+    setInput('#pressaoSistolica', '119');
+    setInput('#pressaoDiastolica', '79');
+
+    expect(
+      compiled.querySelector('[data-field-warning="systolic-pressure"]')?.textContent,
+    ).toContain('A pressão sistólica está menor que o valor de referência (120 mmHg)');
+    expect(
+      compiled.querySelector('[data-field-warning="diastolic-pressure"]')?.textContent,
+    ).toContain('A pressão diastólica está menor que o valor de referência (80 mmHg)');
+    expect(compiled.querySelector('[data-field-warning="blood-pressure"]')).toBeNull();
+    expect(
+      compiled.querySelector('main[data-page="servicos-farmaceuticos"]')?.textContent,
+    ).not.toContain('Valor de referência registrado apenas como apoio visual.');
   });
 
   it('should render the medications route from internal navigation', async () => {
@@ -1004,12 +1289,12 @@ describe('App', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(compiled.querySelector('main[data-page="visualizar-medicamento"] h1')?.textContent).toContain(
-      'Dipirona',
-    );
-    expect(compiled.querySelector('main[data-page="visualizar-medicamento"]')?.textContent).toContain(
-      'Concentração',
-    );
+    expect(
+      compiled.querySelector('main[data-page="visualizar-medicamento"] h1')?.textContent,
+    ).toContain('Dipirona');
+    expect(
+      compiled.querySelector('main[data-page="visualizar-medicamento"]')?.textContent,
+    ).toContain('Concentração');
     expect(compiled.querySelector('form')).toBeNull();
 
     await router.navigateByUrl('/medicamentos');
@@ -1048,9 +1333,9 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.querySelector('main[data-page="editar-medicamento"] h1')?.textContent).toContain(
-      'Editar medicamento',
-    );
+    expect(
+      compiled.querySelector('main[data-page="editar-medicamento"] h1')?.textContent,
+    ).toContain('Editar medicamento');
 
     const name = compiled.querySelector<HTMLInputElement>('#medicationName');
     const concentration = compiled.querySelector<HTMLInputElement>('#measurementUnit');
@@ -1099,16 +1384,16 @@ describe('App', () => {
 
     expect(compiled.querySelector<HTMLSelectElement>('#medicationPageSize')?.value).toBe('10');
     expect(compiled.querySelectorAll('tbody tr').length).toBe(10);
-    expect(compiled.querySelector('[data-pagination-summary="medications"]')?.textContent).toContain(
-      'Exibindo 1-10 de 12',
-    );
+    expect(
+      compiled.querySelector('[data-pagination-summary="medications"]')?.textContent,
+    ).toContain('Exibindo 1-10 de 12');
 
     compiled.querySelector<HTMLButtonElement>('button[data-next-page="medications"]')?.click();
     fixture.detectChanges();
 
-    expect(compiled.querySelector('[data-pagination-summary="medications"]')?.textContent).toContain(
-      'Exibindo 11-12 de 12',
-    );
+    expect(
+      compiled.querySelector('[data-pagination-summary="medications"]')?.textContent,
+    ).toContain('Exibindo 11-12 de 12');
 
     const search = compiled.querySelector<HTMLInputElement>('#medicationSearch');
 
@@ -1121,9 +1406,9 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(compiled.querySelectorAll('tbody tr').length).toBe(1);
-    expect(compiled.querySelector('[data-pagination-summary="medications"]')?.textContent).toContain(
-      'Exibindo 1-1 de 1',
-    );
+    expect(
+      compiled.querySelector('[data-pagination-summary="medications"]')?.textContent,
+    ).toContain('Exibindo 1-1 de 1');
   });
 
   it('should render the comorbidities route from internal navigation', async () => {
@@ -1190,7 +1475,9 @@ describe('App', () => {
     );
 
     const name = compiled.querySelector<HTMLInputElement>('#comorbidityName');
-    const interactionSearch = compiled.querySelector<HTMLInputElement>('#interactionMedicationSearch');
+    const interactionSearch = compiled.querySelector<HTMLInputElement>(
+      '#interactionMedicationSearch',
+    );
 
     if (!name || !interactionSearch) {
       throw new Error('Comorbidity form inputs were not rendered.');
@@ -1304,12 +1591,12 @@ describe('App', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(compiled.querySelector('main[data-page="visualizar-comorbidade"] h1')?.textContent).toContain(
-      'Diabetes mellitus',
-    );
-    expect(compiled.querySelector('main[data-page="visualizar-comorbidade"]')?.textContent).toContain(
-      'Dipirona',
-    );
+    expect(
+      compiled.querySelector('main[data-page="visualizar-comorbidade"] h1')?.textContent,
+    ).toContain('Diabetes mellitus');
+    expect(
+      compiled.querySelector('main[data-page="visualizar-comorbidade"]')?.textContent,
+    ).toContain('Dipirona');
     expect(compiled.querySelector('form')).toBeNull();
 
     await router.navigateByUrl('/comorbidades');
@@ -1357,16 +1644,18 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.querySelector('main[data-page="editar-comorbidade"] h1')?.textContent).toContain(
-      'Editar comorbidade',
-    );
+    expect(
+      compiled.querySelector('main[data-page="editar-comorbidade"] h1')?.textContent,
+    ).toContain('Editar comorbidade');
     expect(compiled.querySelectorAll('[data-selected-interaction-id]').length).toBe(1);
     expect(compiled.querySelector('[data-selected-interaction-id]')?.textContent).toContain(
       'Dipirona',
     );
 
     const name = compiled.querySelector<HTMLInputElement>('#comorbidityName');
-    const interactionSearch = compiled.querySelector<HTMLInputElement>('#interactionMedicationSearch');
+    const interactionSearch = compiled.querySelector<HTMLInputElement>(
+      '#interactionMedicationSearch',
+    );
 
     if (!name || !interactionSearch) {
       throw new Error('Comorbidity edit inputs were not rendered.');
@@ -1432,8 +1721,184 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(compiled.querySelectorAll('tbody tr').length).toBe(12);
-    expect(compiled.querySelector('[data-pagination-summary="comorbidities"]')?.textContent).toContain(
-      'Exibindo 1-12 de 12',
+    expect(
+      compiled.querySelector('[data-pagination-summary="comorbidities"]')?.textContent,
+    ).toContain('Exibindo 1-12 de 12');
+  });
+
+  it('should list, create, view and edit patients with comorbidities', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const patientStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const clinicalStore = TestBed.inject(TemporaryClinicalRecordsStore);
+    const diabetes = clinicalStore.createComorbidity({
+      name: 'Diabetes mellitus',
+      medicationInteractionIds: [],
+    });
+
+    await router.navigateByUrl('/pacientes');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    let compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('a[routerLink="/pacientes"]')?.textContent).toContain(
+      'Pacientes',
     );
+    expect(compiled.querySelector('.empty-title')?.textContent).toContain(
+      'Nenhum paciente cadastrado',
+    );
+
+    await router.navigateByUrl('/pacientes/novo');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    compiled = fixture.nativeElement as HTMLElement;
+
+    const setInput = (selector: string, value: string): HTMLInputElement => {
+      const input = compiled.querySelector<HTMLInputElement>(selector);
+
+      if (!input) {
+        throw new Error(`${selector} was not rendered.`);
+      }
+
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      return input;
+    };
+
+    expect(compiled.querySelector('main[data-page="novo-paciente"] h1')?.textContent).toContain(
+      'Novo paciente',
+    );
+    expect(setInput('#cpfUsuario', '12345678901').value).toBe('123.456.789-01');
+    setInput('#nomeUsuario', 'Maria Souza');
+    setInput('#dataNascimentoUsuario', '1988-04-10');
+    setInput('#celularUsuario', '44999999999');
+    setInput('#cidadeUsuario', 'Maringá');
+    const state = compiled.querySelector<HTMLSelectElement>('#estadoUsuario');
+
+    if (!state) {
+      throw new Error('State select was not rendered.');
+    }
+
+    state.value = 'PR';
+    state.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    compiled.querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(router.url).toContain('/pacientes/');
+    expect(router.url).toContain('/editar');
+    expect(compiled.querySelector('main[data-page="editar-paciente"] h1')?.textContent).toContain(
+      'Editar paciente',
+    );
+
+    const comorbiditySearch = compiled.querySelector<HTMLInputElement>('#patientComorbiditySearch');
+
+    if (!comorbiditySearch) {
+      throw new Error('Patient comorbidity search was not rendered.');
+    }
+
+    comorbiditySearch.value = 'diabetes';
+    comorbiditySearch.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    compiled
+      .querySelector<HTMLButtonElement>(`button[data-add-patient-comorbidity-id="${diabetes.id}"]`)
+      ?.click();
+    fixture.detectChanges();
+    compiled
+      .querySelector<HTMLButtonElement>(`button[data-add-patient-comorbidity-id="${diabetes.id}"]`)
+      ?.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelectorAll('[data-selected-patient-comorbidity-id]').length).toBe(1);
+
+    compiled.querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(router.url).toBe('/pacientes');
+    expect(compiled.querySelector('tbody')?.textContent).toContain('Maria Souza');
+    expect(compiled.querySelector('tbody')?.textContent).toContain('1 comorbidade(s)');
+
+    const patient = patientStore.patients()[0];
+    await router.navigateByUrl(`/pacientes/${patient.id}`);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(compiled.querySelector('main[data-page="visualizar-paciente"] h1')?.textContent).toContain(
+      'Maria Souza',
+    );
+    expect(compiled.querySelector('main[data-page="visualizar-paciente"]')?.textContent).toContain(
+      'Diabetes mellitus',
+    );
+    expect(compiled.querySelector('form')).toBeNull();
+  });
+
+  it('should show non-blocking medication-comorbidity warnings during pharmaceutical services', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const patientStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const clinicalStore = TestBed.inject(TemporaryClinicalRecordsStore);
+    const dipirona = clinicalStore.createMedication({
+      name: 'Dipirona',
+      measurementUnit: '500 mg',
+      administrationRoute: 'Oral',
+    });
+    const diabetes = clinicalStore.createComorbidity({
+      name: 'Diabetes mellitus',
+      medicationInteractionIds: [dipirona.id],
+    });
+
+    patientStore.createPatient({
+      name: 'Paciente Comorbidade',
+      cpf: '10120230344',
+      birthDate: '1992-02-02',
+      cellPhone: '44911111111',
+      gender: 'feminino',
+      address: '',
+      city: 'Maringá',
+      state: 'PR',
+      phone: '',
+      responsibleName: '',
+      comorbidityIds: [diabetes.id],
+    });
+
+    await router.navigateByUrl('/atendimentos/novo');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    const setInput = (selector: string, value: string): void => {
+      const input = compiled.querySelector<HTMLInputElement>(selector);
+
+      if (!input) {
+        throw new Error(`${selector} was not rendered.`);
+      }
+
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    };
+
+    setInput('#cpfUsuario', '10120230344');
+    compiled.querySelector<HTMLButtonElement>('button[data-consult-patient]')?.click();
+    fixture.detectChanges();
+    compiled.querySelector<HTMLInputElement>('#enableAplicacaoInjetaveis')?.click();
+    fixture.detectChanges();
+    setInput('#medicamentoInjetavel', 'dipi');
+    compiled
+      .querySelector<HTMLButtonElement>(`button[data-select-medication-id="${dipirona.id}"]`)
+      ?.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('[data-medication-interaction-warning="injectable"]')?.textContent)
+      .toContain(
+        'A medicação Dipirona interage com uma comorbidade do paciente: Diabetes mellitus. Ministre a medicação com cautela.',
+      );
+    expect(compiled.querySelector('[data-medication-interaction-warning="injectable"]')).toBeTruthy();
   });
 });

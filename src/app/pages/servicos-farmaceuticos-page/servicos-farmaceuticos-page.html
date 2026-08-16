@@ -5,7 +5,8 @@
         <p class="mb-2 text-sm font-semibold text-uem-700">Atendimentos</p>
         <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">Novo atendimento</h1>
         <p class="mt-2 max-w-3xl text-sm leading-6 text-app-muted-foreground">
-          Identifique o paciente e selecione apenas os serviços realizados neste atendimento.
+          Identifique o paciente e selecione apenas os serviços realizados neste atendimento. Estes
+          procedimentos não substituem consulta médica ou exames laboratoriais.
         </p>
       </div>
 
@@ -18,7 +19,8 @@
               [attr.data-scroll-target]="step.id"
               (click)="scrollToStep(step.id)"
             >
-              <span class="mr-2 text-uem-700">{{ step.number }}</span>{{ step.title }}
+              <span class="mr-2 text-uem-700">{{ step.number }}</span
+              >{{ step.title }}
             </button>
           }
         </div>
@@ -39,129 +41,12 @@
           </div>
         </div>
 
-        <div class="card-content grid gap-4">
-          @if (patientLookupMessage) {
-            <div [class]="patientLookupVariant === 'info' ? 'alert alert-info' : 'alert alert-success'">
-              <span class="marker marker-success"></span>
-              <div>
-                <p class="alert-title">{{ patientLookupMessage }}</p>
-              </div>
-            </div>
-          }
-
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-            <div class="field">
-              <label for="cpfUsuario" class="label label-required">CPF</label>
-              <input
-                id="cpfUsuario"
-                name="cpfUsuario"
-                class="input"
-                type="text"
-                inputmode="numeric"
-                maxlength="14"
-                [(ngModel)]="patient.cpf"
-                (input)="updateCpf($any($event.target).value)"
-                [attr.aria-invalid]="errors['patient.cpf'] ? 'true' : null"
-              />
-              @if (errors['patient.cpf']) {
-                <p class="field-error">{{ errors['patient.cpf'] }}</p>
-              }
-            </div>
-            <button class="btn btn-secondary" type="button" data-consult-patient (click)="consultPatientByCpf()">
-              Consultar CPF
-            </button>
-          </div>
-
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div class="field md:col-span-2">
-              <label for="nomeUsuario" class="label label-required">Nome</label>
-              <input
-                id="nomeUsuario"
-                name="nomeUsuario"
-                class="input"
-                type="text"
-                autocomplete="name"
-                [(ngModel)]="patient.name"
-                (input)="patient.name = $any($event.target).value"
-                [attr.aria-invalid]="errors['patient.name'] ? 'true' : null"
-              />
-              @if (errors['patient.name']) {
-                <p class="field-error">{{ errors['patient.name'] }}</p>
-              }
-            </div>
-
-            <fieldset class="field">
-              <legend class="label">Gênero</legend>
-              <div class="flex flex-wrap gap-4 text-sm text-app-muted-foreground">
-                <label class="flex items-center gap-2">
-                  <input class="radio-item" type="radio" name="genero" value="masculino" [(ngModel)]="patient.gender" />
-                  Masculino
-                </label>
-                <label class="flex items-center gap-2">
-                  <input class="radio-item" type="radio" name="genero" value="feminino" [(ngModel)]="patient.gender" />
-                  Feminino
-                </label>
-              </div>
-            </fieldset>
-
-            <div class="field">
-              <label for="dataNascimentoUsuario" class="label label-required">Data de nascimento</label>
-              <input
-                id="dataNascimentoUsuario"
-                name="dataNascimentoUsuario"
-                class="input"
-                type="date"
-                [(ngModel)]="patient.birthDate"
-                (input)="patient.birthDate = $any($event.target).value"
-                [attr.aria-invalid]="errors['patient.birthDate'] ? 'true' : null"
-              />
-              @if (errors['patient.birthDate']) {
-                <p class="field-error">{{ errors['patient.birthDate'] }}</p>
-              }
-            </div>
-
-            <div class="field">
-              <label for="celularUsuario" class="label label-required">Telefone celular</label>
-              <input
-                id="celularUsuario"
-                name="celularUsuario"
-                class="input"
-                type="tel"
-                autocomplete="tel"
-                [(ngModel)]="patient.cellPhone"
-                (input)="patient.cellPhone = $any($event.target).value"
-                [attr.aria-invalid]="errors['patient.cellPhone'] ? 'true' : null"
-              />
-              @if (errors['patient.cellPhone']) {
-                <p class="field-error">{{ errors['patient.cellPhone'] }}</p>
-              }
-            </div>
-
-            <div class="field">
-              <label for="telefoneUsuario" class="label">Telefone</label>
-              <input id="telefoneUsuario" name="telefoneUsuario" class="input" type="tel" [(ngModel)]="patient.phone" />
-            </div>
-
-            <div class="field md:col-span-2">
-              <label for="enderecoUsuario" class="label">Endereço</label>
-              <input id="enderecoUsuario" name="enderecoUsuario" class="input" type="text" autocomplete="street-address" [(ngModel)]="patient.address" />
-            </div>
-
-            <div class="field">
-              <label for="cidadeUsuario" class="label">Cidade</label>
-              <input id="cidadeUsuario" name="cidadeUsuario" class="input" type="text" [(ngModel)]="patient.city" (input)="patient.city = $any($event.target).value" />
-            </div>
-
-            <div class="field">
-              <label for="estadoUsuario" class="label">Estado</label>
-              <input id="estadoUsuario" name="estadoUsuario" class="input" type="text" maxlength="2" placeholder="PR" [(ngModel)]="patient.state" (input)="patient.state = $any($event.target).value" />
-            </div>
-
-            <div class="field md:col-span-2">
-              <label for="responsavelUsuario" class="label">Nome do responsável em caso de menor</label>
-              <input id="responsavelUsuario" name="responsavelUsuario" class="input" type="text" [(ngModel)]="patient.responsibleName" />
-            </div>
-          </div>
+        <div class="card-content">
+          <app-patient-form
+            [patient]="patient"
+            [errors]="errors"
+            (patientSelected)="selectPatient($event)"
+          />
         </div>
       </section>
 
@@ -180,36 +65,122 @@
               <span class="card-title block">Cuidados farmacêuticos</span>
             </span>
           </label>
-          <p class="card-description">Estes procedimentos não substituem consulta médica ou exames laboratoriais.</p>
         </div>
 
         @if (isStepEnabled('cuidados-farmaceuticos')) {
           <div class="card-content grid gap-4" data-step-content>
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <label class="field rounded-lg border bg-app-surface-subtle p-4" for="glicemiaCapilar">
+            <div
+              class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(13rem,1fr)_minmax(24rem,1.35fr)_minmax(13rem,1fr)]"
+              data-vital-signs-grid
+            >
+              <label
+                class="field self-start rounded-lg border bg-app-surface-subtle p-4"
+                for="glicemiaCapilar"
+              >
                 <span class="label">Glicemia capilar</span>
                 <span class="input-group">
-                  <input id="glicemiaCapilar" name="glicemiaCapilar" class="input" type="number" [(ngModel)]="care.bloodGlucose" />
+                  <input
+                    id="glicemiaCapilar"
+                    name="glicemiaCapilar"
+                    class="input"
+                    type="number"
+                    [value]="care.bloodGlucose"
+                    (input)="updateCareField('bloodGlucose', $any($event.target).value)"
+                  />
                   <span class="input-group-addon">mg/dl</span>
                 </span>
-                <span class="field-description">Valor de referência registrado apenas como apoio visual.</span>
+                @if (hasBloodGlucoseWarning()) {
+                  <span class="alert alert-warning py-2" data-field-warning="blood-glucose">
+                    <span class="marker marker-warning"></span>
+                    <span class="alert-title"
+                      >Valor acima da referência informada de 80 a 110 mg/dL.</span
+                    >
+                  </span>
+                }
               </label>
 
-              <label class="field rounded-lg border bg-app-surface-subtle p-4">
+              <label class="field self-start rounded-lg border bg-app-surface-subtle p-4">
                 <span class="label">Pressão arterial</span>
-                <span class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                  <input id="pressaoSistolica" name="pressaoSistolica" class="input" type="number" [(ngModel)]="care.systolicPressure" />
-                  <span class="text-sm font-semibold text-app-muted-foreground">x</span>
-                  <input id="pressaoDiastolica" name="pressaoDiastolica" class="input" type="number" [(ngModel)]="care.diastolicPressure" />
+                <span
+                  class="grid grid-cols-1 items-start gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
+                >
+                  <span class="grid gap-2">
+                    <span class="input-group">
+                      <input
+                        id="pressaoSistolica"
+                        name="pressaoSistolica"
+                        class="input"
+                        type="number"
+                        [value]="care.systolicPressure"
+                        (input)="updateCareField('systolicPressure', $any($event.target).value)"
+                        aria-describedby="pressaoSistolicaWarning"
+                      />
+                      <span class="input-group-addon">mmHg</span>
+                    </span>
+                    @if (systolicPressureWarning()) {
+                      <span
+                        id="pressaoSistolicaWarning"
+                        class="alert alert-warning py-2"
+                        data-field-warning="systolic-pressure"
+                      >
+                        <span class="marker marker-warning"></span>
+                        <span class="alert-title">{{ systolicPressureWarning() }}</span>
+                      </span>
+                    }
+                  </span>
+                  <span
+                    class="hidden pt-2 text-sm font-semibold text-app-muted-foreground sm:inline"
+                    >x</span
+                  >
+                  <span class="grid gap-2">
+                    <span class="input-group">
+                      <input
+                        id="pressaoDiastolica"
+                        name="pressaoDiastolica"
+                        class="input"
+                        type="number"
+                        [value]="care.diastolicPressure"
+                        (input)="updateCareField('diastolicPressure', $any($event.target).value)"
+                        aria-describedby="pressaoDiastolicaWarning"
+                      />
+                      <span class="input-group-addon">mmHg</span>
+                    </span>
+                    @if (diastolicPressureWarning()) {
+                      <span
+                        id="pressaoDiastolicaWarning"
+                        class="alert alert-warning py-2"
+                        data-field-warning="diastolic-pressure"
+                      >
+                        <span class="marker marker-warning"></span>
+                        <span class="alert-title">{{ diastolicPressureWarning() }}</span>
+                      </span>
+                    }
+                  </span>
                 </span>
               </label>
 
-              <label class="field rounded-lg border bg-app-surface-subtle p-4">
+              <label class="field self-start rounded-lg border bg-app-surface-subtle p-4">
                 <span class="label">Temperatura corporal axilar</span>
                 <span class="input-group">
-                  <input id="temperaturaCorporal" name="temperaturaCorporal" class="input" type="number" step="0.1" [(ngModel)]="care.bodyTemperature" />
+                  <input
+                    id="temperaturaCorporal"
+                    name="temperaturaCorporal"
+                    class="input"
+                    type="number"
+                    step="0.1"
+                    [value]="care.bodyTemperature"
+                    (input)="updateCareField('bodyTemperature', $any($event.target).value)"
+                  />
                   <span class="input-group-addon">°C</span>
                 </span>
+                @if (hasBodyTemperatureWarning()) {
+                  <span class="alert alert-warning py-2" data-field-warning="body-temperature">
+                    <span class="marker marker-warning"></span>
+                    <span class="alert-title"
+                      >Valor acima da referência informada de 36 °C a 37 °C.</span
+                    >
+                  </span>
+                }
               </label>
             </div>
           </div>
@@ -235,27 +206,79 @@
 
         @if (isStepEnabled('aplicacao-injetaveis')) {
           <div class="card-content grid gap-4" data-step-content>
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(12rem,2fr)_minmax(7rem,1fr)_minmax(9rem,1fr)_minmax(10rem,1.5fr)_auto] lg:items-start">
+            <div
+              class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(12rem,2fr)_minmax(7rem,1fr)_minmax(9rem,1fr)_minmax(10rem,1.5fr)_auto] lg:items-start"
+            >
               <div class="field">
                 <label for="medicamentoInjetavel" class="label">Medicamento/concentração</label>
-                <input id="medicamentoInjetavel" name="medicamentoInjetavel" class="input" type="text" [(ngModel)]="medicationDrafts.injectable.medicationConcentration" />
+                <app-medication-autocomplete
+                  inputId="medicamentoInjetavel"
+                  inputName="medicamentoInjetavel"
+                  section="injectable"
+                  describedBy="medicamentoInjetavelErro"
+                  [invalid]="!!medicationErrors.injectable.medicationConcentration"
+                  [value]="medicationDrafts.injectable.medicationConcentration"
+                  [selectedMedicationId]="medicationDrafts.injectable.medicationId"
+                  (valueChange)="updateMedicationQuery('injectable', $event)"
+                  (medicationSelected)="selectMedication('injectable', $event)"
+                />
                 @if (medicationErrors.injectable.medicationConcentration) {
-                  <p class="field-error">{{ medicationErrors.injectable.medicationConcentration }}</p>
+                  <p
+                    id="medicamentoInjetavelErro"
+                    class="field-error"
+                    data-field-error="injectable-medication"
+                  >
+                    {{ medicationErrors.injectable.medicationConcentration }}
+                  </p>
+                }
+                @for (interaction of medicationInteractionWarnings('injectable'); track interaction.comorbidity.id) {
+                  <div class="alert alert-danger py-2" data-medication-interaction-warning="injectable">
+                    <span class="marker marker-danger"></span>
+                    <p class="alert-title">
+                      A medicação {{ interaction.medication.name }} interage com uma comorbidade do paciente:
+                      {{ interaction.comorbidity.name }}. Ministre a medicação com cautela.
+                    </p>
+                  </div>
                 }
               </div>
               <div class="field">
                 <label for="loteInjetavel" class="label">Lote</label>
-                <input id="loteInjetavel" name="loteInjetavel" class="input" type="text" [(ngModel)]="medicationDrafts.injectable.batch" />
+                <input
+                  id="loteInjetavel"
+                  name="loteInjetavel"
+                  class="input"
+                  type="text"
+                  [(ngModel)]="medicationDrafts.injectable.batch"
+                />
               </div>
               <div class="field">
                 <label for="validadeInjetavel" class="label">Validade</label>
-                <input id="validadeInjetavel" name="validadeInjetavel" class="input" type="date" [(ngModel)]="medicationDrafts.injectable.expirationDate" />
+                <input
+                  id="validadeInjetavel"
+                  name="validadeInjetavel"
+                  class="input"
+                  type="date"
+                  [(ngModel)]="medicationDrafts.injectable.expirationDate"
+                />
               </div>
               <div class="field">
                 <label for="posologiaInjetavel" class="label">Posologia</label>
-                <input id="posologiaInjetavel" name="posologiaInjetavel" class="input" type="text" [(ngModel)]="medicationDrafts.injectable.dosage" />
+                <input
+                  id="posologiaInjetavel"
+                  name="posologiaInjetavel"
+                  class="input"
+                  type="text"
+                  [(ngModel)]="medicationDrafts.injectable.dosage"
+                />
               </div>
-              <button class="btn btn-secondary lg:mt-7" type="button" data-add-medication="injectable" (click)="addMedication('injectable')">Adicionar</button>
+              <button
+                class="btn btn-secondary lg:mt-7"
+                type="button"
+                data-add-medication="injectable"
+                (click)="addMedication('injectable')"
+              >
+                Adicionar
+              </button>
             </div>
 
             @if (errors['injectableMedications']) {
@@ -265,9 +288,21 @@
             @if (medicationItems.injectable.length > 0) {
               <div class="grid gap-2">
                 @for (item of medicationItems.injectable; track item.id) {
-                  <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-app-surface-subtle p-3" data-medication-item="injectable">
-                    <span class="text-sm font-semibold">{{ item.medicationConcentration }} · {{ item.batch }} · {{ item.dosage }}</span>
-                    <button class="btn btn-ghost btn-sm" type="button" (click)="removeMedication('injectable', item.id)">Remover</button>
+                  <div
+                    class="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-app-surface-subtle p-3"
+                    data-medication-item="injectable"
+                  >
+                    <span class="text-sm font-semibold"
+                      >{{ item.medicationConcentration }} · {{ item.batch }} ·
+                      {{ item.dosage }}</span
+                    >
+                    <button
+                      class="btn btn-ghost btn-sm"
+                      type="button"
+                      (click)="removeMedication('injectable', item.id)"
+                    >
+                      Remover
+                    </button>
                   </div>
                 }
               </div>
@@ -276,7 +311,12 @@
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div class="field">
                 <label for="viaAdministracao" class="label">Via de administração</label>
-                <select id="viaAdministracao" name="viaAdministracao" class="native-select" [(ngModel)]="injectable.administrationRoute">
+                <select
+                  id="viaAdministracao"
+                  name="viaAdministracao"
+                  class="native-select"
+                  [(ngModel)]="injectable.administrationRoute"
+                >
                   <option value="">Selecione</option>
                   <option>Intramuscular</option>
                   <option>Subcutânea</option>
@@ -285,11 +325,23 @@
               </div>
               <div class="field">
                 <label for="prescritorInjetavel" class="label">Nome do prescritor</label>
-                <input id="prescritorInjetavel" name="prescritorInjetavel" class="input" type="text" [(ngModel)]="injectable.prescriberName" />
+                <input
+                  id="prescritorInjetavel"
+                  name="prescritorInjetavel"
+                  class="input"
+                  type="text"
+                  [(ngModel)]="injectable.prescriberName"
+                />
               </div>
               <div class="field">
                 <label for="crmCroInjetavel" class="label">CRM/CRO</label>
-                <input id="crmCroInjetavel" name="crmCroInjetavel" class="input" type="text" [(ngModel)]="injectable.crmCro" />
+                <input
+                  id="crmCroInjetavel"
+                  name="crmCroInjetavel"
+                  class="input"
+                  type="text"
+                  [(ngModel)]="injectable.crmCro"
+                />
               </div>
             </div>
           </div>
@@ -315,27 +367,84 @@
 
         @if (isStepEnabled('inaloterapia')) {
           <div class="card-content grid gap-4" data-step-content>
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(12rem,2fr)_minmax(7rem,1fr)_minmax(9rem,1fr)_minmax(10rem,1.5fr)_auto] lg:items-start">
+            <div
+              class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(12rem,2fr)_minmax(7rem,1fr)_minmax(9rem,1fr)_minmax(10rem,1.5fr)_auto] lg:items-start"
+            >
               <div class="field">
                 <label for="medicamentoInaloterapia" class="label">Medicamento/concentração</label>
-                <input id="medicamentoInaloterapia" name="medicamentoInaloterapia" class="input" type="text" [(ngModel)]="medicationDrafts.inhalotherapy.medicationConcentration" (input)="medicationDrafts.inhalotherapy.medicationConcentration = $any($event.target).value" />
+                <app-medication-autocomplete
+                  inputId="medicamentoInaloterapia"
+                  inputName="medicamentoInaloterapia"
+                  section="inhalotherapy"
+                  describedBy="medicamentoInaloterapiaErro"
+                  [invalid]="!!medicationErrors.inhalotherapy.medicationConcentration"
+                  [value]="medicationDrafts.inhalotherapy.medicationConcentration"
+                  [selectedMedicationId]="medicationDrafts.inhalotherapy.medicationId"
+                  (valueChange)="updateMedicationQuery('inhalotherapy', $event)"
+                  (medicationSelected)="selectMedication('inhalotherapy', $event)"
+                />
                 @if (medicationErrors.inhalotherapy.medicationConcentration) {
-                  <p class="field-error">{{ medicationErrors.inhalotherapy.medicationConcentration }}</p>
+                  <p
+                    id="medicamentoInaloterapiaErro"
+                    class="field-error"
+                    data-field-error="inhalotherapy-medication"
+                  >
+                    {{ medicationErrors.inhalotherapy.medicationConcentration }}
+                  </p>
+                }
+                @for (interaction of medicationInteractionWarnings('inhalotherapy'); track interaction.comorbidity.id) {
+                  <div class="alert alert-danger py-2" data-medication-interaction-warning="inhalotherapy">
+                    <span class="marker marker-danger"></span>
+                    <p class="alert-title">
+                      A medicação {{ interaction.medication.name }} interage com uma comorbidade do paciente:
+                      {{ interaction.comorbidity.name }}. Ministre a medicação com cautela.
+                    </p>
+                  </div>
                 }
               </div>
               <div class="field">
                 <label for="loteInaloterapia" class="label">Lote</label>
-                <input id="loteInaloterapia" name="loteInaloterapia" class="input" type="text" [(ngModel)]="medicationDrafts.inhalotherapy.batch" (input)="medicationDrafts.inhalotherapy.batch = $any($event.target).value" />
+                <input
+                  id="loteInaloterapia"
+                  name="loteInaloterapia"
+                  class="input"
+                  type="text"
+                  [(ngModel)]="medicationDrafts.inhalotherapy.batch"
+                  (input)="medicationDrafts.inhalotherapy.batch = $any($event.target).value"
+                />
               </div>
               <div class="field">
                 <label for="validadeInaloterapia" class="label">Validade</label>
-                <input id="validadeInaloterapia" name="validadeInaloterapia" class="input" type="date" [(ngModel)]="medicationDrafts.inhalotherapy.expirationDate" (input)="medicationDrafts.inhalotherapy.expirationDate = $any($event.target).value" />
+                <input
+                  id="validadeInaloterapia"
+                  name="validadeInaloterapia"
+                  class="input"
+                  type="date"
+                  [(ngModel)]="medicationDrafts.inhalotherapy.expirationDate"
+                  (input)="
+                    medicationDrafts.inhalotherapy.expirationDate = $any($event.target).value
+                  "
+                />
               </div>
               <div class="field">
                 <label for="posologiaInaloterapia" class="label">Posologia</label>
-                <input id="posologiaInaloterapia" name="posologiaInaloterapia" class="input" type="text" [(ngModel)]="medicationDrafts.inhalotherapy.dosage" (input)="medicationDrafts.inhalotherapy.dosage = $any($event.target).value" />
+                <input
+                  id="posologiaInaloterapia"
+                  name="posologiaInaloterapia"
+                  class="input"
+                  type="text"
+                  [(ngModel)]="medicationDrafts.inhalotherapy.dosage"
+                  (input)="medicationDrafts.inhalotherapy.dosage = $any($event.target).value"
+                />
               </div>
-              <button class="btn btn-secondary lg:mt-7" type="button" data-add-medication="inaloterapia" (click)="addMedication('inhalotherapy')">Adicionar</button>
+              <button
+                class="btn btn-secondary lg:mt-7"
+                type="button"
+                data-add-medication="inaloterapia"
+                (click)="addMedication('inhalotherapy')"
+              >
+                Adicionar
+              </button>
             </div>
 
             @if (errors['inhalotherapyMedications']) {
@@ -345,9 +454,21 @@
             @if (medicationItems.inhalotherapy.length > 0) {
               <div class="grid gap-2">
                 @for (item of medicationItems.inhalotherapy; track item.id) {
-                  <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-app-surface-subtle p-3" data-medication-item="inaloterapia">
-                    <span class="text-sm font-semibold">{{ item.medicationConcentration }} · {{ item.batch }} · {{ item.dosage }}</span>
-                    <button class="btn btn-ghost btn-sm" type="button" (click)="removeMedication('inhalotherapy', item.id)">Remover</button>
+                  <div
+                    class="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-app-surface-subtle p-3"
+                    data-medication-item="inaloterapia"
+                  >
+                    <span class="text-sm font-semibold"
+                      >{{ item.medicationConcentration }} · {{ item.batch }} ·
+                      {{ item.dosage }}</span
+                    >
+                    <button
+                      class="btn btn-ghost btn-sm"
+                      type="button"
+                      (click)="removeMedication('inhalotherapy', item.id)"
+                    >
+                      Remover
+                    </button>
                   </div>
                 }
               </div>
@@ -356,11 +477,23 @@
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div class="field">
                 <label for="prescritorInaloterapia" class="label">Nome do prescritor</label>
-                <input id="prescritorInaloterapia" name="prescritorInaloterapia" class="input" type="text" [(ngModel)]="inhalotherapy.prescriberName" />
+                <input
+                  id="prescritorInaloterapia"
+                  name="prescritorInaloterapia"
+                  class="input"
+                  type="text"
+                  [(ngModel)]="inhalotherapy.prescriberName"
+                />
               </div>
               <div class="field">
                 <label for="crmCroInaloterapia" class="label">CRM/CRO</label>
-                <input id="crmCroInaloterapia" name="crmCroInaloterapia" class="input" type="text" [(ngModel)]="inhalotherapy.crmCro" />
+                <input
+                  id="crmCroInaloterapia"
+                  name="crmCroInaloterapia"
+                  class="input"
+                  type="text"
+                  [(ngModel)]="inhalotherapy.crmCro"
+                />
               </div>
             </div>
           </div>
@@ -387,43 +520,127 @@
         @if (isStepEnabled('servicos-acompanhamento')) {
           <div class="card-content grid gap-4" data-step-content>
             <div class="grid gap-3 sm:grid-cols-2">
-              <label class="flex items-center gap-2 rounded-lg border bg-app-surface-subtle p-3 text-sm text-app-muted-foreground">
-                <input class="checkbox" name="homeCare" type="checkbox" [(ngModel)]="complementary.homeCare" />
+              <label
+                class="flex items-center gap-2 rounded-lg border bg-app-surface-subtle p-3 text-sm text-app-muted-foreground"
+              >
+                <input
+                  class="checkbox"
+                  name="homeCare"
+                  type="checkbox"
+                  [(ngModel)]="complementary.homeCare"
+                />
                 Assistência farmacêutica domiciliar
               </label>
-              <label class="flex items-center gap-2 rounded-lg border bg-app-surface-subtle p-3 text-sm text-app-muted-foreground">
-                <input class="checkbox" name="pharmacotherapeuticFollowUp" type="checkbox" [(ngModel)]="complementary.pharmacotherapeuticFollowUp" />
+              <label
+                class="flex items-center gap-2 rounded-lg border bg-app-surface-subtle p-3 text-sm text-app-muted-foreground"
+              >
+                <input
+                  class="checkbox"
+                  name="pharmacotherapeuticFollowUp"
+                  type="checkbox"
+                  [(ngModel)]="complementary.pharmacotherapeuticFollowUp"
+                />
                 Acompanhamento farmacoterapêutico
               </label>
-              <label class="flex items-center gap-2 rounded-lg border bg-app-surface-subtle p-3 text-sm text-app-muted-foreground sm:col-span-2">
-                <input class="checkbox" name="minorDisorderIndication" type="checkbox" [(ngModel)]="complementary.minorDisorderIndication" />
+              <label
+                class="flex items-center gap-2 rounded-lg border bg-app-surface-subtle p-3 text-sm text-app-muted-foreground sm:col-span-2"
+              >
+                <input
+                  class="checkbox"
+                  name="minorDisorderIndication"
+                  type="checkbox"
+                  [(ngModel)]="complementary.minorDisorderIndication"
+                />
                 Indicação farmacêutica em transtornos menores
               </label>
             </div>
 
             <div class="field">
               <label for="sinaisSintomas" class="label">Sinais e sintomas</label>
-              <textarea id="sinaisSintomas" name="sinaisSintomas" class="textarea" rows="4" [(ngModel)]="complementary.signsAndSymptoms"></textarea>
+              <textarea
+                id="sinaisSintomas"
+                name="sinaisSintomas"
+                class="textarea"
+                rows="4"
+                [(ngModel)]="complementary.signsAndSymptoms"
+              ></textarea>
             </div>
 
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(12rem,2fr)_minmax(7rem,1fr)_minmax(9rem,1fr)_minmax(10rem,1.5fr)_auto] lg:items-start">
+            <div
+              class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(12rem,2fr)_minmax(7rem,1fr)_minmax(9rem,1fr)_minmax(10rem,1.5fr)_auto] lg:items-start"
+            >
               <div class="field">
-                <label for="medicamentoAcompanhamento" class="label">Medicamento/concentração</label>
-                <input id="medicamentoAcompanhamento" name="medicamentoAcompanhamento" class="input" type="text" [(ngModel)]="medicationDrafts.complementary.medicationConcentration" />
+                <label for="medicamentoAcompanhamento" class="label"
+                  >Medicamento/concentração</label
+                >
+                <app-medication-autocomplete
+                  inputId="medicamentoAcompanhamento"
+                  inputName="medicamentoAcompanhamento"
+                  section="complementary"
+                  describedBy="medicamentoAcompanhamentoErro"
+                  [invalid]="!!medicationErrors.complementary.medicationConcentration"
+                  [value]="medicationDrafts.complementary.medicationConcentration"
+                  [selectedMedicationId]="medicationDrafts.complementary.medicationId"
+                  (valueChange)="updateMedicationQuery('complementary', $event)"
+                  (medicationSelected)="selectMedication('complementary', $event)"
+                />
+                @if (medicationErrors.complementary.medicationConcentration) {
+                  <p
+                    id="medicamentoAcompanhamentoErro"
+                    class="field-error"
+                    data-field-error="complementary-medication"
+                  >
+                    {{ medicationErrors.complementary.medicationConcentration }}
+                  </p>
+                }
+                @for (interaction of medicationInteractionWarnings('complementary'); track interaction.comorbidity.id) {
+                  <div class="alert alert-danger py-2" data-medication-interaction-warning="complementary">
+                    <span class="marker marker-danger"></span>
+                    <p class="alert-title">
+                      A medicação {{ interaction.medication.name }} interage com uma comorbidade do paciente:
+                      {{ interaction.comorbidity.name }}. Ministre a medicação com cautela.
+                    </p>
+                  </div>
+                }
               </div>
               <div class="field">
                 <label for="loteAcompanhamento" class="label">Lote</label>
-                <input id="loteAcompanhamento" name="loteAcompanhamento" class="input" type="text" [(ngModel)]="medicationDrafts.complementary.batch" />
+                <input
+                  id="loteAcompanhamento"
+                  name="loteAcompanhamento"
+                  class="input"
+                  type="text"
+                  [(ngModel)]="medicationDrafts.complementary.batch"
+                />
               </div>
               <div class="field">
                 <label for="validadeAcompanhamento" class="label">Validade</label>
-                <input id="validadeAcompanhamento" name="validadeAcompanhamento" class="input" type="date" [(ngModel)]="medicationDrafts.complementary.expirationDate" />
+                <input
+                  id="validadeAcompanhamento"
+                  name="validadeAcompanhamento"
+                  class="input"
+                  type="date"
+                  [(ngModel)]="medicationDrafts.complementary.expirationDate"
+                />
               </div>
               <div class="field">
                 <label for="posologiaAcompanhamento" class="label">Posologia</label>
-                <input id="posologiaAcompanhamento" name="posologiaAcompanhamento" class="input" type="text" [(ngModel)]="medicationDrafts.complementary.dosage" />
+                <input
+                  id="posologiaAcompanhamento"
+                  name="posologiaAcompanhamento"
+                  class="input"
+                  type="text"
+                  [(ngModel)]="medicationDrafts.complementary.dosage"
+                />
               </div>
-              <button class="btn btn-secondary lg:mt-7" type="button" data-add-medication="complementary" (click)="addMedication('complementary')">Adicionar</button>
+              <button
+                class="btn btn-secondary lg:mt-7"
+                type="button"
+                data-add-medication="complementary"
+                (click)="addMedication('complementary')"
+              >
+                Adicionar
+              </button>
             </div>
 
             @if (errors['complementaryMedications']) {
@@ -433,9 +650,21 @@
             @if (medicationItems.complementary.length > 0) {
               <div class="grid gap-2">
                 @for (item of medicationItems.complementary; track item.id) {
-                  <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-app-surface-subtle p-3" data-medication-item="complementary">
-                    <span class="text-sm font-semibold">{{ item.medicationConcentration }} · {{ item.batch }} · {{ item.dosage }}</span>
-                    <button class="btn btn-ghost btn-sm" type="button" (click)="removeMedication('complementary', item.id)">Remover</button>
+                  <div
+                    class="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-app-surface-subtle p-3"
+                    data-medication-item="complementary"
+                  >
+                    <span class="text-sm font-semibold"
+                      >{{ item.medicationConcentration }} · {{ item.batch }} ·
+                      {{ item.dosage }}</span
+                    >
+                    <button
+                      class="btn btn-ghost btn-sm"
+                      type="button"
+                      (click)="removeMedication('complementary', item.id)"
+                    >
+                      Remover
+                    </button>
                   </div>
                 }
               </div>
@@ -444,11 +673,23 @@
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div class="field">
                 <label for="numeroFicha" class="label">Nº ficha</label>
-                <input id="numeroFicha" name="numeroFicha" class="input" type="text" [(ngModel)]="complementary.recordNumber" />
+                <input
+                  id="numeroFicha"
+                  name="numeroFicha"
+                  class="input"
+                  type="text"
+                  [(ngModel)]="complementary.recordNumber"
+                />
               </div>
               <div class="field">
                 <label for="dataAtendimento" class="label">Data</label>
-                <input id="dataAtendimento" name="dataAtendimento" class="input" type="date" [(ngModel)]="complementary.attendanceDate" />
+                <input
+                  id="dataAtendimento"
+                  name="dataAtendimento"
+                  class="input"
+                  type="date"
+                  [(ngModel)]="complementary.attendanceDate"
+                />
               </div>
             </div>
           </div>
@@ -476,15 +717,39 @@
           <div class="card-content grid gap-4" data-step-content>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div class="field">
-                <label for="intervaloRetornos" class="label label-required">Intervalo para retorno</label>
-                <input id="intervaloRetornos" name="intervaloRetornos" class="input" type="number" min="1" step="1" [(ngModel)]="followUp.returnIntervalDays" (input)="followUp.returnIntervalDays = $any($event.target).value" [attr.aria-invalid]="errors['returnIntervalDays'] ? 'true' : null" />
+                <label for="intervaloRetornos" class="label label-required"
+                  >Intervalo para retorno</label
+                >
+                <input
+                  id="intervaloRetornos"
+                  name="intervaloRetornos"
+                  class="input"
+                  type="number"
+                  min="1"
+                  step="1"
+                  [(ngModel)]="followUp.returnIntervalDays"
+                  (input)="followUp.returnIntervalDays = $any($event.target).value"
+                  [attr.aria-invalid]="errors['returnIntervalDays'] ? 'true' : null"
+                />
                 @if (errors['returnIntervalDays']) {
                   <p class="field-error">{{ errors['returnIntervalDays'] }}</p>
                 }
               </div>
               <div class="field">
-                <label for="quantidadeRetornos" class="label label-required">Quantidade de retornos</label>
-                <input id="quantidadeRetornos" name="quantidadeRetornos" class="input" type="number" min="1" step="1" [(ngModel)]="followUp.returnCount" (input)="followUp.returnCount = $any($event.target).value" [attr.aria-invalid]="errors['returnCount'] ? 'true' : null" />
+                <label for="quantidadeRetornos" class="label label-required"
+                  >Quantidade de retornos</label
+                >
+                <input
+                  id="quantidadeRetornos"
+                  name="quantidadeRetornos"
+                  class="input"
+                  type="number"
+                  min="1"
+                  step="1"
+                  [(ngModel)]="followUp.returnCount"
+                  (input)="followUp.returnCount = $any($event.target).value"
+                  [attr.aria-invalid]="errors['returnCount'] ? 'true' : null"
+                />
                 @if (errors['returnCount']) {
                   <p class="field-error">{{ errors['returnCount'] }}</p>
                 }
