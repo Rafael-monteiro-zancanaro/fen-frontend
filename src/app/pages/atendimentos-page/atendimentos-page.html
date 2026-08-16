@@ -1,0 +1,196 @@
+<main data-page="atendimentos" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="mb-2 text-sm font-semibold text-uem-700">Atendimentos</p>
+        <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">Atendimentos</h1>
+        <p class="mt-2 max-w-2xl text-sm leading-6 text-app-muted-foreground">
+          Consulte os serviços farmacêuticos registrados e acompanhe retornos pendentes.
+        </p>
+      </div>
+
+      <a class="btn btn-primary" routerLink="/atendimentos/novo">Novo atendimento</a>
+    </div>
+
+    @if (successMessage()) {
+      <div class="alert alert-success">
+        <span class="marker marker-success"></span>
+        <div>
+          <p class="alert-title">{{ successMessage() }}</p>
+          <p class="alert-description">A listagem foi atualizada.</p>
+        </div>
+      </div>
+    }
+
+    @if (errorMessage()) {
+      <div class="alert alert-danger">
+        <span class="marker marker-danger"></span>
+        <div>
+          <p class="alert-title">Não foi possível carregar os atendimentos</p>
+          <p class="alert-description">{{ errorMessage() }}</p>
+        </div>
+      </div>
+    }
+
+    @if (isLoading()) {
+      <section class="card p-5">
+        <div class="skeleton h-6 w-52"></div>
+        <div class="mt-4 grid gap-3">
+          <div class="skeleton h-10 w-full"></div>
+          <div class="skeleton h-10 w-full"></div>
+        </div>
+      </section>
+    } @else if (attendances().length === 0) {
+      <section class="empty">
+        <div class="empty-icon" aria-hidden="true">+</div>
+        <h2 class="empty-title">Nenhum atendimento registrado</h2>
+        <p class="empty-description">
+          Registre o primeiro atendimento farmacêutico para iniciar o histórico.
+        </p>
+        <a class="btn btn-primary" routerLink="/atendimentos/novo">Novo atendimento</a>
+      </section>
+    } @else {
+      <section class="card">
+        <div class="card-content">
+          <div class="mb-4 overflow-x-auto">
+            <div class="tabs-list" role="tablist" aria-label="Filtros rápidos de atendimento">
+              @for (filter of statusFilters; track filter.value) {
+                <button
+                  class="tabs-trigger"
+                  type="button"
+                  role="tab"
+                  [attr.data-status-filter]="filter.value"
+                  [attr.aria-selected]="statusFilter() === filter.value"
+                  [attr.data-state]="statusFilter() === filter.value ? 'active' : 'inactive'"
+                  (click)="updateStatusFilter(filter.value)"
+                >
+                  {{ filter.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="data-table-toolbar">
+            <div class="field min-w-64 flex-1">
+              <label for="attendanceSearch" class="label">Pesquisar atendimentos</label>
+              <input
+                id="attendanceSearch"
+                class="input"
+                type="search"
+                [ngModel]="searchTerm()"
+                (ngModelChange)="updateSearchTerm($event)"
+                placeholder="Buscar por paciente, CPF ou serviço"
+              />
+            </div>
+          </div>
+
+          @if (filteredAttendances().length === 0) {
+            <div class="empty">
+              <h2 class="empty-title">Nenhum resultado encontrado</h2>
+              <p class="empty-description">
+                Ajuste a busca ou selecione outro filtro rápido.
+              </p>
+            </div>
+          } @else {
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Paciente</th>
+                    <th>CPF</th>
+                    <th>Data</th>
+                    <th>Serviço(s)</th>
+                    <th>Situação</th>
+                    <th>Acompanhamento</th>
+                    <th class="w-36">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (attendance of paginatedAttendances(); track attendance.id) {
+                    <tr>
+                      <td class="font-semibold text-app-foreground">{{ attendance.patient.name }}</td>
+                      <td>{{ formatCpf(attendance.patient.cpf) }}</td>
+                      <td>{{ formatDate(attendance.createdAt) }}</td>
+                      <td>{{ serviceLabels(attendance) }}</td>
+                      <td>
+                        <span [class]="statusBadgeClass(attendance.status)">
+                          {{ statusLabel(attendance.status) }}
+                        </span>
+                      </td>
+                      <td>
+                        @if (attendance.followUp) {
+                          {{ attendance.followUp.returnCount }} retorno(s)
+                        } @else {
+                          <span class="text-app-muted-foreground">Sem acompanhamento</span>
+                        }
+                      </td>
+                      <td>
+                        <div class="flex flex-nowrap gap-2" data-attendance-actions>
+                          <a
+                            class="btn btn-secondary btn-icon btn-sm"
+                            [routerLink]="['/atendimentos', attendance.id]"
+                            aria-label="Visualizar atendimento"
+                            title="Visualizar atendimento"
+                          >
+                            <ng-icon name="bootstrapEye" size="1rem" />
+                          </a>
+                          @if (attendance.status === 'EXPIRADO') {
+                            <button
+                              class="btn btn-primary btn-icon btn-sm"
+                              type="button"
+                              aria-label="Encerrar atendimento"
+                              title="Encerrar atendimento"
+                              [attr.data-close-attendance-id]="attendance.id"
+                              (click)="askToCloseAttendance(attendance.id)"
+                            >
+                              <ng-icon name="bootstrapCheckLg" size="1rem" />
+                            </button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <app-pagination-controls
+              [pagination]="pagination()"
+              summaryId="attendances"
+              pageSizeSelectId="attendancePageSize"
+              itemLabel="atendimento(s)"
+              (previousPage)="goToPreviousPage()"
+              (nextPage)="goToNextPage()"
+              (pageSizeChange)="updatePageSize($event)"
+            />
+          }
+        </div>
+      </section>
+    }
+  </section>
+
+  @if (attendancePendingCloseId()) {
+    <div class="alert-dialog-overlay" (click)="cancelCloseAttendance()"></div>
+    <section class="alert-dialog" role="alertdialog" aria-modal="true">
+      <div class="alert-dialog-header">
+        <h2 class="alert-dialog-title">Encerrar atendimento?</h2>
+        <p class="alert-dialog-description">
+          O atendimento expirado será marcado como concluído.
+        </p>
+      </div>
+      <div class="alert-dialog-footer">
+        <button class="btn btn-secondary" type="button" (click)="cancelCloseAttendance()">
+          Cancelar
+        </button>
+        <button
+          class="btn btn-primary"
+          type="button"
+          data-confirm-close-attendance
+          (click)="confirmCloseAttendance()"
+        >
+          Encerrar
+        </button>
+      </div>
+    </section>
+  }
+</main>

@@ -1,0 +1,53 @@
+<main data-page="visualizar-medicamento" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    @if (medication(); as currentMedication) {
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="mb-2 text-sm font-semibold text-uem-700">Medicamentos</p>
+          <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">
+            {{ currentMedication.name }}
+          </h1>
+        </div>
+
+        <a class="btn btn-secondary" routerLink="/medicamentos">Voltar para listagem</a>
+      </div>
+
+      <section class="card w-full max-w-3xl">
+        <div class="card-header">
+          <h2 class="card-title">Dados do medicamento</h2>
+          <p class="card-description">Informações cadastradas para consulta.</p>
+        </div>
+
+        <div class="card-content grid gap-4 sm:grid-cols-2">
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Nome</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ currentMedication.name }}</p>
+          </div>
+
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Concentração</p>
+            <p class="mt-1 font-semibold text-app-foreground">
+              {{ currentMedication.measurementUnit }}
+            </p>
+          </div>
+
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Via de administração</p>
+            <p class="mt-1 font-semibold text-app-foreground">
+              {{ currentMedication.administrationRoute }}
+            </p>
+          </div>
+        </div>
+      </section>
+    } @else {
+      <div class="alert alert-warning">
+        <span class="marker marker-warning"></span>
+        <div>
+          <p class="alert-title">Medicamento não encontrado</p>
+          <p class="alert-description">Retorne para a listagem e selecione outro medicamento.</p>
+        </div>
+      </div>
+      <a class="btn btn-secondary w-fit" routerLink="/medicamentos">Voltar para listagem</a>
+    }
+  </section>
+</main>

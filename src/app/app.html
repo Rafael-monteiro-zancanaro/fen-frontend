@@ -22,14 +22,25 @@
           <a class="rounded-md bg-white px-3 py-2 text-uem-800 shadow-soft" routerLink="/inicio">
             Inicio
           </a>
-          <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/atendimentos/novo">
+          <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/atendimentos">
             Atendimentos
           </a>
+          <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/medicamentos">
+            Medicamentos
+          </a>
+          <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/comorbidades">
+            Comorbidades
+          </a>
+          @if (canManagePasswordRecovery()) {
+            <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/admin/recuperacoes-senha">
+              Recuperações de senha
+            </a>
+            <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/admin/funcionarios">
+              Funcionários
+            </a>
+          }
           <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" href="#">
             Pacientes
-          </a>
-          <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" href="#">
-            Equipe
           </a>
           <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/login">
             Sair

@@ -1,0 +1,53 @@
+<main data-page="visualizar-recuperacao-senha" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    @if (request(); as currentRequest) {
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="mb-2 text-sm font-semibold text-uem-700">Administração</p>
+          <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">
+            {{ currentRequest.email }}
+          </h1>
+        </div>
+
+        <a class="btn btn-secondary" routerLink="/admin/recuperacoes-senha">Voltar para listagem</a>
+      </div>
+
+      <section class="card w-full max-w-3xl">
+        <div class="card-header">
+          <h2 class="card-title">Dados da solicitação</h2>
+          <p class="card-description">Informações disponíveis para análise administrativa.</p>
+        </div>
+
+        <div class="card-content grid gap-4 sm:grid-cols-2">
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">E-mail</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ currentRequest.email }}</p>
+          </div>
+
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Data da solicitação</p>
+            <p class="mt-1 font-semibold text-app-foreground">
+              {{ formatDate(currentRequest.requestedAt) }}
+            </p>
+          </div>
+
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Situação</p>
+            <p class="mt-1">
+              <span class="badge badge-warning">{{ currentRequest.status }}</span>
+            </p>
+          </div>
+        </div>
+      </section>
+    } @else {
+      <div class="alert alert-warning">
+        <span class="marker marker-warning"></span>
+        <div>
+          <p class="alert-title">Solicitação não encontrada</p>
+          <p class="alert-description">Retorne para a listagem e selecione outra solicitação.</p>
+        </div>
+      </div>
+      <a class="btn btn-secondary w-fit" routerLink="/admin/recuperacoes-senha">Voltar para listagem</a>
+    }
+  </section>
+</main>

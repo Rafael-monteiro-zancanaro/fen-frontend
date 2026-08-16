@@ -1,0 +1,99 @@
+<main [attr.data-page]="isEditMode() ? 'editar-medicamento' : 'novo-medicamento'" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    @if (recordNotFound()) {
+      <div class="alert alert-warning">
+        <span class="marker marker-warning"></span>
+        <div>
+          <p class="alert-title">Medicamento não encontrado</p>
+          <p class="alert-description">Retorne para a listagem e selecione outro medicamento.</p>
+        </div>
+      </div>
+      <a class="btn btn-secondary w-fit" routerLink="/medicamentos">Voltar para listagem</a>
+    } @else {
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="mb-2 text-sm font-semibold text-uem-700">Medicamentos</p>
+          <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">
+            {{ isEditMode() ? 'Editar medicamento' : 'Novo medicamento' }}
+          </h1>
+          <p class="mt-2 max-w-2xl text-sm leading-6 text-app-muted-foreground">
+            {{
+              isEditMode()
+                ? 'Atualize os dados cadastrados para este medicamento.'
+                : 'Cadastre medicamentos para uso em atendimentos e interações com comorbidades.'
+            }}
+          </p>
+        </div>
+
+        <a class="btn btn-secondary" routerLink="/medicamentos">Voltar</a>
+      </div>
+
+      <form class="card w-full max-w-3xl" (submit)="saveMedication(); $event.preventDefault()">
+      <div class="card-content grid gap-4">
+        <div class="field">
+          <label for="medicationName" class="label label-required">Nome do medicamento</label>
+          <input
+            id="medicationName"
+            class="input"
+            type="text"
+            name="medicationName"
+            [(ngModel)]="name"
+            [attr.aria-invalid]="isNameInvalid()"
+            autocomplete="off"
+          />
+          @if (isNameInvalid()) {
+            <p class="field-error" data-field-error="medication-name">
+              Nome do medicamento é obrigatório.
+            </p>
+          }
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div class="field">
+            <label for="measurementUnit" class="label label-required">Concentração</label>
+            <input
+              id="measurementUnit"
+              class="input"
+              type="text"
+              name="measurementUnit"
+              [(ngModel)]="measurementUnit"
+              [attr.aria-invalid]="isMeasurementUnitInvalid()"
+              autocomplete="off"
+            />
+            @if (isMeasurementUnitInvalid()) {
+              <p class="field-error" data-field-error="measurement-unit">
+                Concentração é obrigatória.
+              </p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="administrationRoute" class="label label-required">Via de administração</label>
+            <input
+              id="administrationRoute"
+              class="input"
+              type="text"
+              name="administrationRoute"
+              [(ngModel)]="administrationRoute"
+              [attr.aria-invalid]="isAdministrationRouteInvalid()"
+              autocomplete="off"
+            />
+            @if (isAdministrationRouteInvalid()) {
+              <p class="field-error" data-field-error="administration-route">
+                Via de administração é obrigatória.
+              </p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="card-footer flex-col items-stretch sm:flex-row sm:justify-end">
+        <a class="btn btn-secondary w-full sm:w-auto" routerLink="/medicamentos">Cancelar</a>
+        <button class="btn btn-primary w-full sm:w-auto" type="submit">
+          {{ isEditMode() ? 'Salvar alterações' : 'Salvar medicamento' }}
+        </button>
+      </div>
+      </form>
+    }
+  </section>
+</main>

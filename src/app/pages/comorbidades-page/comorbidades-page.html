@@ -1,0 +1,141 @@
+<main data-page="comorbidades" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="mb-2 text-sm font-semibold text-uem-700">Comorbidades</p>
+        <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">Comorbidades</h1>
+        <p class="mt-2 max-w-2xl text-sm leading-6 text-app-muted-foreground">
+          Consulte condições cadastradas e os medicamentos associados por interação.
+        </p>
+      </div>
+
+      <a class="btn btn-primary" routerLink="/comorbidades/nova">Cadastrar comorbidade</a>
+    </div>
+
+    @if (comorbidities().length === 0) {
+      <section class="empty">
+        <div class="empty-icon" aria-hidden="true">+</div>
+        <h2 class="empty-title">Nenhuma comorbidade cadastrada</h2>
+        <p class="empty-description">
+          Cadastre a primeira comorbidade para relacioná-la a atendimentos e interações.
+        </p>
+        <a class="btn btn-primary" routerLink="/comorbidades/nova">Cadastrar comorbidade</a>
+      </section>
+    } @else {
+      <section class="card">
+        <div class="card-content">
+          <div class="data-table-toolbar">
+            <div class="field min-w-64 flex-1">
+              <label for="comorbiditySearch" class="label">Pesquisar comorbidades</label>
+              <input
+                id="comorbiditySearch"
+                class="input"
+                type="search"
+                [ngModel]="searchTerm()"
+                (ngModelChange)="updateSearchTerm($event)"
+                placeholder="Buscar por nome"
+              />
+            </div>
+          </div>
+
+          @if (filteredComorbidities().length === 0) {
+            <div class="empty">
+              <h2 class="empty-title">Nenhum resultado encontrado</h2>
+              <p class="empty-description">
+                Ajuste os termos da busca para localizar outra comorbidade cadastrada.
+              </p>
+            </div>
+          } @else {
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Interações</th>
+                    <th class="w-44">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (comorbidity of paginatedComorbidities(); track comorbidity.id) {
+                    <tr>
+                      <td class="font-semibold text-app-foreground">{{ comorbidity.name }}</td>
+                      <td>
+                        <span class="badge badge-secondary">
+                          {{ interactionCount(comorbidity) }} interação(ões)
+                        </span>
+                      </td>
+                      <td>
+                        <div class="flex flex-nowrap gap-2" data-comorbidity-actions>
+                          <a
+                            class="btn btn-secondary btn-icon btn-sm"
+                            [routerLink]="['/comorbidades', comorbidity.id]"
+                            aria-label="Visualizar comorbidade"
+                            title="Visualizar comorbidade"
+                          >
+                            <ng-icon name="bootstrapEye" size="1rem" />
+                          </a>
+                          <a
+                            class="btn btn-secondary btn-icon btn-sm"
+                            [routerLink]="['/comorbidades', comorbidity.id, 'editar']"
+                            aria-label="Editar comorbidade"
+                            title="Editar comorbidade"
+                          >
+                            <ng-icon name="bootstrapPencil" size="1rem" />
+                          </a>
+                          <button
+                            class="btn btn-danger btn-icon btn-sm"
+                            type="button"
+                            aria-label="Excluir comorbidade"
+                            title="Excluir comorbidade"
+                            [attr.data-delete-comorbidity-id]="comorbidity.id"
+                            (click)="askToDelete(comorbidity)"
+                          >
+                            <ng-icon name="bootstrapTrash" size="1rem" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <app-pagination-controls
+              [pagination]="pagination()"
+              summaryId="comorbidities"
+              pageSizeSelectId="comorbidityPageSize"
+              itemLabel="comorbidade(s)"
+              (previousPage)="goToPreviousPage()"
+              (nextPage)="goToNextPage()"
+              (pageSizeChange)="updatePageSize($event)"
+            />
+          }
+        </div>
+      </section>
+    }
+  </section>
+
+  @if (comorbidityPendingDeletion(); as comorbidity) {
+    <div class="alert-dialog-overlay" (click)="cancelDeletion()"></div>
+    <section class="alert-dialog" role="alertdialog" aria-modal="true">
+      <div class="alert-dialog-header">
+        <h2 class="alert-dialog-title">Excluir comorbidade</h2>
+        <p class="alert-dialog-description">
+          Confirme a exclusão de {{ comorbidity.name }}. As interações cadastradas para esta
+          comorbidade serão removidas junto com o registro.
+        </p>
+      </div>
+      <div class="alert-dialog-footer">
+        <button class="btn btn-secondary" type="button" (click)="cancelDeletion()">Cancelar</button>
+        <button
+          class="btn btn-danger"
+          type="button"
+          data-confirm-delete-comorbidity
+          (click)="confirmDeletion()"
+        >
+          Excluir
+        </button>
+      </div>
+    </section>
+  }
+</main>

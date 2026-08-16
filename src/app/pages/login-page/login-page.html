@@ -13,7 +13,7 @@
       </div>
     </div>
 
-    <form class="card w-full" aria-labelledby="login-title">
+    <form class="card w-full" aria-labelledby="login-title" (submit)="enter(); $event.preventDefault()">
       <div class="card-content flex flex-col gap-4">
         <div class="field">
           <label for="email" class="label label-required">E-mail</label>
@@ -30,7 +30,7 @@
         <div class="field">
           <div class="flex items-center justify-between gap-3">
             <label for="senha" class="label label-required">Senha</label>
-            <a class="btn btn-link text-sm" href="#">Esqueci minha senha</a>
+            <a class="btn btn-link text-sm" routerLink="/recuperar-senha">Esqueci minha senha</a>
           </div>
 
           <input
@@ -47,11 +47,28 @@
           <input class="checkbox" type="checkbox" />
           Manter meu acesso neste dispositivo
         </label>
+
+        <div class="field">
+          <label for="perfilTemporario" class="label">Perfil de acesso</label>
+          <select
+            id="perfilTemporario"
+            class="native-select"
+            name="perfilTemporario"
+            [(ngModel)]="selectedRole"
+          >
+            <option value="FARMACEUTICO">Farmacêutico</option>
+            <option value="ESTAGIARIO">Estagiário</option>
+            <option value="ADMIN">Administrador</option>
+          </select>
+          <p class="field-description">
+            Seleção temporária até a integração com autenticação e autorização reais.
+          </p>
+        </div>
       </div>
 
       <div class="card-footer flex-col items-stretch sm:flex-row sm:justify-between">
         <a class="btn btn-link text-sm" routerLink="/cadastro">Cadastrar novo usuario</a>
-        <button class="btn btn-primary w-full sm:w-auto" type="submit" routerLink="/inicio">
+        <button class="btn btn-primary w-full sm:w-auto" type="submit">
           Entrar
         </button>
       </div>

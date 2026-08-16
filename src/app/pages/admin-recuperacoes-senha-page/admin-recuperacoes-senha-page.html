@@ -1,0 +1,163 @@
+<main data-page="admin-recuperacoes-senha" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    <div>
+      <p class="mb-2 text-sm font-semibold text-uem-700">Administração</p>
+      <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">
+        Solicitações de recuperação de senha
+      </h1>
+      <p class="mt-2 max-w-2xl text-sm leading-6 text-app-muted-foreground">
+        Analise solicitações pendentes e decida pela aprovação ou rejeição.
+      </p>
+    </div>
+
+    @if (successMessage()) {
+      <div class="alert alert-success">
+        <span class="marker marker-success"></span>
+        <div>
+          <p class="alert-title">{{ successMessage() }}</p>
+          <p class="alert-description">A lista de pendências foi atualizada.</p>
+        </div>
+      </div>
+    }
+
+    @if (errorMessage()) {
+      <div class="alert alert-danger">
+        <span class="marker marker-danger"></span>
+        <div>
+          <p class="alert-title">Não foi possível carregar as solicitações</p>
+          <p class="alert-description">{{ errorMessage() }}</p>
+        </div>
+      </div>
+    }
+
+    @if (isLoading()) {
+      <section class="card p-5">
+        <div class="skeleton h-6 w-52"></div>
+        <div class="mt-4 grid gap-3">
+          <div class="skeleton h-10 w-full"></div>
+          <div class="skeleton h-10 w-full"></div>
+        </div>
+      </section>
+    } @else if (pendingRequests().length === 0) {
+      <section class="empty">
+        <h2 class="empty-title">Nenhuma solicitação de recuperação de senha pendente.</h2>
+        <p class="empty-description">
+          Novas solicitações aparecerão aqui quando forem registradas.
+        </p>
+      </section>
+    } @else {
+      <section class="card">
+        <div class="card-content">
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>E-mail</th>
+                  <th>Data da solicitação</th>
+                  <th>Situação</th>
+                  <th class="w-64">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (request of paginatedPendingRequests(); track request.id) {
+                  <tr>
+                    <td class="font-semibold text-app-foreground">{{ request.email }}</td>
+                    <td>{{ formatDate(request.requestedAt) }}</td>
+                    <td><span class="badge badge-warning">{{ request.status }}</span></td>
+                    <td>
+                      <div class="flex flex-nowrap gap-2" data-recovery-actions>
+                        <a
+                          class="btn btn-secondary btn-icon btn-sm"
+                          [routerLink]="['/admin/recuperacoes-senha', request.id]"
+                          aria-label="Analisar solicitação"
+                          title="Analisar solicitação"
+                        >
+                          <ng-icon name="bootstrapEye" size="1rem" />
+                        </a>
+                        <button
+                          class="btn btn-primary btn-icon btn-sm"
+                          type="button"
+                          aria-label="Aprovar solicitação"
+                          title="Aprovar solicitação"
+                          [disabled]="operationInProgressId() === request.id"
+                          [attr.data-approve-recovery-id]="request.id"
+                          (click)="askToApprove(request)"
+                        >
+                          <ng-icon name="bootstrapCheckLg" size="1rem" />
+                        </button>
+                        <button
+                          class="btn btn-danger btn-icon btn-sm"
+                          type="button"
+                          aria-label="Rejeitar solicitação"
+                          title="Rejeitar solicitação"
+                          [disabled]="operationInProgressId() === request.id"
+                          [attr.data-reject-recovery-id]="request.id"
+                          (click)="askToReject(request)"
+                        >
+                          <ng-icon name="bootstrapXLg" size="1rem" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <app-pagination-controls
+            [pagination]="pagination()"
+            summaryId="recoveries"
+            pageSizeSelectId="recoveryPageSize"
+            itemLabel="solicitação(ões)"
+            (previousPage)="goToPreviousPage()"
+            (nextPage)="goToNextPage()"
+            (pageSizeChange)="updatePageSize($event)"
+          />
+        </div>
+      </section>
+    }
+  </section>
+
+  @if (pendingAction(); as pending) {
+    <div class="alert-dialog-overlay" (click)="cancelAction()"></div>
+    <section class="alert-dialog" role="alertdialog" aria-modal="true">
+      <div class="alert-dialog-header">
+        <h2 class="alert-dialog-title">
+          {{ isApproveAction() ? 'Aprovar recuperação de senha?' : 'Rejeitar recuperação de senha?' }}
+        </h2>
+        <p class="alert-dialog-description">
+          @if (isApproveAction()) {
+            Ao confirmar, a solicitação será autorizada e a senha do usuário será alterada pelo
+            backend quando a integração estiver disponível.
+          } @else {
+            A solicitação será encerrada sem alterar a senha do usuário.
+          }
+        </p>
+      </div>
+      <div class="alert-dialog-footer">
+        <button class="btn btn-secondary" type="button" (click)="cancelAction()">Cancelar</button>
+        @if (isApproveAction()) {
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-confirm-approve-recovery
+            [disabled]="operationInProgressId() === pending.request.id"
+            (click)="confirmAction()"
+          >
+            Aprovar
+          </button>
+        } @else {
+          <button
+            class="btn btn-danger"
+            type="button"
+            data-confirm-reject-recovery
+            [disabled]="operationInProgressId() === pending.request.id"
+            (click)="confirmAction()"
+          >
+            Rejeitar
+          </button>
+        }
+      </div>
+    </section>
+  }
+</main>

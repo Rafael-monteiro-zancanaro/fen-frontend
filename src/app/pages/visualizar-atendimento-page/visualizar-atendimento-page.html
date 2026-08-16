@@ -1,0 +1,176 @@
+<main data-page="visualizar-atendimento" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    @if (attendance(); as currentAttendance) {
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="mb-2 text-sm font-semibold text-uem-700">Atendimento farmacêutico</p>
+          <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">
+            {{ currentAttendance.patient.name }}
+          </h1>
+          <p class="mt-2 text-sm text-app-muted-foreground">
+            {{ serviceLabels(currentAttendance) }}
+          </p>
+        </div>
+
+        <a class="btn btn-secondary" routerLink="/atendimentos">Voltar para listagem</a>
+      </div>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Dados do atendimento</h2>
+          <span [class]="statusBadgeClass(currentAttendance.status)">
+            {{ statusLabel(currentAttendance.status) }}
+          </span>
+        </div>
+        <div class="card-content grid gap-4 md:grid-cols-3">
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">CPF</p>
+            <p class="mt-1 font-semibold text-app-foreground">
+              {{ formatCpf(currentAttendance.patient.cpf) }}
+            </p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Data de nascimento</p>
+            <p class="mt-1">{{ formatDate(currentAttendance.patient.birthDate) }}</p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Celular</p>
+            <p class="mt-1">{{ currentAttendance.patient.cellPhone }}</p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Cidade/UF</p>
+            <p class="mt-1">{{ currentAttendance.patient.city }} - {{ currentAttendance.patient.state }}</p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Data do atendimento</p>
+            <p class="mt-1">{{ formatDate(currentAttendance.createdAt) }}</p>
+          </div>
+        </div>
+      </section>
+
+      @if (currentAttendance.care) {
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">Cuidados farmacêuticos</h2>
+          </div>
+          <div class="card-content grid gap-4 md:grid-cols-4">
+            <div>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">Glicemia capilar</p>
+              <p class="mt-1">{{ currentAttendance.care.bloodGlucose || 'Não informado' }}</p>
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">Pressão arterial</p>
+              <p class="mt-1">
+                {{ currentAttendance.care.systolicPressure || '-' }} x
+                {{ currentAttendance.care.diastolicPressure || '-' }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">Temperatura</p>
+              <p class="mt-1">{{ currentAttendance.care.bodyTemperature || 'Não informado' }}</p>
+            </div>
+          </div>
+        </section>
+      }
+
+      @if (currentAttendance.injectable) {
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">Aplicação de injetáveis</h2>
+          </div>
+          <div class="card-content grid gap-4">
+            <p class="text-sm text-app-muted-foreground">
+              Via de administração: {{ currentAttendance.injectable.administrationRoute || 'Não informada' }}
+            </p>
+            <ng-container
+              [ngTemplateOutlet]="medicationTable"
+              [ngTemplateOutletContext]="{ items: currentAttendance.injectable.medications }"
+            />
+          </div>
+        </section>
+      }
+
+      @if (currentAttendance.inhalotherapy) {
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">Inaloterapia</h2>
+          </div>
+          <div class="card-content grid gap-4">
+            <p class="text-sm text-app-muted-foreground">
+              Prescritor: {{ currentAttendance.inhalotherapy.prescriberName || 'Não informado' }}
+            </p>
+            <ng-container
+              [ngTemplateOutlet]="medicationTable"
+              [ngTemplateOutletContext]="{ items: currentAttendance.inhalotherapy.medications }"
+            />
+          </div>
+        </section>
+      }
+
+      @if (currentAttendance.complementaryServices) {
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">Serviços farmacêuticos</h2>
+          </div>
+          <div class="card-content grid gap-4">
+            <p>{{ currentAttendance.complementaryServices.signsAndSymptoms || 'Sem sinais e sintomas informados.' }}</p>
+            <ng-container
+              [ngTemplateOutlet]="medicationTable"
+              [ngTemplateOutletContext]="{ items: currentAttendance.complementaryServices.medications }"
+            />
+          </div>
+        </section>
+      }
+
+      @if (currentAttendance.followUp) {
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">Acompanhamento</h2>
+          </div>
+          <div class="card-content">
+            <p>
+              Retornar a cada {{ currentAttendance.followUp.returnIntervalDays }} dias,
+              {{ currentAttendance.followUp.returnCount }} vezes.
+            </p>
+            <p class="mt-2 text-sm text-app-muted-foreground">
+              Situação atual: {{ statusLabel(currentAttendance.status) }}
+            </p>
+          </div>
+        </section>
+      }
+    } @else {
+      <section class="empty">
+        <h1 class="empty-title">Atendimento não encontrado</h1>
+        <p class="empty-description">Retorne para a listagem e selecione outro atendimento.</p>
+        <a class="btn btn-secondary w-fit" routerLink="/atendimentos">Voltar para listagem</a>
+      </section>
+    }
+  </section>
+
+  <ng-template #medicationTable let-items="items">
+    @if (hasMedicationItems(items)) {
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Medicamento/concentração</th>
+              <th>Lote</th>
+              <th>Validade</th>
+              <th>Posologia</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of items; track item.id) {
+              <tr>
+                <td class="font-semibold text-app-foreground">{{ item.medicationConcentration }}</td>
+                <td>{{ item.batch }}</td>
+                <td>{{ formatDate(item.expirationDate) }}</td>
+                <td>{{ item.dosage }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </ng-template>
+</main>

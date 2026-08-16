@@ -1,0 +1,139 @@
+<main data-page="medicamentos" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="mb-2 text-sm font-semibold text-uem-700">Medicamentos</p>
+        <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">Medicamentos</h1>
+        <p class="mt-2 max-w-2xl text-sm leading-6 text-app-muted-foreground">
+          Consulte e mantenha os medicamentos usados nos fluxos da Farmácia Ensino.
+        </p>
+      </div>
+
+      <a class="btn btn-primary" routerLink="/medicamentos/novo">Cadastrar medicamento</a>
+    </div>
+
+    @if (medications().length === 0) {
+      <section class="empty">
+        <div class="empty-icon" aria-hidden="true">+</div>
+        <h2 class="empty-title">Nenhum medicamento cadastrado</h2>
+        <p class="empty-description">
+          Cadastre o primeiro medicamento para utilizá-lo em atendimentos e interações.
+        </p>
+        <a class="btn btn-primary" routerLink="/medicamentos/novo">Cadastrar medicamento</a>
+      </section>
+    } @else {
+      <section class="card">
+        <div class="card-content">
+          <div class="data-table-toolbar">
+            <div class="field min-w-64 flex-1">
+              <label for="medicationSearch" class="label">Pesquisar medicamentos</label>
+              <input
+                id="medicationSearch"
+                class="input"
+                type="search"
+                [ngModel]="searchTerm()"
+                (ngModelChange)="updateSearchTerm($event)"
+                placeholder="Buscar por nome, unidade ou via"
+              />
+            </div>
+          </div>
+
+          @if (filteredMedications().length === 0) {
+            <div class="empty">
+              <h2 class="empty-title">Nenhum resultado encontrado</h2>
+              <p class="empty-description">
+                Ajuste os termos da busca para localizar outro medicamento cadastrado.
+              </p>
+            </div>
+          } @else {
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Concentração</th>
+                    <th>Via de administração</th>
+                    <th class="w-44">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (medication of paginatedMedications(); track medication.id) {
+                    <tr>
+                      <td class="font-semibold text-app-foreground">{{ medication.name }}</td>
+                      <td>{{ medication.measurementUnit }}</td>
+                      <td>{{ medication.administrationRoute }}</td>
+                      <td>
+                        <div class="flex flex-nowrap gap-2" data-medication-actions>
+                          <a
+                            class="btn btn-secondary btn-icon btn-sm"
+                            [routerLink]="['/medicamentos', medication.id]"
+                            aria-label="Visualizar medicamento"
+                            title="Visualizar medicamento"
+                          >
+                            <ng-icon name="bootstrapEye" size="1rem" />
+                          </a>
+                          <a
+                            class="btn btn-secondary btn-icon btn-sm"
+                            [routerLink]="['/medicamentos', medication.id, 'editar']"
+                            aria-label="Editar medicamento"
+                            title="Editar medicamento"
+                          >
+                            <ng-icon name="bootstrapPencil" size="1rem" />
+                          </a>
+                          <button
+                            class="btn btn-danger btn-icon btn-sm"
+                            type="button"
+                            aria-label="Excluir medicamento"
+                            title="Excluir medicamento"
+                            [attr.data-delete-medication-id]="medication.id"
+                            (click)="askToDelete(medication)"
+                          >
+                            <ng-icon name="bootstrapTrash" size="1rem" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <app-pagination-controls
+              [pagination]="pagination()"
+              summaryId="medications"
+              pageSizeSelectId="medicationPageSize"
+              itemLabel="medicamento(s)"
+              (previousPage)="goToPreviousPage()"
+              (nextPage)="goToNextPage()"
+              (pageSizeChange)="updatePageSize($event)"
+            />
+          }
+        </div>
+      </section>
+    }
+  </section>
+
+  @if (medicationPendingDeletion(); as medication) {
+    <div class="alert-dialog-overlay" (click)="cancelDeletion()"></div>
+    <section class="alert-dialog" role="alertdialog" aria-modal="true">
+      <div class="alert-dialog-header">
+        <h2 class="alert-dialog-title">Excluir medicamento</h2>
+        <p class="alert-dialog-description">
+          Confirme a exclusão de {{ medication.name }}. Esta ação também remove sua associação de
+          interações em comorbidades cadastradas.
+        </p>
+      </div>
+      <div class="alert-dialog-footer">
+        <button class="btn btn-secondary" type="button" (click)="cancelDeletion()">Cancelar</button>
+        <button
+          class="btn btn-danger"
+          type="button"
+          data-confirm-delete-medication
+          (click)="confirmDeletion()"
+        >
+          Excluir
+        </button>
+      </div>
+    </section>
+  }
+</main>

@@ -1,0 +1,70 @@
+<main data-page="visualizar-comorbidade" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    @if (comorbidity(); as currentComorbidity) {
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="mb-2 text-sm font-semibold text-uem-700">Comorbidades</p>
+          <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">
+            {{ currentComorbidity.name }}
+          </h1>
+        </div>
+
+        <a class="btn btn-secondary" routerLink="/comorbidades">Voltar para listagem</a>
+      </div>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Dados da comorbidade</h2>
+          <p class="card-description">Informações cadastradas para consulta.</p>
+        </div>
+
+        <div class="card-content">
+          <p class="text-xs font-bold uppercase text-app-muted-foreground">Nome</p>
+          <p class="mt-1 font-semibold text-app-foreground">{{ currentComorbidity.name }}</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Medicamentos com interação</h2>
+          <p class="card-description">
+            Medicamentos relacionados a esta comorbidade no cadastro de interações.
+          </p>
+        </div>
+
+        <div class="card-content">
+          @if (interactionMedications().length === 0) {
+            <div class="empty">
+              <h3 class="empty-title">Nenhum medicamento associado</h3>
+              <p class="empty-description">
+                Esta comorbidade não possui interações cadastradas no momento.
+              </p>
+            </div>
+          } @else {
+            <div class="grid gap-3 md:grid-cols-2">
+              @for (medication of interactionMedications(); track medication.id) {
+                <article class="attachment">
+                  <div class="attachment-content">
+                    <h3 class="attachment-name">{{ medication.name }}</h3>
+                    <p class="attachment-meta">
+                      {{ medication.measurementUnit }} · {{ medication.administrationRoute }}
+                    </p>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    } @else {
+      <div class="alert alert-warning">
+        <span class="marker marker-warning"></span>
+        <div>
+          <p class="alert-title">Comorbidade não encontrada</p>
+          <p class="alert-description">Retorne para a listagem e selecione outra comorbidade.</p>
+        </div>
+      </div>
+      <a class="btn btn-secondary w-fit" routerLink="/comorbidades">Voltar para listagem</a>
+    }
+  </section>
+</main>

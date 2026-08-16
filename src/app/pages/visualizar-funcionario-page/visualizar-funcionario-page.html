@@ -1,0 +1,187 @@
+<main data-page="visualizar-funcionario" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    @if (employee(); as currentEmployee) {
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="mb-2 text-sm font-semibold text-uem-700">Funcionários</p>
+          <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">
+            {{ currentEmployee.name }}
+          </h1>
+        </div>
+
+        <a class="btn btn-secondary" routerLink="/admin/funcionarios">Voltar para listagem</a>
+      </div>
+
+      @if (successMessage()) {
+        <div class="alert alert-success">
+          <span class="marker marker-success"></span>
+          <div>
+            <p class="alert-title">{{ successMessage() }}</p>
+            <p class="alert-description">O cadastro exibido foi atualizado.</p>
+          </div>
+        </div>
+      }
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Dados gerais</h2>
+          <p class="card-description">Informações cadastrais disponíveis para consulta.</p>
+        </div>
+
+        <div class="card-content grid gap-4 sm:grid-cols-2">
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Nome</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ currentEmployee.name }}</p>
+          </div>
+
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">E-mail</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ currentEmployee.email }}</p>
+          </div>
+
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">CPF</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ formatCpf(currentEmployee.cpf) }}</p>
+          </div>
+
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Data de nascimento</p>
+            <p class="mt-1 font-semibold text-app-foreground">
+              {{ formatDate(currentEmployee.birthDate) }}
+            </p>
+          </div>
+
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Tipo</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ roleLabel(currentEmployee) }}</p>
+          </div>
+
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Situação</p>
+            <p class="mt-1"><span class="badge badge-success">{{ currentEmployee.status }}</span></p>
+          </div>
+        </div>
+      </section>
+
+      @if (currentEmployee.role !== 'ESTAGIARIO') {
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">Dados profissionais</h2>
+            <p class="card-description">Informações específicas do farmacêutico.</p>
+          </div>
+
+          <div class="card-content grid gap-4 sm:grid-cols-2">
+            <div>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">CRF</p>
+              <p class="mt-1 font-semibold text-app-foreground">{{ currentEmployee.crf }}</p>
+            </div>
+
+            <div>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">Responsável técnico</p>
+              <p class="mt-1">
+                <span class="badge" [class.badge-success]="currentEmployee.isTechnicalResponsible" [class.badge-secondary]="!currentEmployee.isTechnicalResponsible">
+                  {{ currentEmployee.isTechnicalResponsible ? 'Sim' : 'Não' }}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div class="card-footer justify-end">
+            <button
+              class="btn"
+              [class.btn-primary]="!currentEmployee.isTechnicalResponsible"
+              [class.btn-danger]="currentEmployee.isTechnicalResponsible"
+              type="button"
+              data-toggle-technical-responsible
+              (click)="openTechnicalResponsibleDialog()"
+            >
+              {{
+                currentEmployee.isTechnicalResponsible
+                  ? 'Remover responsabilidade técnica'
+                  : 'Definir como responsável técnico'
+              }}
+            </button>
+          </div>
+        </section>
+      } @else {
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">Dados do estágio</h2>
+            <p class="card-description">Informações específicas do vínculo de estágio.</p>
+          </div>
+
+          <div class="card-content grid gap-4 sm:grid-cols-2">
+            <div>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">Tipo do estágio</p>
+              <p class="mt-1 font-semibold text-app-foreground">{{ currentEmployee.internshipType }}</p>
+            </div>
+
+            <div>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">Supervisor</p>
+              <p class="mt-1 font-semibold text-app-foreground">{{ currentEmployee.supervisorName }}</p>
+            </div>
+
+            <div>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">Início da vigência</p>
+              <p class="mt-1 font-semibold text-app-foreground">
+                {{ formatDate(currentEmployee.internshipStartDate) }}
+              </p>
+            </div>
+
+            <div>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">Fim da vigência</p>
+              <p class="mt-1 font-semibold text-app-foreground">
+                {{ formatDate(currentEmployee.internshipEndDate) }}
+              </p>
+            </div>
+          </div>
+        </section>
+      }
+    } @else {
+      <div class="alert alert-warning">
+        <span class="marker marker-warning"></span>
+        <div>
+          <p class="alert-title">Funcionário não encontrado</p>
+          <p class="alert-description">Retorne para a listagem e selecione outro funcionário.</p>
+        </div>
+      </div>
+      <a class="btn btn-secondary w-fit" routerLink="/admin/funcionarios">Voltar para listagem</a>
+    }
+  </section>
+
+  @if (showTechnicalResponsibleDialog() && employee(); as currentEmployee) {
+    <div class="alert-dialog-overlay" (click)="closeTechnicalResponsibleDialog()"></div>
+    <section class="alert-dialog" role="alertdialog" aria-modal="true">
+      <div class="alert-dialog-header">
+        <h2 class="alert-dialog-title">
+          {{
+            isTechnicalResponsible(currentEmployee)
+              ? 'Remover responsabilidade técnica?'
+              : 'Definir como responsável técnico?'
+          }}
+        </h2>
+        <p class="alert-dialog-description">
+          @if (isTechnicalResponsible(currentEmployee)) {
+            O funcionário deixará de ser identificado como responsável técnico.
+          } @else {
+            O funcionário passará a ser identificado como responsável técnico da farmácia.
+          }
+        </p>
+      </div>
+      <div class="alert-dialog-footer">
+        <button class="btn btn-secondary" type="button" (click)="closeTechnicalResponsibleDialog()">
+          Cancelar
+        </button>
+        <button
+          class="btn btn-primary"
+          type="button"
+          data-confirm-technical-responsible
+          [disabled]="isUpdatingTechnicalResponsible()"
+          (click)="confirmTechnicalResponsibleChange()"
+        >
+          Confirmar
+        </button>
+      </div>
+    </section>
+  }
+</main>

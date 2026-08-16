@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { TemporaryAccessControl } from './domain/temporary-access-control';
 
 @Component({
   selector: 'app-root',
@@ -8,9 +9,22 @@ import { Router, RouterLink, RouterOutlet } from '@angular/router';
   styleUrl: './app.css',
 })
 export class App {
-  constructor(private readonly router: Router) {}
+  constructor(
+    private readonly accessControl: TemporaryAccessControl,
+    private readonly router: Router,
+  ) {}
 
   protected isInternalNavigation(): boolean {
-    return this.router.url.startsWith('/inicio') || this.router.url.startsWith('/atendimentos');
+    return (
+      this.router.url.startsWith('/inicio') ||
+      this.router.url.startsWith('/atendimentos') ||
+      this.router.url.startsWith('/medicamentos') ||
+      this.router.url.startsWith('/comorbidades') ||
+      this.router.url.startsWith('/admin')
+    );
+  }
+
+  protected canManagePasswordRecovery(): boolean {
+    return this.accessControl.canAccessAdminModules();
   }
 }

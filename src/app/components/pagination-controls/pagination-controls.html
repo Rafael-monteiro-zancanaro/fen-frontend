@@ -1,0 +1,44 @@
+<div class="data-table-footer">
+  <p [attr.data-pagination-summary]="summaryId">
+    Exibindo {{ pagination.startItem }}-{{ pagination.endItem }} de {{ pagination.totalItems }}
+    {{ itemLabel }}
+  </p>
+
+  <div class="flex flex-wrap items-center gap-3">
+    <label class="label mb-0" [for]="pageSizeSelectId">Registros por página</label>
+    <select
+      class="native-select w-24"
+      [id]="pageSizeSelectId"
+      [value]="pagination.pageSize"
+      (change)="updatePageSize($any($event.target).value)"
+    >
+      @for (option of pageSizeOptions; track option) {
+        <option [value]="option">{{ option }}</option>
+      }
+    </select>
+
+    <div class="button-group" aria-label="Paginação">
+      <button
+        class="btn btn-secondary btn-sm"
+        type="button"
+        [attr.data-previous-page]="summaryId"
+        [disabled]="pagination.currentPage <= 1"
+        (click)="previousPage.emit()"
+      >
+        Anterior
+      </button>
+      <span class="btn btn-secondary btn-sm" aria-current="page">
+        Página {{ pagination.currentPage }} de {{ pagination.totalPages }}
+      </span>
+      <button
+        class="btn btn-secondary btn-sm"
+        type="button"
+        [attr.data-next-page]="summaryId"
+        [disabled]="pagination.currentPage >= pagination.totalPages"
+        (click)="nextPage.emit()"
+      >
+        Próxima
+      </button>
+    </div>
+  </div>
+</div>

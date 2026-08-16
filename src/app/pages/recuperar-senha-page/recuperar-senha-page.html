@@ -1,0 +1,95 @@
+<main data-page="recuperar-senha" class="flex flex-1 items-center justify-center px-4 py-8 md:py-10">
+  <section class="grid w-full max-w-5xl grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_28rem]">
+    <div class="flex flex-col justify-start gap-6">
+      <div class="max-w-2xl">
+        <p class="mb-3 text-sm font-semibold text-uem-700">Recuperação de senha</p>
+        <h1 class="text-3xl font-semibold leading-tight text-app-foreground md:text-4xl">
+          Solicitar alteração de senha
+        </h1>
+        <p class="mt-4 max-w-xl text-base leading-7 text-app-muted-foreground">
+          Envie a solicitação para análise administrativa. A senha só será alterada após aprovação.
+        </p>
+      </div>
+    </div>
+
+    <form class="card w-full" (submit)="submitRequest(); $event.preventDefault()">
+      <div class="card-content flex flex-col gap-4">
+        @if (requestSent()) {
+          <div class="alert alert-success">
+            <span class="marker marker-success"></span>
+            <div>
+              <p class="alert-title">Solicitação enviada com sucesso</p>
+              <p class="alert-description">
+                A alteração da senha será realizada após aprovação.
+              </p>
+            </div>
+          </div>
+        }
+
+        <div class="field">
+          <label for="recoveryEmail" class="label label-required">E-mail</label>
+          <input
+            id="recoveryEmail"
+            class="input"
+            type="email"
+            name="recoveryEmail"
+            autocomplete="email"
+            placeholder="seu.email@uem.br"
+            [(ngModel)]="email"
+            [attr.aria-invalid]="isEmailRequired() || isEmailInvalid()"
+          />
+          @if (isEmailRequired()) {
+            <p class="field-error" data-field-error="recovery-email">E-mail é obrigatório.</p>
+          } @else if (isEmailInvalid()) {
+            <p class="field-error" data-field-error="recovery-email">Informe um e-mail válido.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="newPassword" class="label label-required">Nova senha</label>
+          <input
+            id="newPassword"
+            class="input"
+            type="password"
+            name="newPassword"
+            autocomplete="new-password"
+            [(ngModel)]="newPassword"
+            [attr.aria-invalid]="isNewPasswordInvalid()"
+          />
+          @if (isNewPasswordInvalid()) {
+            <p class="field-error" data-field-error="new-password">Nova senha é obrigatória.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="confirmNewPassword" class="label label-required">Confirmação da nova senha</label>
+          <input
+            id="confirmNewPassword"
+            class="input"
+            type="password"
+            name="confirmNewPassword"
+            autocomplete="new-password"
+            [(ngModel)]="confirmation"
+            [attr.aria-invalid]="isConfirmationInvalid() || isConfirmationMismatch()"
+          />
+          @if (isConfirmationInvalid()) {
+            <p class="field-error" data-field-error="password-confirmation">
+              Confirmação da nova senha é obrigatória.
+            </p>
+          } @else if (isConfirmationMismatch()) {
+            <p class="field-error" data-field-error="password-confirmation">
+              As senhas devem ser iguais.
+            </p>
+          }
+        </div>
+      </div>
+
+      <div class="card-footer flex-col items-stretch sm:flex-row sm:justify-between">
+        <a class="btn btn-link text-sm" routerLink="/login">Voltar ao login</a>
+        <button class="btn btn-primary w-full sm:w-auto" type="submit">
+          Enviar solicitação
+        </button>
+      </div>
+    </form>
+  </section>
+</main>

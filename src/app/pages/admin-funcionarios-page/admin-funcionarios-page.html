@@ -1,0 +1,118 @@
+<main data-page="admin-funcionarios" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    <div>
+      <p class="mb-2 text-sm font-semibold text-uem-700">Administração</p>
+      <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">Funcionários</h1>
+      <p class="mt-2 max-w-2xl text-sm leading-6 text-app-muted-foreground">
+        Consulte a equipe cadastrada e acesse os detalhes profissionais.
+      </p>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="alert alert-danger">
+        <span class="marker marker-danger"></span>
+        <div>
+          <p class="alert-title">Não foi possível carregar os funcionários</p>
+          <p class="alert-description">{{ errorMessage() }}</p>
+        </div>
+      </div>
+    }
+
+    @if (isLoading()) {
+      <section class="card p-5">
+        <div class="skeleton h-6 w-52"></div>
+        <div class="mt-4 grid gap-3">
+          <div class="skeleton h-10 w-full"></div>
+          <div class="skeleton h-10 w-full"></div>
+        </div>
+      </section>
+    } @else if (employees().length === 0) {
+      <section class="empty">
+        <h2 class="empty-title">Nenhum funcionário cadastrado.</h2>
+        <p class="empty-description">
+          Os funcionários aparecerão aqui quando forem disponibilizados pela integração.
+        </p>
+      </section>
+    } @else {
+      <section class="card">
+        <div class="card-content">
+          <div class="data-table-toolbar">
+            <div class="field min-w-64 flex-1">
+              <label for="employeeSearch" class="label">Pesquisar funcionários</label>
+              <input
+                id="employeeSearch"
+                class="input"
+                type="search"
+                [ngModel]="searchTerm()"
+                (ngModelChange)="updateSearchTerm($event)"
+                placeholder="Buscar por nome ou e-mail"
+              />
+            </div>
+          </div>
+
+          @if (filteredEmployees().length === 0) {
+            <div class="empty">
+              <h2 class="empty-title">Nenhum resultado encontrado</h2>
+              <p class="empty-description">
+                Ajuste os termos da busca para localizar outro funcionário.
+              </p>
+            </div>
+          } @else {
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Tipo</th>
+                    <th>Situação</th>
+                    <th class="w-24">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (employee of paginatedEmployees(); track employee.id) {
+                    <tr>
+                      <td class="font-semibold text-app-foreground">
+                        <div class="flex flex-wrap items-center gap-2">
+                          {{ employee.name }}
+                          @if (isTechnicalResponsible(employee)) {
+                            <span class="badge badge-primary">Responsável técnico</span>
+                          }
+                        </div>
+                      </td>
+                      <td>{{ employee.email }}</td>
+                      <td>{{ roleLabel(employee) }}</td>
+                      <td><span class="badge badge-success">{{ employee.status }}</span></td>
+                      <td>
+                        <div class="flex flex-nowrap gap-2" data-employee-actions>
+                          <a
+                            class="btn btn-secondary btn-icon btn-sm"
+                            [routerLink]="['/admin/funcionarios', employee.id]"
+                            aria-label="Visualizar funcionário"
+                            title="Visualizar funcionário"
+                          >
+                            <ng-icon name="bootstrapEye" size="1rem" />
+                          </a>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <app-pagination-controls
+              [pagination]="pagination()"
+              summaryId="employees"
+              pageSizeSelectId="employeePageSize"
+              itemLabel="funcionário(s)"
+              (previousPage)="goToPreviousPage()"
+              (nextPage)="goToNextPage()"
+              (pageSizeChange)="updatePageSize($event)"
+            />
+          }
+        </div>
+      </section>
+    }
+  </section>
+</main>
