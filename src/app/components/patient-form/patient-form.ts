@@ -15,6 +15,7 @@ export class PatientForm {
   @Input({ required: true }) patient!: PatientInput;
   @Input() errors: Record<string, string> = {};
   @Input() cpfLookupEnabled = true;
+  @Input() cpfReadonly = false;
   @Output() readonly patientSelected = new EventEmitter<Patient | null>();
 
   protected readonly brazilianStates = BRAZILIAN_STATES;
@@ -74,6 +75,11 @@ export class PatientForm {
   }
 
   protected updateCpf(input: HTMLInputElement): void {
+    if (this.cpfReadonly) {
+      input.value = this.patient.cpf;
+      return;
+    }
+
     const cpf = onlyDigits(input.value);
     this.patient.cpf = maskCpf(cpf);
     input.value = this.patient.cpf;

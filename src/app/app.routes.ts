@@ -52,6 +52,10 @@ export const routes: Routes = [
     component: ServicosFarmaceuticosPage,
   },
   {
+    path: 'atendimentos/:id/continuar',
+    component: ServicosFarmaceuticosPage,
+  },
+  {
     path: 'atendimentos/:id',
     component: VisualizarAtendimentoPage,
   },

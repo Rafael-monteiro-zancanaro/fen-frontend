@@ -651,6 +651,114 @@ describe('App', () => {
     ).toBeNull();
   });
 
+  it('should continue a follow-up attendance from the listing as a new linked attendance', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const initialAttendance = attendanceStore.createAttendance({
+      patient: {
+        name: 'Carlos Lima',
+        cpf: '55566677788',
+        birthDate: '1981-05-05',
+        cellPhone: '44933333333',
+        gender: 'masculino',
+        address: 'Rua A',
+        city: 'Maringá',
+        state: 'PR',
+        phone: '',
+        responsibleName: '',
+      },
+      selectedServices: ['servicos-farmaceuticos'],
+      care: null,
+      injectable: null,
+      inhalotherapy: null,
+      complementaryServices: {
+        homeCare: false,
+        pharmacotherapeuticFollowUp: true,
+        minorDisorderIndication: false,
+        signsAndSymptoms: 'Acompanhamento',
+        medications: [
+          {
+            id: 'item-1',
+            medicationConcentration: 'Medicamento A',
+            batch: 'A1',
+            expirationDate: '2027-01-01',
+            dosage: '1 vez ao dia',
+          },
+        ],
+        recordNumber: '',
+        attendanceDate: '2026-08-16',
+      },
+      followUp: {
+        returnIntervalDays: 7,
+        returnCount: 2,
+      },
+    });
+
+    await router.navigateByUrl('/atendimentos');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    let compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('thead')?.textContent).toContain('Código');
+    expect(compiled.querySelector('tbody')?.textContent).toContain(
+      String(initialAttendance.codigo),
+    );
+    expect(
+      compiled.querySelector(`[data-continue-attendance-id="${initialAttendance.id}"]`)
+        ?.textContent,
+    ).toContain('Prosseguir atendimento (1 de 2)');
+
+    compiled
+      .querySelector<HTMLElement>(`[data-continue-attendance-id="${initialAttendance.id}"]`)
+      ?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    compiled = fixture.nativeElement as HTMLElement;
+
+    expect(router.url).toBe(`/atendimentos/${initialAttendance.id}/continuar`);
+    expect(
+      compiled.querySelector('main[data-page="servicos-farmaceuticos"] h1')?.textContent,
+    ).toContain('Continuar atendimento');
+    expect(compiled.querySelector('[data-follow-up-context]')?.textContent).toContain(
+      'Retorno 1 de 2',
+    );
+    expect(compiled.querySelector('[data-follow-up-context]')?.textContent).toContain(
+      `Atendimento anterior: #${initialAttendance.codigo}`,
+    );
+    expect(compiled.querySelector<HTMLInputElement>('#cpfUsuario')?.value).toBe('555.666.777-88');
+    expect(compiled.querySelector<HTMLInputElement>('#nomeUsuario')?.value).toBe('Carlos Lima');
+    expect(compiled.querySelector('button[data-consult-patient]')).toBeNull();
+    expect(compiled.querySelector('#acompanhamento')).toBeNull();
+
+    compiled.querySelector<HTMLInputElement>('#enableCuidadosFarmaceuticos')?.click();
+    fixture.detectChanges();
+    const bloodGlucose = compiled.querySelector<HTMLInputElement>('#glicemiaCapilar');
+
+    if (!bloodGlucose) {
+      throw new Error('Blood glucose input was not rendered.');
+    }
+
+    bloodGlucose.value = '98';
+    bloodGlucose.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    compiled.querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const followUpReturn = attendanceStore.attendances()[0];
+
+    expect(router.url).toBe('/atendimentos');
+    expect(followUpReturn.id).not.toBe(initialAttendance.id);
+    expect(followUpReturn.codigo).toBeGreaterThan(initialAttendance.codigo);
+    expect(followUpReturn.patient.id).toBe(initialAttendance.patient.id);
+    expect(followUpReturn.followUpLink?.previousAttendanceId).toBe(initialAttendance.id);
+    expect(followUpReturn.followUpLink?.returnNumber).toBe(1);
+    expect(followUpReturn.followUp).toEqual(initialAttendance.followUp);
+    expect(followUpReturn.status).toBe('AGUARDANDO_RETORNO');
+    expect(attendanceStore.getAttendance(initialAttendance.id)?.status).toBe('CONCLUIDO');
+  });
+
   it('should show a read-only pharmaceutical service attendance detail page', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
@@ -712,6 +820,82 @@ describe('App', () => {
       compiled.querySelector('main[data-page="visualizar-atendimento"]')?.textContent,
     ).toContain('Retornar a cada 7 dias, 3 vezes');
     expect(compiled.querySelector('form')).toBeNull();
+  });
+
+  it('should show business code and follow-up history in attendance details', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const initialAttendance = attendanceStore.createAttendance({
+      patient: {
+        name: 'Bruna Santos',
+        cpf: '44455566677',
+        birthDate: '1990-06-06',
+        cellPhone: '44922222222',
+        gender: 'feminino',
+        address: 'Rua A',
+        city: 'Maringá',
+        state: 'PR',
+        phone: '',
+        responsibleName: '',
+      },
+      selectedServices: ['inaloterapia'],
+      care: null,
+      injectable: null,
+      inhalotherapy: {
+        medications: [
+          {
+            id: 'item-1',
+            medicationConcentration: 'Soro fisiológico',
+            batch: 'S1',
+            expirationDate: '2027-01-01',
+            dosage: 'Nebulização',
+          },
+        ],
+        prescriberName: 'Dra. Ana',
+        crmCro: 'CRM 123',
+      },
+      complementaryServices: null,
+      followUp: {
+        returnIntervalDays: 7,
+        returnCount: 2,
+      },
+    });
+    const firstReturn = attendanceStore.createFollowUpReturn(initialAttendance.id, {
+      patient: initialAttendance.patient,
+      selectedServices: ['cuidados-farmaceuticos'],
+      care: {
+        bloodGlucose: '98',
+        systolicPressure: '',
+        diastolicPressure: '',
+        bodyTemperature: '',
+      },
+      injectable: null,
+      inhalotherapy: null,
+      complementaryServices: null,
+      followUp: null,
+    });
+
+    await router.navigateByUrl(`/atendimentos/${firstReturn!.id}`);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(
+      compiled.querySelector('main[data-page="visualizar-atendimento"] h1')?.textContent,
+    ).toContain(`#${firstReturn?.codigo}`);
+    expect(compiled.querySelector('[data-attendance-code]')?.textContent).toContain(
+      String(firstReturn?.codigo),
+    );
+    expect(compiled.querySelector('[data-follow-up-history]')?.textContent).toContain(
+      'Atendimento inicial',
+    );
+    expect(compiled.querySelector('[data-follow-up-history]')?.textContent).toContain('1º retorno');
+    expect(compiled.querySelector('[data-follow-up-history]')?.textContent).toContain('2º retorno');
+    expect(compiled.querySelector('[data-follow-up-history]')?.textContent).toContain('Pendente');
+    expect(
+      compiled.querySelector(`[data-follow-up-history-link="${initialAttendance.id}"]`),
+    ).toBeTruthy();
   });
 
   it('should render the pharmaceutical services form with patient lookup and optional steps', async () => {
@@ -1087,6 +1271,90 @@ describe('App', () => {
       'Dipirona',
     );
     expect(attendanceStore.attendances()).toHaveLength(0);
+  });
+
+  it('should show medication draft validation errors in all medication service steps', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const clinicalStore = TestBed.inject(TemporaryClinicalRecordsStore);
+    const dipirona = clinicalStore.createMedication({
+      name: 'Dipirona',
+      measurementUnit: '500 mg',
+      administrationRoute: 'Oral',
+    });
+
+    await router.navigateByUrl('/atendimentos/novo');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    const setInput = (selector: string, value: string): void => {
+      const input = compiled.querySelector<HTMLInputElement>(selector);
+
+      if (!input) {
+        throw new Error(`${selector} was not rendered.`);
+      }
+
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    };
+
+    const enableAndSelectMedication = (enableSelector: string, inputSelector: string): void => {
+      compiled.querySelector<HTMLInputElement>(enableSelector)?.click();
+      fixture.detectChanges();
+      setInput(inputSelector, 'dipi');
+      compiled
+        .querySelector<HTMLButtonElement>(`button[data-select-medication-id="${dipirona.id}"]`)
+        ?.click();
+      fixture.detectChanges();
+    };
+
+    enableAndSelectMedication('#enableAplicacaoInjetaveis', '#medicamentoInjetavel');
+    compiled.querySelector<HTMLButtonElement>('button[data-add-medication="injectable"]')?.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('[data-field-error="injectable-batch"]')?.textContent).toContain(
+      'Informe o lote.',
+    );
+    expect(
+      compiled.querySelector('[data-field-error="injectable-expiration-date"]')?.textContent,
+    ).toContain('Informe a validade.');
+    expect(compiled.querySelector('[data-field-error="injectable-dosage"]')?.textContent).toContain(
+      'Informe a posologia.',
+    );
+
+    enableAndSelectMedication('#enableInaloterapia', '#medicamentoInaloterapia');
+    compiled
+      .querySelector<HTMLButtonElement>('button[data-add-medication="inaloterapia"]')
+      ?.click();
+    fixture.detectChanges();
+
+    expect(
+      compiled.querySelector('[data-field-error="inhalotherapy-batch"]')?.textContent,
+    ).toContain('Informe o lote.');
+    expect(
+      compiled.querySelector('[data-field-error="inhalotherapy-expiration-date"]')?.textContent,
+    ).toContain('Informe a validade.');
+    expect(
+      compiled.querySelector('[data-field-error="inhalotherapy-dosage"]')?.textContent,
+    ).toContain('Informe a posologia.');
+
+    enableAndSelectMedication('#enableServicosFarmaceuticos', '#medicamentoAcompanhamento');
+    compiled
+      .querySelector<HTMLButtonElement>('button[data-add-medication="complementary"]')
+      ?.click();
+    fixture.detectChanges();
+
+    expect(
+      compiled.querySelector('[data-field-error="complementary-batch"]')?.textContent,
+    ).toContain('Informe o lote.');
+    expect(
+      compiled.querySelector('[data-field-error="complementary-expiration-date"]')?.textContent,
+    ).toContain('Informe a validade.');
+    expect(
+      compiled.querySelector('[data-field-error="complementary-dosage"]')?.textContent,
+    ).toContain('Informe a posologia.');
   });
 
   it('should show non-blocking warnings for values above reference ranges', async () => {
@@ -1829,9 +2097,9 @@ describe('App', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(compiled.querySelector('main[data-page="visualizar-paciente"] h1')?.textContent).toContain(
-      'Maria Souza',
-    );
+    expect(
+      compiled.querySelector('main[data-page="visualizar-paciente"] h1')?.textContent,
+    ).toContain('Maria Souza');
     expect(compiled.querySelector('main[data-page="visualizar-paciente"]')?.textContent).toContain(
       'Diabetes mellitus',
     );
@@ -1895,10 +2163,13 @@ describe('App', () => {
       ?.click();
     fixture.detectChanges();
 
-    expect(compiled.querySelector('[data-medication-interaction-warning="injectable"]')?.textContent)
-      .toContain(
-        'A medicação Dipirona interage com uma comorbidade do paciente: Diabetes mellitus. Ministre a medicação com cautela.',
-      );
-    expect(compiled.querySelector('[data-medication-interaction-warning="injectable"]')).toBeTruthy();
+    expect(
+      compiled.querySelector('[data-medication-interaction-warning="injectable"]')?.textContent,
+    ).toContain(
+      'A medicação Dipirona interage com uma comorbidade do paciente: Diabetes mellitus. Ministre a medicação com cautela.',
+    );
+    expect(
+      compiled.querySelector('[data-medication-interaction-warning="injectable"]'),
+    ).toBeTruthy();
   });
 });

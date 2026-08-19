@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   AttendanceStatus,
+  FollowUpHistoryEntry,
+  FollowUpHistoryStatus,
   PharmaceuticalServiceAttendance,
   ServiceMedicationItem,
 } from '../../domain/clinical-records';
@@ -39,6 +41,14 @@ export class VisualizarAtendimentoPage {
     return ATTENDANCE_STATUS_LABELS[status];
   }
 
+  protected historyStatusLabel(status: FollowUpHistoryStatus): string {
+    if (status === 'PENDENTE') {
+      return 'Pendente';
+    }
+
+    return this.statusLabel(status);
+  }
+
   protected statusBadgeClass(status: AttendanceStatus): string {
     if (status === 'CONCLUIDO') {
       return 'badge badge-success';
@@ -52,10 +62,16 @@ export class VisualizarAtendimentoPage {
   }
 
   protected serviceLabels(attendance: PharmaceuticalServiceAttendance): string {
-    return attendance.selectedServices.map((service) => PHARMACEUTICAL_SERVICE_LABELS[service]).join(', ');
+    return attendance.selectedServices
+      .map((service) => PHARMACEUTICAL_SERVICE_LABELS[service])
+      .join(', ');
   }
 
   protected hasMedicationItems(items: ServiceMedicationItem[] | undefined): boolean {
     return Boolean(items?.length);
+  }
+
+  protected followUpHistory(attendance: PharmaceuticalServiceAttendance): FollowUpHistoryEntry[] {
+    return this.store.followUpHistory(attendance.id);
   }
 }

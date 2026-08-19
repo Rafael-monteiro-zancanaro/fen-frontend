@@ -3,16 +3,15 @@
     <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
       <div>
         <p class="mb-2 text-sm font-semibold text-uem-700">Atendimentos</p>
-        <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">Novo atendimento</h1>
+        <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">{{ pageTitle() }}</h1>
         <p class="mt-2 max-w-3xl text-sm leading-6 text-app-muted-foreground">
-          Identifique o paciente e selecione apenas os serviços realizados neste atendimento. Estes
-          procedimentos não substituem consulta médica ou exames laboratoriais.
+          {{ pageDescription() }}
         </p>
       </div>
 
       <nav class="card p-3" aria-label="Seções do formulário">
         <div class="grid gap-1">
-          @for (step of steps; track step.id) {
+          @for (step of steps(); track step.id) {
             <button
               class="rounded-md px-3 py-2 text-left text-sm font-semibold text-app-muted-foreground hover:bg-app-surface-muted hover:text-app-foreground"
               type="button"
@@ -26,6 +25,16 @@
         </div>
       </nav>
     </div>
+
+    @if (isFollowUpContinuation()) {
+      <div class="alert alert-info" data-follow-up-context>
+        <span class="marker marker-info"></span>
+        <div>
+          <p class="alert-title">{{ followUpContextLabel() }}</p>
+          <p class="alert-description">{{ previousAttendanceCodeLabel() }}</p>
+        </div>
+      </div>
+    }
 
     <form class="grid gap-5" (ngSubmit)="submit()">
       <section id="identificacao-usuario" data-service-step class="card scroll-mt-24">
@@ -45,6 +54,8 @@
           <app-patient-form
             [patient]="patient"
             [errors]="errors"
+            [cpfLookupEnabled]="!isFollowUpContinuation()"
+            [cpfReadonly]="isFollowUpContinuation()"
             (patientSelected)="selectPatient($event)"
           />
         </div>
@@ -231,12 +242,19 @@
                     {{ medicationErrors.injectable.medicationConcentration }}
                   </p>
                 }
-                @for (interaction of medicationInteractionWarnings('injectable'); track interaction.comorbidity.id) {
-                  <div class="alert alert-danger py-2" data-medication-interaction-warning="injectable">
+                @for (
+                  interaction of medicationInteractionWarnings('injectable');
+                  track interaction.comorbidity.id
+                ) {
+                  <div
+                    class="alert alert-danger py-2"
+                    data-medication-interaction-warning="injectable"
+                  >
                     <span class="marker marker-danger"></span>
                     <p class="alert-title">
-                      A medicação {{ interaction.medication.name }} interage com uma comorbidade do paciente:
-                      {{ interaction.comorbidity.name }}. Ministre a medicação com cautela.
+                      A medicação {{ interaction.medication.name }} interage com uma comorbidade do
+                      paciente: {{ interaction.comorbidity.name }}. Ministre a medicação com
+                      cautela.
                     </p>
                   </div>
                 }
@@ -249,7 +267,14 @@
                   class="input"
                   type="text"
                   [(ngModel)]="medicationDrafts.injectable.batch"
+                  [attr.aria-invalid]="medicationErrors.injectable.batch ? 'true' : null"
+                  aria-describedby="loteInjetavelErro"
                 />
+                @if (medicationErrors.injectable.batch) {
+                  <p id="loteInjetavelErro" class="field-error" data-field-error="injectable-batch">
+                    {{ medicationErrors.injectable.batch }}
+                  </p>
+                }
               </div>
               <div class="field">
                 <label for="validadeInjetavel" class="label">Validade</label>
@@ -259,7 +284,18 @@
                   class="input"
                   type="date"
                   [(ngModel)]="medicationDrafts.injectable.expirationDate"
+                  [attr.aria-invalid]="medicationErrors.injectable.expirationDate ? 'true' : null"
+                  aria-describedby="validadeInjetavelErro"
                 />
+                @if (medicationErrors.injectable.expirationDate) {
+                  <p
+                    id="validadeInjetavelErro"
+                    class="field-error"
+                    data-field-error="injectable-expiration-date"
+                  >
+                    {{ medicationErrors.injectable.expirationDate }}
+                  </p>
+                }
               </div>
               <div class="field">
                 <label for="posologiaInjetavel" class="label">Posologia</label>
@@ -269,7 +305,18 @@
                   class="input"
                   type="text"
                   [(ngModel)]="medicationDrafts.injectable.dosage"
+                  [attr.aria-invalid]="medicationErrors.injectable.dosage ? 'true' : null"
+                  aria-describedby="posologiaInjetavelErro"
                 />
+                @if (medicationErrors.injectable.dosage) {
+                  <p
+                    id="posologiaInjetavelErro"
+                    class="field-error"
+                    data-field-error="injectable-dosage"
+                  >
+                    {{ medicationErrors.injectable.dosage }}
+                  </p>
+                }
               </div>
               <button
                 class="btn btn-secondary lg:mt-7"
@@ -392,12 +439,19 @@
                     {{ medicationErrors.inhalotherapy.medicationConcentration }}
                   </p>
                 }
-                @for (interaction of medicationInteractionWarnings('inhalotherapy'); track interaction.comorbidity.id) {
-                  <div class="alert alert-danger py-2" data-medication-interaction-warning="inhalotherapy">
+                @for (
+                  interaction of medicationInteractionWarnings('inhalotherapy');
+                  track interaction.comorbidity.id
+                ) {
+                  <div
+                    class="alert alert-danger py-2"
+                    data-medication-interaction-warning="inhalotherapy"
+                  >
                     <span class="marker marker-danger"></span>
                     <p class="alert-title">
-                      A medicação {{ interaction.medication.name }} interage com uma comorbidade do paciente:
-                      {{ interaction.comorbidity.name }}. Ministre a medicação com cautela.
+                      A medicação {{ interaction.medication.name }} interage com uma comorbidade do
+                      paciente: {{ interaction.comorbidity.name }}. Ministre a medicação com
+                      cautela.
                     </p>
                   </div>
                 }
@@ -411,7 +465,18 @@
                   type="text"
                   [(ngModel)]="medicationDrafts.inhalotherapy.batch"
                   (input)="medicationDrafts.inhalotherapy.batch = $any($event.target).value"
+                  [attr.aria-invalid]="medicationErrors.inhalotherapy.batch ? 'true' : null"
+                  aria-describedby="loteInaloterapiaErro"
                 />
+                @if (medicationErrors.inhalotherapy.batch) {
+                  <p
+                    id="loteInaloterapiaErro"
+                    class="field-error"
+                    data-field-error="inhalotherapy-batch"
+                  >
+                    {{ medicationErrors.inhalotherapy.batch }}
+                  </p>
+                }
               </div>
               <div class="field">
                 <label for="validadeInaloterapia" class="label">Validade</label>
@@ -424,7 +489,20 @@
                   (input)="
                     medicationDrafts.inhalotherapy.expirationDate = $any($event.target).value
                   "
+                  [attr.aria-invalid]="
+                    medicationErrors.inhalotherapy.expirationDate ? 'true' : null
+                  "
+                  aria-describedby="validadeInaloterapiaErro"
                 />
+                @if (medicationErrors.inhalotherapy.expirationDate) {
+                  <p
+                    id="validadeInaloterapiaErro"
+                    class="field-error"
+                    data-field-error="inhalotherapy-expiration-date"
+                  >
+                    {{ medicationErrors.inhalotherapy.expirationDate }}
+                  </p>
+                }
               </div>
               <div class="field">
                 <label for="posologiaInaloterapia" class="label">Posologia</label>
@@ -435,7 +513,18 @@
                   type="text"
                   [(ngModel)]="medicationDrafts.inhalotherapy.dosage"
                   (input)="medicationDrafts.inhalotherapy.dosage = $any($event.target).value"
+                  [attr.aria-invalid]="medicationErrors.inhalotherapy.dosage ? 'true' : null"
+                  aria-describedby="posologiaInaloterapiaErro"
                 />
+                @if (medicationErrors.inhalotherapy.dosage) {
+                  <p
+                    id="posologiaInaloterapiaErro"
+                    class="field-error"
+                    data-field-error="inhalotherapy-dosage"
+                  >
+                    {{ medicationErrors.inhalotherapy.dosage }}
+                  </p>
+                }
               </div>
               <button
                 class="btn btn-secondary lg:mt-7"
@@ -593,12 +682,19 @@
                     {{ medicationErrors.complementary.medicationConcentration }}
                   </p>
                 }
-                @for (interaction of medicationInteractionWarnings('complementary'); track interaction.comorbidity.id) {
-                  <div class="alert alert-danger py-2" data-medication-interaction-warning="complementary">
+                @for (
+                  interaction of medicationInteractionWarnings('complementary');
+                  track interaction.comorbidity.id
+                ) {
+                  <div
+                    class="alert alert-danger py-2"
+                    data-medication-interaction-warning="complementary"
+                  >
                     <span class="marker marker-danger"></span>
                     <p class="alert-title">
-                      A medicação {{ interaction.medication.name }} interage com uma comorbidade do paciente:
-                      {{ interaction.comorbidity.name }}. Ministre a medicação com cautela.
+                      A medicação {{ interaction.medication.name }} interage com uma comorbidade do
+                      paciente: {{ interaction.comorbidity.name }}. Ministre a medicação com
+                      cautela.
                     </p>
                   </div>
                 }
@@ -611,7 +707,18 @@
                   class="input"
                   type="text"
                   [(ngModel)]="medicationDrafts.complementary.batch"
+                  [attr.aria-invalid]="medicationErrors.complementary.batch ? 'true' : null"
+                  aria-describedby="loteAcompanhamentoErro"
                 />
+                @if (medicationErrors.complementary.batch) {
+                  <p
+                    id="loteAcompanhamentoErro"
+                    class="field-error"
+                    data-field-error="complementary-batch"
+                  >
+                    {{ medicationErrors.complementary.batch }}
+                  </p>
+                }
               </div>
               <div class="field">
                 <label for="validadeAcompanhamento" class="label">Validade</label>
@@ -621,7 +728,20 @@
                   class="input"
                   type="date"
                   [(ngModel)]="medicationDrafts.complementary.expirationDate"
+                  [attr.aria-invalid]="
+                    medicationErrors.complementary.expirationDate ? 'true' : null
+                  "
+                  aria-describedby="validadeAcompanhamentoErro"
                 />
+                @if (medicationErrors.complementary.expirationDate) {
+                  <p
+                    id="validadeAcompanhamentoErro"
+                    class="field-error"
+                    data-field-error="complementary-expiration-date"
+                  >
+                    {{ medicationErrors.complementary.expirationDate }}
+                  </p>
+                }
               </div>
               <div class="field">
                 <label for="posologiaAcompanhamento" class="label">Posologia</label>
@@ -631,7 +751,18 @@
                   class="input"
                   type="text"
                   [(ngModel)]="medicationDrafts.complementary.dosage"
+                  [attr.aria-invalid]="medicationErrors.complementary.dosage ? 'true' : null"
+                  aria-describedby="posologiaAcompanhamentoErro"
                 />
+                @if (medicationErrors.complementary.dosage) {
+                  <p
+                    id="posologiaAcompanhamentoErro"
+                    class="field-error"
+                    data-field-error="complementary-dosage"
+                  >
+                    {{ medicationErrors.complementary.dosage }}
+                  </p>
+                }
               </div>
               <button
                 class="btn btn-secondary lg:mt-7"
@@ -696,81 +827,92 @@
         }
       </section>
 
-      <section id="acompanhamento" data-service-step class="card scroll-mt-24">
-        <div class="card-header">
-          <label class="flex items-center gap-3">
-            <input
-              id="enableAcompanhamento"
-              class="checkbox"
-              type="checkbox"
-              [checked]="isStepEnabled('acompanhamento')"
-              (change)="toggleOptionalStep('acompanhamento', $any($event.target).checked)"
-            />
-            <span>
-              <span class="text-xs font-bold uppercase text-uem-700">06</span>
-              <span class="card-title block">Acompanhamento</span>
-            </span>
-          </label>
-        </div>
+      @if (!isFollowUpContinuation()) {
+        <section id="acompanhamento" data-service-step class="card scroll-mt-24">
+          <div class="card-header">
+            <label class="flex items-center gap-3">
+              <input
+                id="enableAcompanhamento"
+                class="checkbox"
+                type="checkbox"
+                [checked]="isStepEnabled('acompanhamento')"
+                (change)="toggleOptionalStep('acompanhamento', $any($event.target).checked)"
+              />
+              <span>
+                <span class="text-xs font-bold uppercase text-uem-700">06</span>
+                <span class="card-title block">Acompanhamento</span>
+              </span>
+            </label>
+          </div>
 
-        @if (isStepEnabled('acompanhamento')) {
-          <div class="card-content grid gap-4" data-step-content>
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div class="field">
-                <label for="intervaloRetornos" class="label label-required"
-                  >Intervalo para retorno</label
-                >
-                <input
-                  id="intervaloRetornos"
-                  name="intervaloRetornos"
-                  class="input"
-                  type="number"
-                  min="1"
-                  step="1"
-                  [(ngModel)]="followUp.returnIntervalDays"
-                  (input)="followUp.returnIntervalDays = $any($event.target).value"
-                  [attr.aria-invalid]="errors['returnIntervalDays'] ? 'true' : null"
-                />
-                @if (errors['returnIntervalDays']) {
-                  <p class="field-error">{{ errors['returnIntervalDays'] }}</p>
-                }
-              </div>
-              <div class="field">
-                <label for="quantidadeRetornos" class="label label-required"
-                  >Quantidade de retornos</label
-                >
-                <input
-                  id="quantidadeRetornos"
-                  name="quantidadeRetornos"
-                  class="input"
-                  type="number"
-                  min="1"
-                  step="1"
-                  [(ngModel)]="followUp.returnCount"
-                  (input)="followUp.returnCount = $any($event.target).value"
-                  [attr.aria-invalid]="errors['returnCount'] ? 'true' : null"
-                />
-                @if (errors['returnCount']) {
-                  <p class="field-error">{{ errors['returnCount'] }}</p>
-                }
-              </div>
-            </div>
-
-            @if (followUpPreview()) {
-              <div class="alert alert-info" data-follow-up-preview>
-                <span class="marker marker-info"></span>
-                <div>
-                  <p class="alert-title">{{ followUpPreview() }}</p>
+          @if (isStepEnabled('acompanhamento')) {
+            <div class="card-content grid gap-4" data-step-content>
+              <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div class="field">
+                  <label for="intervaloRetornos" class="label label-required"
+                    >Intervalo para retorno</label
+                  >
+                  <input
+                    id="intervaloRetornos"
+                    name="intervaloRetornos"
+                    class="input"
+                    type="number"
+                    min="1"
+                    step="1"
+                    [(ngModel)]="followUp.returnIntervalDays"
+                    (input)="followUp.returnIntervalDays = $any($event.target).value"
+                    [attr.aria-invalid]="errors['returnIntervalDays'] ? 'true' : null"
+                  />
+                  @if (errors['returnIntervalDays']) {
+                    <p class="field-error">{{ errors['returnIntervalDays'] }}</p>
+                  }
+                </div>
+                <div class="field">
+                  <label for="quantidadeRetornos" class="label label-required"
+                    >Quantidade de retornos</label
+                  >
+                  <input
+                    id="quantidadeRetornos"
+                    name="quantidadeRetornos"
+                    class="input"
+                    type="number"
+                    min="1"
+                    step="1"
+                    [(ngModel)]="followUp.returnCount"
+                    (input)="followUp.returnCount = $any($event.target).value"
+                    [attr.aria-invalid]="errors['returnCount'] ? 'true' : null"
+                  />
+                  @if (errors['returnCount']) {
+                    <p class="field-error">{{ errors['returnCount'] }}</p>
+                  }
                 </div>
               </div>
-            }
+
+              @if (followUpPreview()) {
+                <div class="alert alert-info" data-follow-up-preview>
+                  <span class="marker marker-info"></span>
+                  <div>
+                    <p class="alert-title">{{ followUpPreview() }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </section>
+      }
+
+      @if (errors['submit']) {
+        <div class="alert alert-danger">
+          <span class="marker marker-danger"></span>
+          <div>
+            <p class="alert-title">{{ errors['submit'] }}</p>
           </div>
-        }
-      </section>
+        </div>
+      }
 
       <div class="card-footer justify-between">
         <a class="btn btn-secondary" routerLink="/atendimentos">Cancelar</a>
-        <button class="btn btn-primary" type="submit">
+        <button class="btn btn-primary" type="submit" [disabled]="isSubmitting">
           <ng-icon name="bootstrapSave" size="1rem" />
           Salvar atendimento
         </button>

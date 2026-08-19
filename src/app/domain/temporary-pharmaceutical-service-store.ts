@@ -4,6 +4,8 @@ import {
   AttendanceStatusFilter,
   Comorbidity,
   CreatePharmaceuticalServiceAttendanceInput,
+  FollowUpHistoryEntry,
+  FollowUpProgress,
   Medication,
   Patient,
   PatientInput,
@@ -149,8 +151,10 @@ export class TemporaryPharmaceuticalServiceStore {
     input: CreatePharmaceuticalServiceAttendanceInput,
   ): PharmaceuticalServiceAttendance {
     const patient = this.upsertPatient(input.patient);
+    const id = this.createId();
     const attendance: PharmaceuticalServiceAttendance = {
-      id: this.createId(),
+      id,
+      codigo: this.nextBusinessCode(),
       patient,
       selectedServices: input.selectedServices,
       status: input.followUp ? 'AGUARDANDO_RETORNO' : 'CONCLUIDO',
@@ -160,6 +164,14 @@ export class TemporaryPharmaceuticalServiceStore {
       inhalotherapy: input.inhalotherapy,
       complementaryServices: input.complementaryServices,
       followUp: input.followUp,
+      followUpLink: input.followUp
+        ? {
+            chainId: this.createId(),
+            originAttendanceId: id,
+            previousAttendanceId: null,
+            returnNumber: 0,
+          }
+        : null,
     };
 
     this.updateState({
@@ -172,6 +184,138 @@ export class TemporaryPharmaceuticalServiceStore {
 
   getAttendance(id: string): PharmaceuticalServiceAttendance | undefined {
     return this.state().attendances.find((attendance) => attendance.id === id);
+  }
+
+  createFollowUpReturn(
+    previousAttendanceId: string,
+    input: CreatePharmaceuticalServiceAttendanceInput,
+  ): PharmaceuticalServiceAttendance | undefined {
+    const previousAttendance = this.getAttendance(previousAttendanceId);
+    const progress = this.followUpProgress(previousAttendanceId);
+
+    if (
+      !previousAttendance?.followUp ||
+      !previousAttendance.followUpLink ||
+      !progress.canContinue
+    ) {
+      return undefined;
+    }
+
+    const nextReturnNumber = progress.nextReturnNumber;
+
+    if (!nextReturnNumber) {
+      return undefined;
+    }
+
+    const patient = this.upsertPatient(input.patient);
+    const id = this.createId();
+    const attendance: PharmaceuticalServiceAttendance = {
+      id,
+      codigo: this.nextBusinessCode(),
+      patient,
+      selectedServices: input.selectedServices,
+      status:
+        nextReturnNumber < previousAttendance.followUp.returnCount
+          ? 'AGUARDANDO_RETORNO'
+          : 'CONCLUIDO',
+      createdAt: new Date().toISOString(),
+      care: input.care,
+      injectable: input.injectable,
+      inhalotherapy: input.inhalotherapy,
+      complementaryServices: input.complementaryServices,
+      followUp: previousAttendance.followUp,
+      followUpLink: {
+        chainId: previousAttendance.followUpLink.chainId,
+        originAttendanceId: previousAttendance.followUpLink.originAttendanceId,
+        previousAttendanceId: previousAttendance.id,
+        returnNumber: nextReturnNumber,
+      },
+    };
+
+    this.updateState({
+      ...this.state(),
+      attendances: [
+        attendance,
+        ...this.state().attendances.map((currentAttendance) =>
+          currentAttendance.id === previousAttendance.id
+            ? { ...currentAttendance, status: 'CONCLUIDO' as AttendanceStatus }
+            : currentAttendance,
+        ),
+      ],
+    });
+
+    return attendance;
+  }
+
+  followUpProgress(id: string): FollowUpProgress {
+    const attendance = this.getAttendance(id);
+    const emptyProgress: FollowUpProgress = {
+      returnCount: 0,
+      completedReturns: 0,
+      nextReturnNumber: null,
+      canContinue: false,
+    };
+
+    if (!attendance?.followUp || !attendance.followUpLink) {
+      return emptyProgress;
+    }
+
+    const chain = this.followUpChain(attendance);
+    const completedReturns = chain.filter(
+      (chainAttendance) => (chainAttendance.followUpLink?.returnNumber ?? 0) > 0,
+    ).length;
+    const returnCount = attendance.followUp.returnCount;
+    const latestAttendance = chain.at(-1);
+    const canContinue =
+      latestAttendance?.id === attendance.id &&
+      (attendance.status === 'AGUARDANDO_RETORNO' || attendance.status === 'EXPIRADO') &&
+      completedReturns < returnCount;
+
+    return {
+      returnCount,
+      completedReturns,
+      nextReturnNumber: canContinue ? completedReturns + 1 : null,
+      canContinue,
+    };
+  }
+
+  followUpHistory(id: string): FollowUpHistoryEntry[] {
+    const attendance = this.getAttendance(id);
+
+    if (!attendance?.followUp || !attendance.followUpLink) {
+      return [];
+    }
+
+    const chain = this.followUpChain(attendance);
+    const registeredEntries = chain.map((chainAttendance) => {
+      const returnNumber = chainAttendance.followUpLink?.returnNumber ?? 0;
+
+      return {
+        label: returnNumber === 0 ? 'Atendimento inicial' : `${returnNumber}º retorno`,
+        attendanceId: chainAttendance.id,
+        codigo: chainAttendance.codigo,
+        status: chainAttendance.status,
+        createdAt: chainAttendance.createdAt,
+      };
+    });
+
+    const pendingEntries: FollowUpHistoryEntry[] = [];
+
+    for (
+      let returnNumber = registeredEntries.length;
+      returnNumber <= attendance.followUp.returnCount;
+      returnNumber += 1
+    ) {
+      pendingEntries.push({
+        label: `${returnNumber}º retorno`,
+        attendanceId: null,
+        codigo: null,
+        status: 'PENDENTE',
+        createdAt: null,
+      });
+    }
+
+    return [...registeredEntries, ...pendingEntries];
   }
 
   searchAttendances(
@@ -194,7 +338,7 @@ export class TemporaryPharmaceuticalServiceStore {
         .join(' ');
 
       return this.normalize(
-        `${attendance.patient.name} ${attendance.patient.cpf} ${services}`,
+        `${attendance.codigo} ${attendance.patient.name} ${attendance.patient.cpf} ${services}`,
       ).includes(query);
     });
   }
@@ -312,7 +456,9 @@ export class TemporaryPharmaceuticalServiceStore {
                 : [],
             }))
           : [],
-        attendances: Array.isArray(parsedState.attendances) ? parsedState.attendances : [],
+        attendances: Array.isArray(parsedState.attendances)
+          ? this.hydrateAttendances(parsedState.attendances)
+          : [],
       };
     } catch {
       return fallback;
@@ -343,5 +489,63 @@ export class TemporaryPharmaceuticalServiceStore {
 
   private createId(): string {
     return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+  }
+
+  private nextBusinessCode(): number {
+    const greatestCode = this.state().attendances.reduce(
+      (maxCode, attendance) => Math.max(maxCode, attendance.codigo || 0),
+      1000,
+    );
+
+    return greatestCode + 1;
+  }
+
+  private followUpChain(
+    attendance: PharmaceuticalServiceAttendance,
+  ): PharmaceuticalServiceAttendance[] {
+    if (!attendance.followUpLink) {
+      return [];
+    }
+
+    return this.state()
+      .attendances.filter(
+        (currentAttendance) =>
+          currentAttendance.followUpLink?.chainId === attendance.followUpLink?.chainId,
+      )
+      .sort(
+        (firstAttendance, secondAttendance) =>
+          (firstAttendance.followUpLink?.returnNumber ?? 0) -
+          (secondAttendance.followUpLink?.returnNumber ?? 0),
+      );
+  }
+
+  private hydrateAttendances(
+    attendances: Partial<PharmaceuticalServiceAttendance>[],
+  ): PharmaceuticalServiceAttendance[] {
+    let nextCode = attendances.reduce(
+      (maxCode, attendance) =>
+        typeof attendance.codigo === 'number' ? Math.max(maxCode, attendance.codigo) : maxCode,
+      1000,
+    );
+
+    return attendances.map((attendance) => {
+      const id = attendance.id ?? this.createId();
+      const codigo = typeof attendance.codigo === 'number' ? attendance.codigo : (nextCode += 1);
+
+      return {
+        ...attendance,
+        id,
+        codigo,
+        followUpLink:
+          attendance.followUp && !attendance.followUpLink
+            ? {
+                chainId: id,
+                originAttendanceId: id,
+                previousAttendanceId: null,
+                returnNumber: 0,
+              }
+            : (attendance.followUpLink ?? null),
+      } as PharmaceuticalServiceAttendance;
+    });
   }
 }

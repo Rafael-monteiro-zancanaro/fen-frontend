@@ -162,9 +162,9 @@ describe('TemporaryPharmaceuticalServiceStore', () => {
     store.updatePatientComorbidities(patient.id, [diabetes.id, hipertensao.id, diabetes.id]);
 
     expect(store.getPatient(patient.id)?.comorbidityIds).toEqual([diabetes.id, hipertensao.id]);
-    expect(store.getPatientComorbidities(patient.id).map((comorbidity) => comorbidity.name)).toEqual(
-      ['Diabetes mellitus', 'Hipertensão'],
-    );
+    expect(
+      store.getPatientComorbidities(patient.id).map((comorbidity) => comorbidity.name),
+    ).toEqual(['Diabetes mellitus', 'Hipertensão']);
     expect(
       store
         .getPatientMedicationInteractions(patient.id, dipirona.id)
@@ -246,6 +246,198 @@ describe('TemporaryPharmaceuticalServiceStore', () => {
     expect(store.closeExpiredAttendance(concluded.id)).toBe(false);
     expect(store.closeExpiredAttendance(withFollowUp.id)).toBe(true);
     expect(store.getAttendance(withFollowUp.id)?.status).toBe('CONCLUIDO');
+  });
+
+  it('creates follow-up returns as new linked attendances with independent business codes', () => {
+    const initial = store.createAttendance({
+      patient: {
+        name: 'João Pereira',
+        cpf: '98765432100',
+        birthDate: '1970-09-20',
+        cellPhone: '44977777777',
+        gender: 'masculino',
+        address: 'Rua A',
+        city: 'Maringá',
+        state: 'PR',
+        phone: '',
+        responsibleName: '',
+      },
+      selectedServices: ['servicos-farmaceuticos'],
+      care: null,
+      injectable: null,
+      inhalotherapy: null,
+      complementaryServices: {
+        homeCare: false,
+        pharmacotherapeuticFollowUp: true,
+        minorDisorderIndication: false,
+        signsAndSymptoms: 'Acompanhamento',
+        medications: [
+          {
+            id: 'item-1',
+            medicationConcentration: 'Medicamento A',
+            batch: 'B1',
+            expirationDate: '2027-02-02',
+            dosage: '1 vez ao dia',
+          },
+        ],
+        recordNumber: '',
+        attendanceDate: '2026-08-16',
+      },
+      followUp: {
+        returnIntervalDays: 7,
+        returnCount: 2,
+      },
+    });
+
+    const firstReturn = store.createFollowUpReturn(initial.id, {
+      patient: {
+        ...initial.patient,
+        name: 'João Pereira Atualizado',
+        cellPhone: '44988888888',
+      },
+      selectedServices: ['cuidados-farmaceuticos'],
+      care: {
+        bloodGlucose: '100',
+        systolicPressure: '120',
+        diastolicPressure: '80',
+        bodyTemperature: '36.5',
+      },
+      injectable: null,
+      inhalotherapy: null,
+      complementaryServices: null,
+      followUp: null,
+    });
+
+    expect(firstReturn).toBeTruthy();
+    expect(firstReturn?.id).not.toBe(initial.id);
+    expect(firstReturn?.codigo).toBeGreaterThan(initial.codigo);
+    expect(firstReturn?.patient.id).toBe(initial.patient.id);
+    expect(firstReturn?.patient.name).toBe('João Pereira Atualizado');
+    expect(firstReturn?.followUp).toEqual(initial.followUp);
+    expect(firstReturn?.followUpLink?.chainId).toBe(initial.followUpLink?.chainId);
+    expect(firstReturn?.followUpLink?.originAttendanceId).toBe(initial.id);
+    expect(firstReturn?.followUpLink?.previousAttendanceId).toBe(initial.id);
+    expect(firstReturn?.followUpLink?.returnNumber).toBe(1);
+    expect(firstReturn?.status).toBe('AGUARDANDO_RETORNO');
+    expect(store.getAttendance(initial.id)?.status).toBe('CONCLUIDO');
+    expect(store.followUpProgress(firstReturn!.id)).toEqual({
+      returnCount: 2,
+      completedReturns: 1,
+      nextReturnNumber: 2,
+      canContinue: true,
+    });
+
+    const secondReturn = store.createFollowUpReturn(firstReturn!.id, {
+      patient: firstReturn!.patient,
+      selectedServices: ['cuidados-farmaceuticos'],
+      care: {
+        bloodGlucose: '98',
+        systolicPressure: '',
+        diastolicPressure: '',
+        bodyTemperature: '',
+      },
+      injectable: null,
+      inhalotherapy: null,
+      complementaryServices: null,
+      followUp: null,
+    });
+
+    expect(secondReturn?.followUpLink?.returnNumber).toBe(2);
+    expect(secondReturn?.status).toBe('CONCLUIDO');
+    expect(store.followUpProgress(secondReturn!.id)).toEqual({
+      returnCount: 2,
+      completedReturns: 2,
+      nextReturnNumber: null,
+      canContinue: false,
+    });
+    expect(
+      store.createFollowUpReturn(firstReturn!.id, {
+        patient: firstReturn!.patient,
+        selectedServices: ['cuidados-farmaceuticos'],
+        care: {
+          bloodGlucose: '99',
+          systolicPressure: '',
+          diastolicPressure: '',
+          bodyTemperature: '',
+        },
+        injectable: null,
+        inhalotherapy: null,
+        complementaryServices: null,
+        followUp: null,
+      }),
+    ).toBeUndefined();
+  });
+
+  it('summarizes follow-up history with registered and pending returns', () => {
+    const initial = store.createAttendance({
+      patient: {
+        name: 'Maria Souza',
+        cpf: '12345678901',
+        birthDate: '1988-04-10',
+        cellPhone: '44999999999',
+        gender: 'feminino',
+        address: '',
+        city: 'Maringá',
+        state: 'PR',
+        phone: '',
+        responsibleName: '',
+      },
+      selectedServices: ['cuidados-farmaceuticos'],
+      care: {
+        bloodGlucose: '95',
+        systolicPressure: '120',
+        diastolicPressure: '80',
+        bodyTemperature: '36.5',
+      },
+      injectable: null,
+      inhalotherapy: null,
+      complementaryServices: null,
+      followUp: {
+        returnIntervalDays: 7,
+        returnCount: 3,
+      },
+    });
+    const firstReturn = store.createFollowUpReturn(initial.id, {
+      patient: initial.patient,
+      selectedServices: ['cuidados-farmaceuticos'],
+      care: {
+        bloodGlucose: '96',
+        systolicPressure: '',
+        diastolicPressure: '',
+        bodyTemperature: '',
+      },
+      injectable: null,
+      inhalotherapy: null,
+      complementaryServices: null,
+      followUp: null,
+    });
+
+    expect(store.followUpHistory(firstReturn!.id)).toEqual([
+      expect.objectContaining({
+        label: 'Atendimento inicial',
+        attendanceId: initial.id,
+        codigo: initial.codigo,
+        status: 'CONCLUIDO',
+      }),
+      expect.objectContaining({
+        label: '1º retorno',
+        attendanceId: firstReturn?.id,
+        codigo: firstReturn?.codigo,
+        status: 'AGUARDANDO_RETORNO',
+      }),
+      expect.objectContaining({
+        label: '2º retorno',
+        attendanceId: null,
+        codigo: null,
+        status: 'PENDENTE',
+      }),
+      expect.objectContaining({
+        label: '3º retorno',
+        attendanceId: null,
+        codigo: null,
+        status: 'PENDENTE',
+      }),
+    ]);
   });
 
   it('searches attendances by patient, CPF and service while respecting status filters', () => {

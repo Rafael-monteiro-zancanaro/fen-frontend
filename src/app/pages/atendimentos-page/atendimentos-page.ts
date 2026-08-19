@@ -4,7 +4,11 @@ import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { bootstrapCheckLg, bootstrapEye } from '@ng-icons/bootstrap-icons';
 import { PaginationControls } from '../../components/pagination-controls/pagination-controls';
-import { AttendanceStatus, AttendanceStatusFilter } from '../../domain/clinical-records';
+import {
+  AttendanceStatus,
+  AttendanceStatusFilter,
+  PharmaceuticalServiceAttendance,
+} from '../../domain/clinical-records';
 import {
   ATTENDANCE_STATUS_LABELS,
   PHARMACEUTICAL_SERVICE_LABELS,
@@ -106,8 +110,26 @@ export class AtendimentosPage {
     return 'badge badge-secondary';
   }
 
-  protected serviceLabels(attendance: { selectedServices: (keyof typeof PHARMACEUTICAL_SERVICE_LABELS)[] }): string {
-    return attendance.selectedServices.map((service) => PHARMACEUTICAL_SERVICE_LABELS[service]).join(', ');
+  protected serviceLabels(attendance: {
+    selectedServices: (keyof typeof PHARMACEUTICAL_SERVICE_LABELS)[];
+  }): string {
+    return attendance.selectedServices
+      .map((service) => PHARMACEUTICAL_SERVICE_LABELS[service])
+      .join(', ');
+  }
+
+  protected canContinueAttendance(attendance: PharmaceuticalServiceAttendance): boolean {
+    return this.store.followUpProgress(attendance.id).canContinue;
+  }
+
+  protected continueAttendanceLabel(attendance: PharmaceuticalServiceAttendance): string {
+    const progress = this.store.followUpProgress(attendance.id);
+
+    if (!progress.nextReturnNumber) {
+      return 'Prosseguir atendimento';
+    }
+
+    return `Prosseguir atendimento (${progress.nextReturnNumber} de ${progress.returnCount})`;
   }
 
   protected askToCloseAttendance(id: string): void {

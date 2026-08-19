@@ -19,6 +19,7 @@
         inputmode="numeric"
         maxlength="14"
         [value]="patient.cpf"
+        [readOnly]="cpfReadonly"
         (input)="updateCpf($any($event.target))"
         [attr.aria-invalid]="errors['patient.cpf'] ? 'true' : null"
       />
@@ -198,7 +199,12 @@
 
     <div class="field">
       <label for="estadoUsuario" class="label">Estado</label>
-      <select id="estadoUsuario" name="estadoUsuario" class="native-select" [(ngModel)]="patient.state">
+      <select
+        id="estadoUsuario"
+        name="estadoUsuario"
+        class="native-select"
+        [(ngModel)]="patient.state"
+      >
         <option value="">Selecione</option>
         @for (state of brazilianStates; track state.value) {
           <option [value]="state.value">{{ state.label }}</option>

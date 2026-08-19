@@ -5,10 +5,10 @@
         <div>
           <p class="mb-2 text-sm font-semibold text-uem-700">Atendimento farmacêutico</p>
           <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">
-            {{ currentAttendance.patient.name }}
+            Atendimento #{{ currentAttendance.codigo }} - {{ currentAttendance.patient.name }}
           </h1>
           <p class="mt-2 text-sm text-app-muted-foreground">
-            {{ serviceLabels(currentAttendance) }}
+            {{ currentAttendance.patient.name }} · {{ serviceLabels(currentAttendance) }}
           </p>
         </div>
 
@@ -23,6 +23,10 @@
           </span>
         </div>
         <div class="card-content grid gap-4 md:grid-cols-3">
+          <div data-attendance-code>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Código</p>
+            <p class="mt-1 font-semibold text-app-foreground">#{{ currentAttendance.codigo }}</p>
+          </div>
           <div>
             <p class="text-xs font-bold uppercase text-app-muted-foreground">CPF</p>
             <p class="mt-1 font-semibold text-app-foreground">
@@ -39,7 +43,9 @@
           </div>
           <div>
             <p class="text-xs font-bold uppercase text-app-muted-foreground">Cidade/UF</p>
-            <p class="mt-1">{{ currentAttendance.patient.city }} - {{ currentAttendance.patient.state }}</p>
+            <p class="mt-1">
+              {{ currentAttendance.patient.city }} - {{ currentAttendance.patient.state }}
+            </p>
           </div>
           <div>
             <p class="text-xs font-bold uppercase text-app-muted-foreground">Data do atendimento</p>
@@ -80,7 +86,8 @@
           </div>
           <div class="card-content grid gap-4">
             <p class="text-sm text-app-muted-foreground">
-              Via de administração: {{ currentAttendance.injectable.administrationRoute || 'Não informada' }}
+              Via de administração:
+              {{ currentAttendance.injectable.administrationRoute || 'Não informada' }}
             </p>
             <ng-container
               [ngTemplateOutlet]="medicationTable"
@@ -113,28 +120,83 @@
             <h2 class="card-title">Serviços farmacêuticos</h2>
           </div>
           <div class="card-content grid gap-4">
-            <p>{{ currentAttendance.complementaryServices.signsAndSymptoms || 'Sem sinais e sintomas informados.' }}</p>
+            <p>
+              {{
+                currentAttendance.complementaryServices.signsAndSymptoms ||
+                  'Sem sinais e sintomas informados.'
+              }}
+            </p>
             <ng-container
               [ngTemplateOutlet]="medicationTable"
-              [ngTemplateOutletContext]="{ items: currentAttendance.complementaryServices.medications }"
+              [ngTemplateOutletContext]="{
+                items: currentAttendance.complementaryServices.medications,
+              }"
             />
           </div>
         </section>
       }
 
       @if (currentAttendance.followUp) {
-        <section class="card">
+        <section class="card" data-follow-up-history>
           <div class="card-header">
             <h2 class="card-title">Acompanhamento</h2>
           </div>
-          <div class="card-content">
+          <div class="card-content grid gap-4">
             <p>
               Retornar a cada {{ currentAttendance.followUp.returnIntervalDays }} dias,
               {{ currentAttendance.followUp.returnCount }} vezes.
             </p>
-            <p class="mt-2 text-sm text-app-muted-foreground">
-              Situação atual: {{ statusLabel(currentAttendance.status) }}
-            </p>
+            <div class="grid gap-1 text-sm text-app-muted-foreground md:grid-cols-2">
+              <p>Intervalo: {{ currentAttendance.followUp.returnIntervalDays }} dias</p>
+              <p>Retornos previstos: {{ currentAttendance.followUp.returnCount }}</p>
+            </div>
+
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Etapa</th>
+                    <th>Código</th>
+                    <th>Data</th>
+                    <th>Situação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (entry of followUpHistory(currentAttendance); track entry.label) {
+                    <tr>
+                      <td class="font-semibold text-app-foreground">
+                        @if (entry.attendanceId) {
+                          <a
+                            class="btn-link"
+                            [routerLink]="['/atendimentos', entry.attendanceId]"
+                            [attr.data-follow-up-history-link]="entry.attendanceId"
+                          >
+                            {{ entry.label }}
+                          </a>
+                        } @else {
+                          {{ entry.label }}
+                        }
+                      </td>
+                      <td>
+                        @if (entry.codigo) {
+                          #{{ entry.codigo }}
+                        } @else {
+                          <span class="text-app-muted-foreground">-</span>
+                        }
+                      </td>
+                      <td>
+                        @if (entry.createdAt) {
+                          {{ formatDate(entry.createdAt) }}
+                        } @else {
+                          <span class="text-app-muted-foreground">-</span>
+                        }
+                      </td>
+                      <td>{{ historyStatusLabel(entry.status) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
       }
@@ -162,7 +224,9 @@
           <tbody>
             @for (item of items; track item.id) {
               <tr>
-                <td class="font-semibold text-app-foreground">{{ item.medicationConcentration }}</td>
+                <td class="font-semibold text-app-foreground">
+                  {{ item.medicationConcentration }}
+                </td>
                 <td>{{ item.batch }}</td>
                 <td>{{ formatDate(item.expirationDate) }}</td>
                 <td>{{ item.dosage }}</td>

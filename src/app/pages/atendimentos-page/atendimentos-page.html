@@ -79,7 +79,7 @@
                 type="search"
                 [ngModel]="searchTerm()"
                 (ngModelChange)="updateSearchTerm($event)"
-                placeholder="Buscar por paciente, CPF ou serviço"
+                placeholder="Buscar por código, paciente, CPF ou serviço"
               />
             </div>
           </div>
@@ -87,28 +87,30 @@
           @if (filteredAttendances().length === 0) {
             <div class="empty">
               <h2 class="empty-title">Nenhum resultado encontrado</h2>
-              <p class="empty-description">
-                Ajuste a busca ou selecione outro filtro rápido.
-              </p>
+              <p class="empty-description">Ajuste a busca ou selecione outro filtro rápido.</p>
             </div>
           } @else {
             <div class="table-wrapper">
               <table class="table">
                 <thead>
                   <tr>
+                    <th>Código</th>
                     <th>Paciente</th>
                     <th>CPF</th>
                     <th>Data</th>
                     <th>Serviço(s)</th>
                     <th>Situação</th>
                     <th>Acompanhamento</th>
-                    <th class="w-36">Ações</th>
+                    <th class="w-64">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (attendance of paginatedAttendances(); track attendance.id) {
                     <tr>
-                      <td class="font-semibold text-app-foreground">{{ attendance.patient.name }}</td>
+                      <td class="font-semibold text-app-foreground">#{{ attendance.codigo }}</td>
+                      <td class="font-semibold text-app-foreground">
+                        {{ attendance.patient.name }}
+                      </td>
                       <td>{{ formatCpf(attendance.patient.cpf) }}</td>
                       <td>{{ formatDate(attendance.createdAt) }}</td>
                       <td>{{ serviceLabels(attendance) }}</td>
@@ -134,6 +136,15 @@
                           >
                             <ng-icon name="bootstrapEye" size="1rem" />
                           </a>
+                          @if (canContinueAttendance(attendance)) {
+                            <a
+                              class="btn btn-outline btn-sm"
+                              [routerLink]="['/atendimentos', attendance.id, 'continuar']"
+                              [attr.data-continue-attendance-id]="attendance.id"
+                            >
+                              {{ continueAttendanceLabel(attendance) }}
+                            </a>
+                          }
                           @if (attendance.status === 'EXPIRADO') {
                             <button
                               class="btn btn-primary btn-icon btn-sm"
@@ -174,9 +185,7 @@
     <section class="alert-dialog" role="alertdialog" aria-modal="true">
       <div class="alert-dialog-header">
         <h2 class="alert-dialog-title">Encerrar atendimento?</h2>
-        <p class="alert-dialog-description">
-          O atendimento expirado será marcado como concluído.
-        </p>
+        <p class="alert-dialog-description">O atendimento expirado será marcado como concluído.</p>
       </div>
       <div class="alert-dialog-footer">
         <button class="btn btn-secondary" type="button" (click)="cancelCloseAttendance()">
