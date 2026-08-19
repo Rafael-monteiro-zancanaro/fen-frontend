@@ -133,6 +133,18 @@ export interface FollowUpHistoryEntry {
   createdAt: string | null;
 }
 
+export interface AdvancedAttendanceSearchCriteria {
+  cpfPaciente?: string;
+  medicamentoId?: string;
+  lote?: string;
+  dataAtendimento?: string;
+}
+
+export interface AdvancedAttendanceSearchResult {
+  attendance: PharmaceuticalServiceAttendance;
+  matchedMedications: ServiceMedicationItem[];
+}
+
 export interface PharmaceuticalServiceAttendance {
   id: string;
   codigo: number;

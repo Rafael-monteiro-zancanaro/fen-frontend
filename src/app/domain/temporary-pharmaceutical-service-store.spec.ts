@@ -515,4 +515,204 @@ describe('TemporaryPharmaceuticalServiceStore', () => {
     expect(store.searchAttendances('inaloterapia', 'AGUARDANDO_RETORNO')).toEqual([waiting]);
     expect(store.searchAttendances('', 'CONCLUIDO')).toHaveLength(1);
   });
+
+  it('searches attendances advanced criteria with AND semantics across medication items', () => {
+    const dipirona = clinicalStore.createMedication({
+      name: 'Dipirona',
+      measurementUnit: '500 mg',
+      administrationRoute: 'Oral',
+    });
+    const ibuprofeno = clinicalStore.createMedication({
+      name: 'Ibuprofeno',
+      measurementUnit: '400 mg',
+      administrationRoute: 'Oral',
+    });
+    const soro = clinicalStore.createMedication({
+      name: 'Soro fisiológico',
+      measurementUnit: '0,9%',
+      administrationRoute: 'Inalatória',
+    });
+    const injectableAttendance = store.createAttendance({
+      patient: {
+        name: 'Carla Rocha',
+        cpf: '22233344455',
+        birthDate: '1980-03-03',
+        cellPhone: '44955555555',
+        gender: 'feminino',
+        address: '',
+        city: 'Maringá',
+        state: 'PR',
+        phone: '',
+        responsibleName: '',
+      },
+      selectedServices: ['aplicacao-injetaveis'],
+      care: null,
+      injectable: {
+        medications: [
+          {
+            id: 'item-1',
+            medicationId: dipirona.id,
+            medicationConcentration: 'Dipirona — 500 mg',
+            batch: 'AAA',
+            expirationDate: '2027-03-03',
+            dosage: 'Dose única',
+          },
+          {
+            id: 'item-2',
+            medicationId: ibuprofeno.id,
+            medicationConcentration: 'Ibuprofeno — 400 mg',
+            batch: 'BBB',
+            expirationDate: '2027-03-03',
+            dosage: 'Dose única',
+          },
+        ],
+        administrationRoute: 'Intramuscular',
+        prescriberName: 'Dr. Paulo',
+        crmCro: 'CRM 456',
+      },
+      inhalotherapy: null,
+      complementaryServices: null,
+      followUp: null,
+    });
+    const inhalotherapyAttendance = store.createAttendance({
+      patient: {
+        name: 'Bruno Santos',
+        cpf: '33344455566',
+        birthDate: '1975-04-04',
+        cellPhone: '44944444444',
+        gender: 'masculino',
+        address: '',
+        city: 'Maringá',
+        state: 'PR',
+        phone: '',
+        responsibleName: '',
+      },
+      selectedServices: ['inaloterapia'],
+      care: null,
+      injectable: null,
+      inhalotherapy: {
+        medications: [
+          {
+            id: 'item-3',
+            medicationId: soro.id,
+            medicationConcentration: 'Soro fisiológico — 0,9%',
+            batch: 'S1',
+            expirationDate: '2027-04-04',
+            dosage: 'Nebulização',
+          },
+        ],
+        prescriberName: '',
+        crmCro: '',
+      },
+      complementaryServices: null,
+      followUp: null,
+    });
+    const followUpInitial = store.createAttendance({
+      patient: {
+        name: 'Maria Souza',
+        cpf: '12345678901',
+        birthDate: '1988-04-10',
+        cellPhone: '44999999999',
+        gender: 'feminino',
+        address: '',
+        city: 'Maringá',
+        state: 'PR',
+        phone: '',
+        responsibleName: '',
+      },
+      selectedServices: ['servicos-farmaceuticos'],
+      care: null,
+      injectable: null,
+      inhalotherapy: null,
+      complementaryServices: {
+        homeCare: false,
+        pharmacotherapeuticFollowUp: true,
+        minorDisorderIndication: false,
+        signsAndSymptoms: '',
+        medications: [
+          {
+            id: 'item-4',
+            medicationId: dipirona.id,
+            medicationConcentration: 'Dipirona — 500 mg',
+            batch: 'RET-1',
+            expirationDate: '2027-05-05',
+            dosage: '1 vez ao dia',
+          },
+        ],
+        recordNumber: '',
+        attendanceDate: '2026-08-16',
+      },
+      followUp: {
+        returnIntervalDays: 7,
+        returnCount: 2,
+      },
+    });
+    const followUpReturn = store.createFollowUpReturn(followUpInitial.id, {
+      patient: followUpInitial.patient,
+      selectedServices: ['servicos-farmaceuticos'],
+      care: null,
+      injectable: null,
+      inhalotherapy: null,
+      complementaryServices: {
+        homeCare: false,
+        pharmacotherapeuticFollowUp: true,
+        minorDisorderIndication: false,
+        signsAndSymptoms: '',
+        medications: [
+          {
+            id: 'item-5',
+            medicationId: ibuprofeno.id,
+            medicationConcentration: 'Ibuprofeno — 400 mg',
+            batch: 'RET-2',
+            expirationDate: '2027-05-05',
+            dosage: '1 vez ao dia',
+          },
+        ],
+        recordNumber: '',
+        attendanceDate: '2026-08-23',
+      },
+      followUp: null,
+    });
+
+    expect(
+      store.searchAttendancesAdvanced({
+        medicamentoId: dipirona.id,
+        lote: 'BBB',
+      }),
+    ).toEqual([]);
+    expect(
+      store.searchAttendancesAdvanced({
+        medicamentoId: dipirona.id,
+        lote: 'AAA',
+      }),
+    ).toEqual([
+      expect.objectContaining({
+        attendance: injectableAttendance,
+        matchedMedications: [injectableAttendance.injectable!.medications[0]],
+      }),
+    ]);
+    expect(
+      store
+        .searchAttendancesAdvanced({
+          lote: 'S1',
+        })
+        .map((result) => result.attendance),
+    ).toEqual([inhalotherapyAttendance]);
+    expect(
+      store
+        .searchAttendancesAdvanced({
+          cpfPaciente: '123.456.789-01',
+          medicamentoId: ibuprofeno.id,
+          lote: 'RET-2',
+        })
+        .map((result) => result.attendance),
+    ).toEqual([followUpReturn]);
+    expect(
+      store.searchAttendancesAdvanced({
+        cpfPaciente: injectableAttendance.patient.cpf,
+        dataAtendimento: injectableAttendance.createdAt.slice(0, 10),
+        medicamentoId: dipirona.id,
+      }),
+    ).toHaveLength(1);
+  });
 });

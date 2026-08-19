@@ -12,8 +12,34 @@
           </p>
         </div>
 
-        <a class="btn btn-secondary" routerLink="/atendimentos">Voltar para listagem</a>
+        <div class="flex flex-wrap gap-3">
+          <button
+            class="btn btn-primary"
+            type="button"
+            [disabled]="isPrinting()"
+            (click)="printAttendance(currentAttendance)"
+          >
+            @if (isPrinting()) {
+              <span class="spinner size-4" aria-hidden="true"></span>
+              Gerando PDF...
+            } @else {
+              <ng-icon name="bootstrapPrinter" size="1rem" />
+              Imprimir via do paciente
+            }
+          </button>
+          <a class="btn btn-secondary" routerLink="/atendimentos">Voltar para listagem</a>
+        </div>
       </div>
+
+      @if (printErrorMessage()) {
+        <div class="alert alert-danger">
+          <span class="marker marker-danger"></span>
+          <div>
+            <p class="alert-title">Não foi possível concluir a operação</p>
+            <p class="alert-description">{{ printErrorMessage() }}</p>
+          </div>
+        </div>
+      }
 
       <section class="card">
         <div class="card-header">

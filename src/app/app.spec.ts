@@ -759,6 +759,230 @@ describe('App', () => {
     expect(attendanceStore.getAttendance(initialAttendance.id)?.status).toBe('CONCLUIDO');
   });
 
+  it('should search attendances advanced by selected medication and batch without matching different items', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const clinicalStore = TestBed.inject(TemporaryClinicalRecordsStore);
+    const dipirona = clinicalStore.createMedication({
+      name: 'Dipirona',
+      measurementUnit: '500 mg',
+      administrationRoute: 'Oral',
+    });
+    const ibuprofeno = clinicalStore.createMedication({
+      name: 'Ibuprofeno',
+      measurementUnit: '400 mg',
+      administrationRoute: 'Oral',
+    });
+    const matchingAttendance = attendanceStore.createAttendance({
+      patient: {
+        name: 'Carla Rocha',
+        cpf: '22233344455',
+        birthDate: '1980-03-03',
+        cellPhone: '44955555555',
+        gender: 'feminino',
+        address: '',
+        city: 'Maringá',
+        state: 'PR',
+        phone: '',
+        responsibleName: '',
+      },
+      selectedServices: ['aplicacao-injetaveis'],
+      care: null,
+      injectable: {
+        medications: [
+          {
+            id: 'item-1',
+            medicationId: dipirona.id,
+            medicationConcentration: 'Dipirona — 500 mg',
+            batch: 'AAA123',
+            expirationDate: '2027-03-03',
+            dosage: 'Dose única',
+          },
+          {
+            id: 'item-2',
+            medicationId: ibuprofeno.id,
+            medicationConcentration: 'Ibuprofeno — 400 mg',
+            batch: 'BBB999',
+            expirationDate: '2027-03-03',
+            dosage: 'Dose única',
+          },
+        ],
+        administrationRoute: 'Intramuscular',
+        prescriberName: '',
+        crmCro: '',
+      },
+      inhalotherapy: null,
+      complementaryServices: null,
+      followUp: null,
+    });
+    attendanceStore.createAttendance({
+      patient: {
+        name: 'Bruno Santos',
+        cpf: '33344455566',
+        birthDate: '1975-04-04',
+        cellPhone: '44944444444',
+        gender: 'masculino',
+        address: '',
+        city: 'Maringá',
+        state: 'PR',
+        phone: '',
+        responsibleName: '',
+      },
+      selectedServices: ['aplicacao-injetaveis'],
+      care: null,
+      injectable: {
+        medications: [
+          {
+            id: 'item-3',
+            medicationId: dipirona.id,
+            medicationConcentration: 'Dipirona — 500 mg',
+            batch: 'CCC123',
+            expirationDate: '2027-04-04',
+            dosage: 'Dose única',
+          },
+          {
+            id: 'item-4',
+            medicationId: ibuprofeno.id,
+            medicationConcentration: 'Ibuprofeno — 400 mg',
+            batch: 'AAA123',
+            expirationDate: '2027-04-04',
+            dosage: 'Dose única',
+          },
+        ],
+        administrationRoute: 'Intramuscular',
+        prescriberName: '',
+        crmCro: '',
+      },
+      inhalotherapy: null,
+      complementaryServices: null,
+      followUp: null,
+    });
+
+    await router.navigateByUrl('/atendimentos/busca-avancada');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(
+      compiled.querySelector('main[data-page="busca-avancada-atendimentos"] h1')?.textContent,
+    ).toContain('Busca avançada de atendimentos');
+    expect(compiled.querySelector('[data-advanced-search-initial]')?.textContent).toContain(
+      'Utilize os filtros acima',
+    );
+    expect(compiled.querySelector('tbody')).toBeNull();
+
+    const medicationInput = compiled.querySelector<HTMLInputElement>('#advancedMedication');
+    const batchInput = compiled.querySelector<HTMLInputElement>('#advancedBatch');
+
+    if (!medicationInput || !batchInput) {
+      throw new Error('Advanced search fields were not rendered.');
+    }
+
+    medicationInput.value = 'dipi';
+    medicationInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    compiled
+      .querySelector<HTMLButtonElement>(`button[data-select-medication-id="${dipirona.id}"]`)
+      ?.click();
+    batchInput.value = 'AAA123';
+    batchInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    compiled.querySelector<HTMLButtonElement>('button[data-submit-advanced-search]')?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(compiled.querySelector('[data-advanced-search-total]')?.textContent).toContain(
+      '1 atendimento encontrado',
+    );
+    expect(compiled.querySelector('tbody')?.textContent).toContain(`#${matchingAttendance.codigo}`);
+    expect(compiled.querySelector('tbody')?.textContent).toContain('Carla Rocha');
+    expect(compiled.querySelector('tbody')?.textContent).toContain('Dipirona — 500 mg');
+    expect(compiled.querySelector('tbody')?.textContent).toContain('AAA123');
+    expect(compiled.querySelector('tbody')?.textContent).not.toContain('Bruno Santos');
+    expect(
+      compiled.querySelector('[data-pagination-summary="advanced-attendances"]')?.textContent,
+    ).toContain('Exibindo 1-1 de 1');
+
+    compiled
+      .querySelector<HTMLAnchorElement>(`a[data-view-attendance-id="${matchingAttendance.id}"]`)
+      ?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(router.url).toBe(`/atendimentos/${matchingAttendance.id}`);
+  });
+
+  it('should validate empty advanced search and clear filters/results', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    attendanceStore.createAttendance({
+      patient: {
+        name: 'Maria Souza',
+        cpf: '12345678901',
+        birthDate: '1988-04-10',
+        cellPhone: '44999999999',
+        gender: 'feminino',
+        address: '',
+        city: 'Maringá',
+        state: 'PR',
+        phone: '',
+        responsibleName: '',
+      },
+      selectedServices: ['cuidados-farmaceuticos'],
+      care: {
+        bloodGlucose: '95',
+        systolicPressure: '',
+        diastolicPressure: '',
+        bodyTemperature: '',
+      },
+      injectable: null,
+      inhalotherapy: null,
+      complementaryServices: null,
+      followUp: null,
+    });
+
+    await router.navigateByUrl('/atendimentos/busca-avancada');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    compiled.querySelector<HTMLButtonElement>('button[data-submit-advanced-search]')?.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.alert-warning')?.textContent).toContain(
+      'Informe ao menos um critério',
+    );
+    expect(compiled.querySelector('tbody')).toBeNull();
+
+    const cpfInput = compiled.querySelector<HTMLInputElement>('#advancedCpf');
+
+    if (!cpfInput) {
+      throw new Error('CPF search field was not rendered.');
+    }
+
+    cpfInput.value = '12345678901';
+    cpfInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(cpfInput.value).toBe('123.456.789-01');
+
+    compiled.querySelector<HTMLButtonElement>('button[data-submit-advanced-search]')?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(compiled.querySelector('tbody')?.textContent).toContain('Maria Souza');
+
+    compiled.querySelector<HTMLButtonElement>('button[data-clear-advanced-search]')?.click();
+    fixture.detectChanges();
+
+    expect(cpfInput.value).toBe('');
+    expect(compiled.querySelector('[data-advanced-search-initial]')?.textContent).toContain(
+      'Utilize os filtros acima',
+    );
+    expect(compiled.querySelector('tbody')).toBeNull();
+  });
+
   it('should show a read-only pharmaceutical service attendance detail page', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);

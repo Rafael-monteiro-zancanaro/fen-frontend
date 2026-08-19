@@ -17,39 +17,75 @@
         </span>
       </a>
 
-      <nav class="flex flex-wrap items-center gap-1 text-sm font-semibold" aria-label="Navegacao principal">
+      <nav
+        class="flex flex-wrap items-center gap-1 text-sm font-semibold"
+        aria-label="Navegacao principal"
+      >
         @if (isInternalNavigation()) {
           <a class="rounded-md bg-white px-3 py-2 text-uem-800 shadow-soft" routerLink="/inicio">
             Inicio
           </a>
-          <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/atendimentos">
+          <a
+            class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+            routerLink="/atendimentos"
+          >
             Atendimentos
           </a>
-          <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/medicamentos">
+          <a
+            class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+            routerLink="/atendimentos/busca-avancada"
+          >
+            Busca avançada
+          </a>
+          <a
+            class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+            routerLink="/medicamentos"
+          >
             Medicamentos
           </a>
-          <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/comorbidades">
+          <a
+            class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+            routerLink="/comorbidades"
+          >
             Comorbidades
           </a>
           @if (canManagePasswordRecovery()) {
-            <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/admin/recuperacoes-senha">
+            <a
+              class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+              routerLink="/admin/recuperacoes-senha"
+            >
               Recuperações de senha
             </a>
-            <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/admin/funcionarios">
+            <a
+              class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+              routerLink="/admin/funcionarios"
+            >
               Funcionários
             </a>
           }
-          <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/pacientes">
+          <a
+            class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+            routerLink="/pacientes"
+          >
             Pacientes
           </a>
-          <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/login">
+          <a
+            class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+            routerLink="/login"
+          >
             Sair
           </a>
         } @else {
-          <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/login">
+          <a
+            class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+            routerLink="/login"
+          >
             Login
           </a>
-          <a class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white" routerLink="/cadastro">
+          <a
+            class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+            routerLink="/cadastro"
+          >
             Cadastro
           </a>
         }

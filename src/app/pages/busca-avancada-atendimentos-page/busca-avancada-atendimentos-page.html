@@ -1,0 +1,213 @@
+<main data-page="busca-avancada-atendimentos" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="mb-2 text-sm font-semibold text-uem-700">Atendimentos</p>
+        <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">
+          Busca avançada de atendimentos
+        </h1>
+        <p class="mt-2 max-w-3xl text-sm leading-6 text-app-muted-foreground">
+          Localize atendimentos por paciente, medicamento, lote ou data para apoiar consultas de
+          rastreabilidade.
+        </p>
+      </div>
+
+      <a class="btn btn-secondary" routerLink="/atendimentos">Voltar para atendimentos</a>
+    </div>
+
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">Filtros da busca</h2>
+        <p class="card-description">Os critérios preenchidos serão combinados na mesma consulta.</p>
+      </div>
+
+      <form class="card-content grid gap-4" (ngSubmit)="submitSearch()">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div class="field">
+            <label for="advancedCpf" class="label">CPF do paciente</label>
+            <input
+              id="advancedCpf"
+              name="advancedCpf"
+              class="input"
+              type="text"
+              inputmode="numeric"
+              maxlength="14"
+              [value]="cpf()"
+              (input)="updateCpf($any($event.target))"
+            />
+          </div>
+
+          <div class="field">
+            <label for="advancedMedication" class="label">Medicamento</label>
+            <app-medication-autocomplete
+              inputId="advancedMedication"
+              inputName="advancedMedication"
+              section="advanced-search"
+              [value]="medicationQuery()"
+              [selectedMedicationId]="medicationId()"
+              (valueChange)="updateMedicationQuery($event)"
+              (medicationSelected)="selectMedication($event)"
+            />
+          </div>
+
+          <div class="field">
+            <label for="advancedBatch" class="label">Lote do medicamento</label>
+            <input
+              id="advancedBatch"
+              name="advancedBatch"
+              class="input"
+              type="text"
+              [ngModel]="batch()"
+              (ngModelChange)="updateBatch($event)"
+            />
+          </div>
+
+          <div class="field">
+            <label for="advancedAttendanceDate" class="label">Data do atendimento</label>
+            <input
+              id="advancedAttendanceDate"
+              name="advancedAttendanceDate"
+              class="input"
+              type="date"
+              [ngModel]="attendanceDate()"
+              (ngModelChange)="updateAttendanceDate($event)"
+            />
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <button
+            class="btn btn-primary"
+            type="submit"
+            data-submit-advanced-search
+            [disabled]="isLoading()"
+          >
+            @if (isLoading()) {
+              <span class="spinner size-4" aria-hidden="true"></span>
+            } @else {
+              <ng-icon name="bootstrapSearch" size="1rem" />
+            }
+            Buscar atendimentos
+          </button>
+          <button
+            class="btn btn-secondary"
+            type="button"
+            data-clear-advanced-search
+            (click)="clearFilters()"
+          >
+            <ng-icon name="bootstrapXCircle" size="1rem" />
+            Limpar filtros
+          </button>
+        </div>
+      </form>
+    </section>
+
+    @if (warningMessage()) {
+      <div class="alert alert-warning">
+        <span class="marker marker-warning"></span>
+        <div>
+          <p class="alert-title">{{ warningMessage() }}</p>
+        </div>
+      </div>
+    }
+
+    @if (errorMessage()) {
+      <div class="alert alert-danger">
+        <span class="marker marker-danger"></span>
+        <div>
+          <p class="alert-title">Erro na busca</p>
+          <p class="alert-description">{{ errorMessage() }}</p>
+        </div>
+      </div>
+    }
+
+    @if (isLoading()) {
+      <section class="card p-5" aria-live="polite">
+        <div class="skeleton h-6 w-52"></div>
+        <div class="mt-4 grid gap-3">
+          <div class="skeleton h-10 w-full"></div>
+          <div class="skeleton h-10 w-full"></div>
+        </div>
+      </section>
+    } @else if (!hasSearched()) {
+      <section class="empty" data-advanced-search-initial>
+        <h2 class="empty-title">Informe os critérios da consulta</h2>
+        <p class="empty-description">
+          Utilize os filtros acima para localizar atendimentos específicos.
+        </p>
+      </section>
+    } @else if (results().length === 0) {
+      <section class="empty">
+        <h2 class="empty-title">Nenhum atendimento encontrado</h2>
+        <p class="empty-description">Nenhum atendimento encontrado para os critérios informados.</p>
+      </section>
+    } @else {
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Resultados</h2>
+          <p class="card-description" data-advanced-search-total>{{ totalLabel() }}</p>
+        </div>
+        <div class="card-content">
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Paciente</th>
+                  <th>CPF</th>
+                  <th>Data</th>
+                  <th>Medicamento</th>
+                  <th>Lote</th>
+                  <th>Situação</th>
+                  <th class="w-24">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (result of paginatedResults(); track result.attendance.id) {
+                  <tr>
+                    <td class="font-semibold text-app-foreground">
+                      #{{ result.attendance.codigo }}
+                    </td>
+                    <td class="font-semibold text-app-foreground">
+                      {{ result.attendance.patient.name }}
+                    </td>
+                    <td>{{ formatCpf(result.attendance.patient.cpf) }}</td>
+                    <td>{{ formatDate(result.attendance.createdAt) }}</td>
+                    <td>{{ matchedMedicationLabel(result) }}</td>
+                    <td>{{ matchedBatchLabel(result) }}</td>
+                    <td>
+                      <span [class]="statusBadgeClass(result.attendance.status)">
+                        {{ statusLabel(result.attendance.status) }}
+                      </span>
+                    </td>
+                    <td>
+                      <a
+                        class="btn btn-secondary btn-icon btn-sm"
+                        [routerLink]="['/atendimentos', result.attendance.id]"
+                        [attr.data-view-attendance-id]="result.attendance.id"
+                        aria-label="Visualizar atendimento"
+                        title="Visualizar atendimento"
+                      >
+                        <ng-icon name="bootstrapEye" size="1rem" />
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <app-pagination-controls
+            [pagination]="pagination()"
+            summaryId="advanced-attendances"
+            pageSizeSelectId="advancedAttendancePageSize"
+            itemLabel="atendimento(s)"
+            (previousPage)="goToPreviousPage()"
+            (nextPage)="goToNextPage()"
+            (pageSizeChange)="updatePageSize($event)"
+          />
+        </div>
+      </section>
+    }
+  </section>
+</main>

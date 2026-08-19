@@ -9,7 +9,10 @@
         </p>
       </div>
 
-      <a class="btn btn-primary" routerLink="/atendimentos/novo">Novo atendimento</a>
+      <div class="flex flex-wrap gap-3">
+        <a class="btn btn-secondary" routerLink="/atendimentos/busca-avancada">Busca avançada</a>
+        <a class="btn btn-primary" routerLink="/atendimentos/novo">Novo atendimento</a>
+      </div>
     </div>
 
     @if (successMessage()) {
@@ -26,7 +29,7 @@
       <div class="alert alert-danger">
         <span class="marker marker-danger"></span>
         <div>
-          <p class="alert-title">Não foi possível carregar os atendimentos</p>
+          <p class="alert-title">Não foi possível concluir a operação</p>
           <p class="alert-description">{{ errorMessage() }}</p>
         </div>
       </div>
@@ -136,6 +139,29 @@
                           >
                             <ng-icon name="bootstrapEye" size="1rem" />
                           </a>
+                          <button
+                            class="btn btn-secondary btn-icon btn-sm"
+                            type="button"
+                            [disabled]="printingAttendanceId() === attendance.id"
+                            [attr.aria-label]="
+                              printingAttendanceId() === attendance.id
+                                ? 'Gerando via do atendimento'
+                                : 'Imprimir atendimento'
+                            "
+                            [title]="
+                              printingAttendanceId() === attendance.id
+                                ? 'Gerando PDF...'
+                                : 'Imprimir atendimento'
+                            "
+                            [attr.data-print-attendance-id]="attendance.id"
+                            (click)="printAttendance(attendance.id)"
+                          >
+                            @if (printingAttendanceId() === attendance.id) {
+                              <span class="spinner size-4" aria-hidden="true"></span>
+                            } @else {
+                              <ng-icon name="bootstrapPrinter" size="1rem" />
+                            }
+                          </button>
                           @if (canContinueAttendance(attendance)) {
                             <a
                               class="btn btn-outline btn-sm"

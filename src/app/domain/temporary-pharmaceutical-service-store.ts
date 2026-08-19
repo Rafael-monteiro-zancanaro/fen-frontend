@@ -1,5 +1,7 @@
 import { Injectable, computed, signal } from '@angular/core';
 import {
+  AdvancedAttendanceSearchCriteria,
+  AdvancedAttendanceSearchResult,
   AttendanceStatus,
   AttendanceStatusFilter,
   Comorbidity,
@@ -11,6 +13,7 @@ import {
   PatientInput,
   PharmaceuticalServiceAttendance,
   PharmaceuticalServiceKey,
+  ServiceMedicationItem,
 } from './clinical-records';
 import { TemporaryClinicalRecordsStore } from './temporary-clinical-records-store';
 
@@ -343,6 +346,56 @@ export class TemporaryPharmaceuticalServiceStore {
     });
   }
 
+  searchAttendancesAdvanced(
+    criteria: AdvancedAttendanceSearchCriteria,
+  ): AdvancedAttendanceSearchResult[] {
+    const cpfPaciente = this.onlyDigits(criteria.cpfPaciente ?? '');
+    const medicamentoId = criteria.medicamentoId?.trim() ?? '';
+    const lote = this.normalize(criteria.lote ?? '');
+    const dataAtendimento = criteria.dataAtendimento?.trim() ?? '';
+
+    if (!cpfPaciente && !medicamentoId && !lote && !dataAtendimento) {
+      return [];
+    }
+
+    return this.state().attendances.flatMap((attendance) => {
+      if (cpfPaciente && attendance.patient.cpf !== cpfPaciente) {
+        return [];
+      }
+
+      if (dataAtendimento && attendance.createdAt.slice(0, 10) !== dataAtendimento) {
+        return [];
+      }
+
+      const medicationItems = this.attendanceMedicationItems(attendance);
+      const matchedMedications =
+        medicamentoId || lote
+          ? medicationItems.filter((item) => {
+              if (medicamentoId && item.medicationId !== medicamentoId) {
+                return false;
+              }
+
+              if (lote && !this.normalize(item.batch).includes(lote)) {
+                return false;
+              }
+
+              return true;
+            })
+          : [];
+
+      if ((medicamentoId || lote) && matchedMedications.length === 0) {
+        return [];
+      }
+
+      return [
+        {
+          attendance,
+          matchedMedications,
+        },
+      ];
+    });
+  }
+
   markAttendanceExpired(id: string): boolean {
     return this.updateAttendanceStatus(id, 'EXPIRADO');
   }
@@ -517,6 +570,16 @@ export class TemporaryPharmaceuticalServiceStore {
           (firstAttendance.followUpLink?.returnNumber ?? 0) -
           (secondAttendance.followUpLink?.returnNumber ?? 0),
       );
+  }
+
+  private attendanceMedicationItems(
+    attendance: PharmaceuticalServiceAttendance,
+  ): ServiceMedicationItem[] {
+    return [
+      ...(attendance.injectable?.medications ?? []),
+      ...(attendance.inhalotherapy?.medications ?? []),
+      ...(attendance.complementaryServices?.medications ?? []),
+    ];
   }
 
   private hydrateAttendances(

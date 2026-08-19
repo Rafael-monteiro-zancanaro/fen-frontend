@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { adminOnlyGuard } from './domain/admin-only.guard';
 import { AtendimentosPage } from './pages/atendimentos-page/atendimentos-page';
+import { BuscaAvancadaAtendimentosPage } from './pages/busca-avancada-atendimentos-page/busca-avancada-atendimentos-page';
 import { AdminFuncionariosPage } from './pages/admin-funcionarios-page/admin-funcionarios-page';
 import { AdminRecuperacoesSenhaPage } from './pages/admin-recuperacoes-senha-page/admin-recuperacoes-senha-page';
 import { CadastroUsuarioPage } from './pages/cadastro-usuario-page/cadastro-usuario-page';
@@ -46,6 +47,10 @@ export const routes: Routes = [
   {
     path: 'atendimentos',
     component: AtendimentosPage,
+  },
+  {
+    path: 'atendimentos/busca-avancada',
+    component: BuscaAvancadaAtendimentosPage,
   },
   {
     path: 'atendimentos/novo',

@@ -1,6 +1,9 @@
-import { Component, computed } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { bootstrapPrinter } from '@ng-icons/bootstrap-icons';
+import { AtendimentoPdfService } from '../../domain/atendimento-pdf.service';
 import {
   AttendanceStatus,
   FollowUpHistoryEntry,
@@ -16,10 +19,17 @@ import {
 
 @Component({
   selector: 'app-visualizar-atendimento-page',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, NgIcon, RouterLink],
+  providers: [
+    provideIcons({
+      bootstrapPrinter,
+    }),
+  ],
   templateUrl: './visualizar-atendimento-page.html',
 })
 export class VisualizarAtendimentoPage {
+  protected readonly isPrinting = signal(false);
+  protected readonly printErrorMessage = signal('');
   protected readonly attendance = computed(() =>
     this.store.getAttendance(this.route.snapshot.paramMap.get('id') ?? ''),
   );
@@ -27,6 +37,7 @@ export class VisualizarAtendimentoPage {
   constructor(
     private readonly route: ActivatedRoute,
     private readonly store: TemporaryPharmaceuticalServiceStore,
+    private readonly atendimentoPdfService: AtendimentoPdfService,
   ) {}
 
   protected formatCpf(cpf: string): string {
@@ -73,5 +84,22 @@ export class VisualizarAtendimentoPage {
 
   protected followUpHistory(attendance: PharmaceuticalServiceAttendance): FollowUpHistoryEntry[] {
     return this.store.followUpHistory(attendance.id);
+  }
+
+  protected async printAttendance(attendance: PharmaceuticalServiceAttendance): Promise<void> {
+    if (this.isPrinting()) {
+      return;
+    }
+
+    this.printErrorMessage.set('');
+    this.isPrinting.set(true);
+
+    try {
+      await this.atendimentoPdfService.generate(attendance);
+    } catch {
+      this.printErrorMessage.set('Não foi possível gerar a via do paciente. Tente novamente.');
+    } finally {
+      this.isPrinting.set(false);
+    }
   }
 }

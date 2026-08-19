@@ -1,0 +1,293 @@
+<article class="print-page">
+  <header class="institutional-header">
+    <div class="logo-cell">
+      <img src="/uem-logo.png" alt="UEM" />
+    </div>
+    <div class="institution-cell">
+      <h1>FARMÁCIA ENSINO</h1>
+      <div class="institution-grid">
+        <p><strong>Razão Social:</strong> Universidade Estadual de Maringá</p>
+        <p><strong>CNPJ:</strong> 79.151.312/0001-56</p>
+        <p>Avenida Colombo, 5790</p>
+        <p>Bloco Q-04</p>
+        <p>Jardim Universitário</p>
+        <p>CEP 87020-900</p>
+        <p>Telefone: (44) 3011-4300</p>
+        <p>e-mail: sec-fen&#64;uem.br</p>
+        <p>Maringá-PR</p>
+      </div>
+    </div>
+    <div class="fen-cell">
+      <strong>FARMÁCIA<br />ENSINO<br />UEM</strong>
+    </div>
+  </header>
+
+  <section class="document-title">
+    <h2>DECLARAÇÃO DE SERVIÇOS FARMACÊUTICOS</h2>
+    <p>Atendimento nº {{ data().codigo }} · Data: {{ data().createdAt }}</p>
+  </section>
+
+  <section class="print-section avoid-break">
+    <h3>Identificação do usuário</h3>
+    <div class="field-row">
+      <span class="field-label">Nome:</span>
+      <span class="field-value">{{ data().patient.name }}</span>
+    </div>
+    <div class="field-grid three">
+      <div class="field-row">
+        <span class="field-label">CPF:</span>
+        <span class="field-value">{{ data().patient.cpf }}</span>
+      </div>
+      <div class="field-row">
+        <span class="field-label">Gênero:</span>
+        <span class="field-value">{{ data().patient.gender }}</span>
+      </div>
+      <div class="field-row">
+        <span class="field-label">Nascimento:</span>
+        <span class="field-value">{{ data().patient.birthDate }}</span>
+      </div>
+    </div>
+    <div class="field-row">
+      <span class="field-label">Endereço:</span>
+      <span class="field-value">
+        {{ data().patient.address }}
+        @if (data().patient.neighborhood) {
+          - {{ data().patient.neighborhood }}
+        }
+      </span>
+    </div>
+    <div class="field-grid three">
+      <div class="field-row">
+        <span class="field-label">Cidade:</span>
+        <span class="field-value">{{ data().patient.city }}</span>
+      </div>
+      <div class="field-row">
+        <span class="field-label">Estado:</span>
+        <span class="field-value">{{ data().patient.state }}</span>
+      </div>
+      <div class="field-row">
+        <span class="field-label">CEP:</span>
+        <span class="field-value">{{ data().patient.cep }}</span>
+      </div>
+    </div>
+    <div class="field-grid two">
+      <div class="field-row">
+        <span class="field-label">Celular:</span>
+        <span class="field-value">{{ data().patient.cellPhone }}</span>
+      </div>
+      <div class="field-row">
+        <span class="field-label">Telefone:</span>
+        <span class="field-value">{{ data().patient.phone }}</span>
+      </div>
+    </div>
+    <div class="field-row">
+      <span class="field-label">Nome do responsável:</span>
+      <span class="field-value">{{ data().patient.responsibleName }}</span>
+    </div>
+  </section>
+
+  <section class="print-section avoid-break">
+    <h3>Serviços realizados</h3>
+    <div class="checkbox-grid">
+      @for (service of data().selectedServices; track service.label) {
+        <span class="checkbox-line">
+          <span class="box">{{ service.selected ? 'X' : '' }}</span>
+          {{ service.label }}
+        </span>
+      }
+    </div>
+  </section>
+
+  @if (data().care; as care) {
+    <section class="print-section avoid-break">
+      <h3>Cuidados farmacêuticos</h3>
+      <table class="print-table">
+        <tbody>
+          <tr>
+            <th>Glicemia capilar</th>
+            <td>{{ care.bloodGlucose }}</td>
+            <td class="reference">Valor normal: 80 a 110 mg/dl</td>
+          </tr>
+          <tr>
+            <th>Pressão arterial</th>
+            <td>{{ care.bloodPressure }}</td>
+            <td class="reference">Valor normal: &lt;120 x &lt;80 mmHg</td>
+          </tr>
+          <tr>
+            <th>Temperatura corporal axilar</th>
+            <td>{{ care.bodyTemperature }}</td>
+            <td class="reference">Valor normal: 36 a 37 °C</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="observation">
+        Obs.: Estes procedimentos não têm finalidade de diagnóstico e não substituem a consulta
+        médica ou a realização de exames laboratoriais.
+      </p>
+    </section>
+  }
+
+  @if (data().injectable; as injectable) {
+    <section class="print-section avoid-break">
+      <h3>Aplicação de injetáveis</h3>
+      <table class="print-table medication-table">
+        <thead>
+          <tr>
+            <th>Medicamento/concentração</th>
+            <th>Lote</th>
+            <th>Validade</th>
+            <th>Posologia</th>
+            <th>Via de administração</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (medication of injectable.medications; track medication.medicationConcentration) {
+            <tr>
+              <td>{{ medication.medicationConcentration }}</td>
+              <td>{{ medication.batch }}</td>
+              <td>{{ medication.expirationDate }}</td>
+              <td>{{ medication.dosage }}</td>
+              <td>{{ medication.administrationRoute }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <div class="field-grid two">
+        <div class="field-row">
+          <span class="field-label">Nome do prescritor:</span>
+          <span class="field-value">{{ injectable.prescriberName }}</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">CRM/CRO:</span>
+          <span class="field-value">{{ injectable.crmCro }}</span>
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (data().inhalotherapy; as inhalotherapy) {
+    <section class="print-section avoid-break">
+      <h3>Inaloterapia</h3>
+      <table class="print-table medication-table">
+        <thead>
+          <tr>
+            <th>Medicamento/concentração</th>
+            <th>Lote</th>
+            <th>Validade</th>
+            <th>Posologia</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (medication of inhalotherapy.medications; track medication.medicationConcentration) {
+            <tr>
+              <td>{{ medication.medicationConcentration }}</td>
+              <td>{{ medication.batch }}</td>
+              <td>{{ medication.expirationDate }}</td>
+              <td>{{ medication.dosage }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <div class="field-grid two">
+        <div class="field-row">
+          <span class="field-label">Nome do prescritor:</span>
+          <span class="field-value">{{ inhalotherapy.prescriberName }}</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">CRM/CRO:</span>
+          <span class="field-value">{{ inhalotherapy.crmCro }}</span>
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (data().complementaryServices; as complementaryServices) {
+    <section class="print-section avoid-break">
+      <h3>Serviços farmacêuticos</h3>
+      <div class="checkbox-grid stacked">
+        @for (item of complementaryServices.selectedItems; track item) {
+          <span class="checkbox-line"><span class="box">X</span>{{ item }}</span>
+        }
+      </div>
+      <div class="field-grid two">
+        <div class="field-row">
+          <span class="field-label">Nº ficha:</span>
+          <span class="field-value">{{ complementaryServices.recordNumber }}</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Data:</span>
+          <span class="field-value">{{ complementaryServices.attendanceDate }}</span>
+        </div>
+      </div>
+      <div class="field-row multiline">
+        <span class="field-label">Sinais e sintomas:</span>
+        <span class="field-value">{{ complementaryServices.signsAndSymptoms }}</span>
+      </div>
+      <table class="print-table medication-table">
+        <thead>
+          <tr>
+            <th>Medicamento/concentração</th>
+            <th>Lote</th>
+            <th>Validade</th>
+            <th>Posologia</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (
+            medication of complementaryServices.medications;
+            track medication.medicationConcentration
+          ) {
+            <tr>
+              <td>{{ medication.medicationConcentration }}</td>
+              <td>{{ medication.batch }}</td>
+              <td>{{ medication.expirationDate }}</td>
+              <td>{{ medication.dosage }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  @if (data().followUp; as followUp) {
+    <section class="print-section avoid-break">
+      <h3>Acompanhamento</h3>
+      <div
+        class="field-grid"
+        [class.three]="followUp.contextLabel"
+        [class.two]="!followUp.contextLabel"
+      >
+        <div class="field-row">
+          <span class="field-label">Intervalo:</span>
+          <span class="field-value">{{ followUp.returnIntervalDays }} dias</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Retornos previstos:</span>
+          <span class="field-value">{{ followUp.returnCount }}</span>
+        </div>
+        @if (followUp.contextLabel) {
+          <div class="field-row">
+            <span class="field-label">Contexto:</span>
+            <span class="field-value">{{ followUp.contextLabel }}</span>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <footer class="signature-section avoid-break">
+    <div class="signature-box">
+      <span></span>
+      <p>Assinatura usuário/responsável</p>
+    </div>
+    <div class="signature-box">
+      <span></span>
+      <p>Carimbo e assinatura farmacêutico</p>
+    </div>
+  </footer>
+
+  <div class="copy-markers">
+    <span>1ª Via - Usuário</span>
+    <span>2ª Via - Farmácia</span>
+  </div>
+</article>
