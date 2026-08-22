@@ -226,12 +226,14 @@ describe('App', () => {
     expect(compiled.querySelector('header nav')?.textContent).not.toContain(
       'Recuperações de senha',
     );
+    expect(compiled.querySelector('header nav')?.textContent).not.toContain('Cadastros pendentes');
     expect(compiled.querySelector('header nav')?.textContent).not.toContain('Funcionários');
 
     authenticateAs('ADMIN');
     fixture.detectChanges();
 
     expect(compiled.querySelector('header nav')?.textContent).toContain('Recuperações de senha');
+    expect(compiled.querySelector('header nav')?.textContent).toContain('Cadastros pendentes');
     expect(compiled.querySelector('header nav')?.textContent).toContain('Funcionários');
   });
 

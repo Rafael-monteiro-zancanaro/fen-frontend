@@ -1,0 +1,215 @@
+<main data-page="visualizar-cadastro-pendente" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="mb-2 text-sm font-semibold text-uem-700">Administração</p>
+        <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">
+          {{ registration()?.nome ?? 'Análise de cadastro' }}
+        </h1>
+      </div>
+
+      <a class="btn btn-secondary" routerLink="/admin/cadastros-pendentes">Voltar para listagem</a>
+    </div>
+
+    @if (actionErrorMessage()) {
+      <div class="alert alert-danger" data-pending-registration-action-error>
+        <span class="marker marker-danger"></span>
+        <div>
+          <p class="alert-title">A decisão não foi concluída</p>
+          <p class="alert-description">{{ actionErrorMessage() }}</p>
+        </div>
+      </div>
+    }
+
+    @if (isLoading()) {
+      <section
+        class="card p-5"
+        data-pending-registration-loading
+        aria-label="Carregando cadastro pendente"
+      >
+        <div class="skeleton h-6 w-52"></div>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+          <div class="skeleton h-10 w-full"></div>
+          <div class="skeleton h-10 w-full"></div>
+        </div>
+      </section>
+    } @else if (hasLoadError()) {
+      <div class="alert alert-danger" data-pending-registration-error>
+        <span class="marker marker-danger"></span>
+        <div>
+          <p class="alert-title">Não foi possível carregar o cadastro pendente</p>
+          <p class="alert-description">Retorne à listagem e tente novamente.</p>
+        </div>
+      </div>
+    } @else if (registration(); as currentRegistration) {
+      <section class="card w-full max-w-4xl">
+        <div class="card-header">
+          <h2 class="card-title">Dados cadastrais</h2>
+          <p class="card-description">
+            Informações pessoais e de acesso declaradas pelo profissional.
+          </p>
+        </div>
+
+        <div class="card-content grid gap-4 sm:grid-cols-2">
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Nome completo</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ currentRegistration.nome }}</p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">E-mail</p>
+            <p class="mt-1 font-semibold text-app-foreground">{{ currentRegistration.email }}</p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">CPF</p>
+            <p class="mt-1 font-semibold text-app-foreground">
+              {{ formatCpf(currentRegistration.cpf) }}
+            </p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Data de nascimento</p>
+            <p class="mt-1 font-semibold text-app-foreground">
+              {{ formatDate(currentRegistration.dataNascimento) }}
+            </p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Perfil</p>
+            <p class="mt-1">
+              <span class="badge badge-warning">{{ roleLabel(currentRegistration.role) }}</span>
+            </p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Situação</p>
+            <p class="mt-1"><span class="badge badge-warning">Pendente</span></p>
+          </div>
+          <div>
+            <p class="text-xs font-bold uppercase text-app-muted-foreground">Data da solicitação</p>
+            <p class="mt-1 font-semibold text-app-foreground">
+              {{ formatDateTime(currentRegistration.solicitadoEm) }}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card w-full max-w-4xl">
+        <div class="card-header">
+          <h2 class="card-title">Dados profissionais</h2>
+          <p class="card-description">Informações específicas do perfil selecionado no cadastro.</p>
+        </div>
+
+        <div class="card-content grid gap-4 sm:grid-cols-2">
+          @if (currentRegistration.role === 'FARMACEUTICO') {
+            <div>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">CRF</p>
+              <p class="mt-1 font-semibold text-app-foreground">{{ currentRegistration.crf }}</p>
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">
+                Responsável técnico
+              </p>
+              <p class="mt-1 font-semibold text-app-foreground">
+                {{ currentRegistration.responsavelTecnico ? 'Sim' : 'Não' }}
+              </p>
+            </div>
+          } @else {
+            <div>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">Tipo do estágio</p>
+              <p class="mt-1 font-semibold text-app-foreground">
+                {{ internshipTypeLabel(currentRegistration.tipoEstagio) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">Supervisor</p>
+              <p class="mt-1 font-semibold text-app-foreground">
+                {{ currentRegistration.supervisor?.nome ?? 'Não informado' }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">
+                Início da vigência
+              </p>
+              <p class="mt-1 font-semibold text-app-foreground">
+                {{ formatDate(currentRegistration.inicioVigencia) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">Fim da vigência</p>
+              <p class="mt-1 font-semibold text-app-foreground">
+                {{ formatDate(currentRegistration.fimVigencia) }}
+              </p>
+            </div>
+          }
+        </div>
+
+        <div class="card-footer flex flex-wrap justify-end gap-3">
+          <button
+            class="btn btn-danger"
+            type="button"
+            data-reject-registration
+            [disabled]="decisionInProgress()"
+            (click)="askToReject()"
+          >
+            Rejeitar cadastro
+          </button>
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-approve-registration
+            [disabled]="decisionInProgress()"
+            (click)="askToApprove()"
+          >
+            Aprovar cadastro
+          </button>
+        </div>
+      </section>
+    }
+  </section>
+
+  @if (pendingDecision()) {
+    <div class="alert-dialog-overlay" (click)="cancelDecision()"></div>
+    <section class="alert-dialog" role="alertdialog" aria-modal="true">
+      <div class="alert-dialog-header">
+        <h2 class="alert-dialog-title">
+          {{ isApproveDecision() ? 'Aprovar cadastro?' : 'Rejeitar cadastro?' }}
+        </h2>
+        <p class="alert-dialog-description">
+          @if (isApproveDecision()) {
+            O profissional poderá acessar o sistema depois da aprovação.
+          } @else {
+            Esta ação excluirá o cadastro e não poderá ser desfeita.
+          }
+        </p>
+      </div>
+      <div class="alert-dialog-footer">
+        <button
+          class="btn btn-secondary"
+          type="button"
+          [disabled]="decisionInProgress()"
+          (click)="cancelDecision()"
+        >
+          Cancelar
+        </button>
+        @if (isApproveDecision()) {
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-confirm-approve-registration
+            [disabled]="decisionInProgress()"
+            (click)="confirmDecision()"
+          >
+            Aprovar
+          </button>
+        } @else {
+          <button
+            class="btn btn-danger"
+            type="button"
+            data-confirm-reject-registration
+            [disabled]="decisionInProgress()"
+            (click)="confirmDecision()"
+          >
+            Rejeitar
+          </button>
+        }
+      </div>
+    </section>
+  }
+</main>

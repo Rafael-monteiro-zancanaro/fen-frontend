@@ -3,6 +3,7 @@ import { authGuard } from './auth/auth.guard';
 import { adminOnlyGuard } from './domain/admin-only.guard';
 import { AtendimentosPage } from './pages/atendimentos-page/atendimentos-page';
 import { BuscaAvancadaAtendimentosPage } from './pages/busca-avancada-atendimentos-page/busca-avancada-atendimentos-page';
+import { CadastrosPendentesPage } from './pages/cadastros-pendentes-page/cadastros-pendentes-page';
 import { AdminFuncionariosPage } from './pages/admin-funcionarios-page/admin-funcionarios-page';
 import { AdminRecuperacoesSenhaPage } from './pages/admin-recuperacoes-senha-page/admin-recuperacoes-senha-page';
 import { CadastroUsuarioPage } from './pages/cadastro-usuario-page/cadastro-usuario-page';
@@ -22,6 +23,7 @@ import { VisualizarMedicamentoPage } from './pages/visualizar-medicamento-page/v
 import { VisualizarPacientePage } from './pages/visualizar-paciente-page/visualizar-paciente-page';
 import { VisualizarRecuperacaoSenhaPage } from './pages/visualizar-recuperacao-senha-page/visualizar-recuperacao-senha-page';
 import { VisualizarAtendimentoPage } from './pages/visualizar-atendimento-page/visualizar-atendimento-page';
+import { VisualizarCadastroPendentePage } from './pages/visualizar-cadastro-pendente-page/visualizar-cadastro-pendente-page';
 
 export const routes: Routes = [
   {
@@ -130,6 +132,16 @@ export const routes: Routes = [
     path: 'pacientes/:id',
     component: VisualizarPacientePage,
     canActivate: [authGuard],
+  },
+  {
+    path: 'admin/cadastros-pendentes',
+    component: CadastrosPendentesPage,
+    canActivate: [authGuard, adminOnlyGuard],
+  },
+  {
+    path: 'admin/cadastros-pendentes/:id',
+    component: VisualizarCadastroPendentePage,
+    canActivate: [authGuard, adminOnlyGuard],
   },
   {
     path: 'admin/recuperacoes-senha',
