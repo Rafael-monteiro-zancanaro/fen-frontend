@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './auth/auth.guard';
 import { adminOnlyGuard } from './domain/admin-only.guard';
 import { AtendimentosPage } from './pages/atendimentos-page/atendimentos-page';
 import { BuscaAvancadaAtendimentosPage } from './pages/busca-avancada-atendimentos-page/busca-avancada-atendimentos-page';
@@ -43,93 +44,111 @@ export const routes: Routes = [
   {
     path: 'inicio',
     component: InicioPage,
+    canActivate: [authGuard],
   },
   {
     path: 'atendimentos',
     component: AtendimentosPage,
+    canActivate: [authGuard],
   },
   {
     path: 'atendimentos/busca-avancada',
     component: BuscaAvancadaAtendimentosPage,
+    canActivate: [authGuard],
   },
   {
     path: 'atendimentos/novo',
     component: ServicosFarmaceuticosPage,
+    canActivate: [authGuard],
   },
   {
     path: 'atendimentos/:id/continuar',
     component: ServicosFarmaceuticosPage,
+    canActivate: [authGuard],
   },
   {
     path: 'atendimentos/:id',
     component: VisualizarAtendimentoPage,
+    canActivate: [authGuard],
   },
   {
     path: 'medicamentos',
     component: MedicamentosPage,
+    canActivate: [authGuard],
   },
   {
     path: 'medicamentos/novo',
     component: NovoMedicamentoPage,
+    canActivate: [authGuard],
   },
   {
     path: 'medicamentos/:id/editar',
     component: NovoMedicamentoPage,
+    canActivate: [authGuard],
   },
   {
     path: 'medicamentos/:id',
     component: VisualizarMedicamentoPage,
+    canActivate: [authGuard],
   },
   {
     path: 'comorbidades',
     component: ComorbidadesPage,
+    canActivate: [authGuard],
   },
   {
     path: 'comorbidades/nova',
     component: NovaComorbidadePage,
+    canActivate: [authGuard],
   },
   {
     path: 'comorbidades/:id/editar',
     component: NovaComorbidadePage,
+    canActivate: [authGuard],
   },
   {
     path: 'comorbidades/:id',
     component: VisualizarComorbidadePage,
+    canActivate: [authGuard],
   },
   {
     path: 'pacientes',
     component: PacientesPage,
+    canActivate: [authGuard],
   },
   {
     path: 'pacientes/novo',
     component: NovoPacientePage,
+    canActivate: [authGuard],
   },
   {
     path: 'pacientes/:id/editar',
     component: NovoPacientePage,
+    canActivate: [authGuard],
   },
   {
     path: 'pacientes/:id',
     component: VisualizarPacientePage,
+    canActivate: [authGuard],
   },
   {
     path: 'admin/recuperacoes-senha',
     component: AdminRecuperacoesSenhaPage,
-    canActivate: [adminOnlyGuard],
+    canActivate: [authGuard, adminOnlyGuard],
   },
   {
     path: 'admin/recuperacoes-senha/:id',
     component: VisualizarRecuperacaoSenhaPage,
-    canActivate: [adminOnlyGuard],
+    canActivate: [authGuard, adminOnlyGuard],
   },
   {
     path: 'admin/funcionarios',
     component: AdminFuncionariosPage,
-    canActivate: [adminOnlyGuard],
+    canActivate: [authGuard, adminOnlyGuard],
   },
   {
     path: 'admin/funcionarios/:id',
     component: VisualizarFuncionarioPage,
-    canActivate: [adminOnlyGuard],
+    canActivate: [authGuard, adminOnlyGuard],
   },
 ];

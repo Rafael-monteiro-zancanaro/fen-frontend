@@ -3,6 +3,7 @@ import { provideRouter, Router } from '@angular/router';
 import { vi } from 'vitest';
 import { App } from './app';
 import { routes } from './app.routes';
+import { AuthService } from './auth/auth.service';
 import { TemporaryAccessControl } from './domain/temporary-access-control';
 import { TemporaryPasswordRecoveryStore } from './domain/temporary-password-recovery-store';
 import { TemporaryClinicalRecordsStore } from './domain/temporary-clinical-records-store';
@@ -15,7 +16,21 @@ describe('App', () => {
 
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter(routes)],
+      providers: [
+        provideRouter(routes),
+        {
+          provide: AuthService,
+          useFactory: (accessControl: TemporaryAccessControl) => ({
+            isAuthenticated: () => true,
+            currentUser: () => ({
+              id: '00000000-0000-0000-0000-000000000001',
+              email: 'usuario@fen.br',
+              role: accessControl.currentRole(),
+            }),
+          }),
+          deps: [TemporaryAccessControl],
+        },
+      ],
     }).compileComponents();
   });
 
