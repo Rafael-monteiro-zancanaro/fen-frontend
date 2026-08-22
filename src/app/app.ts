@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
-import { TemporaryAccessControl } from './domain/temporary-access-control';
+import { AuthService } from './auth/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -10,7 +10,7 @@ import { TemporaryAccessControl } from './domain/temporary-access-control';
 })
 export class App {
   constructor(
-    private readonly accessControl: TemporaryAccessControl,
+    private readonly auth: AuthService,
     private readonly router: Router,
   ) {}
 
@@ -26,6 +26,11 @@ export class App {
   }
 
   protected canManagePasswordRecovery(): boolean {
-    return this.accessControl.canAccessAdminModules();
+    return this.auth.currentUser()?.role === 'ADMIN';
+  }
+
+  protected logout(): void {
+    this.auth.logout();
+    void this.router.navigateByUrl('/login');
   }
 }

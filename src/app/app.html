@@ -69,12 +69,14 @@
           >
             Pacientes
           </a>
-          <a
+          <button
+            type="button"
+            data-action="logout"
             class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
-            routerLink="/login"
+            (click)="logout()"
           >
             Sair
-          </a>
+          </button>
         } @else {
           <a
             class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"

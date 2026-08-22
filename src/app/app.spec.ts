@@ -1,18 +1,28 @@
+import { signal, WritableSignal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { vi } from 'vitest';
 import { App } from './app';
 import { routes } from './app.routes';
+import { AuthUser } from './auth/auth.models';
 import { AuthService } from './auth/auth.service';
-import { TemporaryAccessControl } from './domain/temporary-access-control';
 import { TemporaryPasswordRecoveryStore } from './domain/temporary-password-recovery-store';
 import { TemporaryClinicalRecordsStore } from './domain/temporary-clinical-records-store';
 import { TemporaryPharmacyEmployeeStore } from './domain/temporary-pharmacy-employee-store';
 import { TemporaryPharmaceuticalServiceStore } from './domain/temporary-pharmaceutical-service-store';
 
 describe('App', () => {
+  let currentUser: WritableSignal<AuthUser | null>;
+  let logout: ReturnType<typeof vi.fn>;
+
   beforeEach(async () => {
     localStorage.clear();
+    currentUser = signal<AuthUser | null>({
+      id: '00000000-0000-0000-0000-000000000001',
+      email: 'usuario@fen.br',
+      role: 'FARMACEUTICO',
+    });
+    logout = vi.fn(() => currentUser.set(null));
 
     await TestBed.configureTestingModule({
       imports: [App],
@@ -20,15 +30,11 @@ describe('App', () => {
         provideRouter(routes),
         {
           provide: AuthService,
-          useFactory: (accessControl: TemporaryAccessControl) => ({
-            isAuthenticated: () => true,
-            currentUser: () => ({
-              id: '00000000-0000-0000-0000-000000000001',
-              email: 'usuario@fen.br',
-              role: accessControl.currentRole(),
-            }),
-          }),
-          deps: [TemporaryAccessControl],
+          useValue: {
+            isAuthenticated: () => currentUser() !== null,
+            currentUser,
+            logout,
+          },
         },
       ],
     }).compileComponents();
@@ -208,12 +214,55 @@ describe('App', () => {
     ).toBeTruthy();
   });
 
+  it('should show administrative links only for the current ADMIN user', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+
+    await router.navigateByUrl('/inicio');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('header nav')?.textContent).not.toContain(
+      'Recuperações de senha',
+    );
+    expect(compiled.querySelector('header nav')?.textContent).not.toContain('Funcionários');
+
+    authenticateAs('ADMIN');
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('header nav')?.textContent).toContain('Recuperações de senha');
+    expect(compiled.querySelector('header nav')?.textContent).toContain('Funcionários');
+  });
+
+  it('should log out and navigate to login from the internal shell', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+
+    await router.navigateByUrl('/inicio');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const logoutButton = compiled.querySelector<HTMLButtonElement>('[data-action="logout"]');
+
+    if (!logoutButton) {
+      throw new Error('Expected logout action in internal navigation.');
+    }
+
+    logoutButton.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(logout).toHaveBeenCalledOnce();
+    expect(currentUser()).toBeNull();
+    expect(router.url).toBe('/login');
+  });
+
   it('should block password recovery admin routes for non-admin roles', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const accessControl = TestBed.inject(TemporaryAccessControl);
 
-    accessControl.setRole('FARMACEUTICO');
+    authenticateAs('FARMACEUTICO');
 
     await router.navigateByUrl('/admin/recuperacoes-senha');
     fixture.detectChanges();
@@ -227,9 +276,8 @@ describe('App', () => {
   it('should block pharmacy employee admin routes for non-admin roles', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const accessControl = TestBed.inject(TemporaryAccessControl);
 
-    accessControl.setRole('ESTAGIARIO');
+    authenticateAs('ESTAGIARIO');
 
     await router.navigateByUrl('/admin/funcionarios');
     fixture.detectChanges();
@@ -243,9 +291,8 @@ describe('App', () => {
   it('should let ADMIN list and search pharmacy employees', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const accessControl = TestBed.inject(TemporaryAccessControl);
 
-    accessControl.setRole('ADMIN');
+    authenticateAs('ADMIN');
 
     await router.navigateByUrl('/admin/funcionarios');
     fixture.detectChanges();
@@ -281,9 +328,8 @@ describe('App', () => {
   it('should render employee pagination controls with the default page size', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const accessControl = TestBed.inject(TemporaryAccessControl);
 
-    accessControl.setRole('ADMIN');
+    authenticateAs('ADMIN');
 
     await router.navigateByUrl('/admin/funcionarios');
     fixture.detectChanges();
@@ -299,7 +345,6 @@ describe('App', () => {
   it('should show pharmacist details and confirm technical responsibility changes', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const accessControl = TestBed.inject(TemporaryAccessControl);
     const employeeStore = TestBed.inject(TemporaryPharmacyEmployeeStore);
     const pharmacist = employeeStore
       .employees()
@@ -309,7 +354,7 @@ describe('App', () => {
       throw new Error('Expected seeded pharmacist employee.');
     }
 
-    accessControl.setRole('ADMIN');
+    authenticateAs('ADMIN');
 
     await router.navigateByUrl(`/admin/funcionarios/${pharmacist.id}`);
     fixture.detectChanges();
@@ -356,7 +401,6 @@ describe('App', () => {
   it('should show intern details without technical responsibility actions', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const accessControl = TestBed.inject(TemporaryAccessControl);
     const employeeStore = TestBed.inject(TemporaryPharmacyEmployeeStore);
     const intern = employeeStore.employees().find((employee) => employee.role === 'ESTAGIARIO');
 
@@ -364,7 +408,7 @@ describe('App', () => {
       throw new Error('Expected seeded intern employee.');
     }
 
-    accessControl.setRole('ADMIN');
+    authenticateAs('ADMIN');
 
     await router.navigateByUrl(`/admin/funcionarios/${intern.id}`);
     fixture.detectChanges();
@@ -389,10 +433,9 @@ describe('App', () => {
   it('should let ADMIN list, inspect, approve and reject password recovery requests', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const accessControl = TestBed.inject(TemporaryAccessControl);
     const recoveryStore = TestBed.inject(TemporaryPasswordRecoveryStore);
 
-    accessControl.setRole('ADMIN');
+    authenticateAs('ADMIN');
     const requestToApprove = recoveryStore.createRequest('aprovar@uem.br');
     const requestToReject = recoveryStore.createRequest('rejeitar@uem.br');
 
@@ -470,10 +513,9 @@ describe('App', () => {
   it('should paginate password recovery requests with a default page size of 10', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const accessControl = TestBed.inject(TemporaryAccessControl);
     const recoveryStore = TestBed.inject(TemporaryPasswordRecoveryStore);
 
-    accessControl.setRole('ADMIN');
+    authenticateAs('ADMIN');
 
     for (let index = 1; index <= 12; index += 1) {
       recoveryStore.createRequest(`recuperacao-${index}@uem.br`);
@@ -2411,4 +2453,12 @@ describe('App', () => {
       compiled.querySelector('[data-medication-interaction-warning="injectable"]'),
     ).toBeTruthy();
   });
+
+  function authenticateAs(role: AuthUser['role']): void {
+    currentUser.set({
+      id: '00000000-0000-0000-0000-000000000001',
+      email: 'usuario@fen.br',
+      role,
+    });
+  }
 });

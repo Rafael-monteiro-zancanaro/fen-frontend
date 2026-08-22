@@ -13,7 +13,7 @@
       </div>
     </div>
 
-    <form class="card w-full" aria-labelledby="login-title" (submit)="enter(); $event.preventDefault()">
+    <form class="card w-full" [formGroup]="loginForm" (ngSubmit)="submit()">
       <div class="card-content flex flex-col gap-4">
         <div class="field">
           <label for="email" class="label label-required">E-mail</label>
@@ -21,10 +21,16 @@
             id="email"
             class="input"
             type="email"
+            formControlName="email"
             autocomplete="email"
             placeholder="seu.email@uem.br"
-            required
+            [attr.aria-invalid]="isEmailRequired() || isEmailInvalid()"
           />
+          @if (isEmailRequired()) {
+            <p class="field-error" data-field-error="login-email">E-mail é obrigatório.</p>
+          } @else if (isEmailInvalid()) {
+            <p class="field-error" data-field-error="login-email">Informe um e-mail válido.</p>
+          }
         </div>
 
         <div class="field">
@@ -37,10 +43,14 @@
             id="senha"
             class="input"
             type="password"
+            formControlName="senha"
             autocomplete="current-password"
             placeholder="Digite sua senha"
-            required
+            [attr.aria-invalid]="isPasswordRequired()"
           />
+          @if (isPasswordRequired()) {
+            <p class="field-error" data-field-error="login-password">Senha é obrigatória.</p>
+          }
         </div>
 
         <label class="flex items-center gap-2 text-sm text-app-muted-foreground">
@@ -48,28 +58,26 @@
           Manter meu acesso neste dispositivo
         </label>
 
-        <div class="field">
-          <label for="perfilTemporario" class="label">Perfil de acesso</label>
-          <select
-            id="perfilTemporario"
-            class="native-select"
-            name="perfilTemporario"
-            [(ngModel)]="selectedRole"
-          >
-            <option value="FARMACEUTICO">Farmacêutico</option>
-            <option value="ESTAGIARIO">Estagiário</option>
-            <option value="ADMIN">Administrador</option>
-          </select>
-          <p class="field-description">
-            Seleção temporária até a integração com autenticação e autorização reais.
-          </p>
-        </div>
+        @if (loginFailed()) {
+          <div class="alert alert-danger" role="alert" aria-live="polite" data-login-error>
+            <span class="marker marker-danger"></span>
+            <div>
+              <p class="alert-title">Não foi possível entrar</p>
+              <p class="alert-description">E-mail ou senha inválidos.</p>
+            </div>
+          </div>
+        }
       </div>
 
       <div class="card-footer flex-col items-stretch sm:flex-row sm:justify-between">
         <a class="btn btn-link text-sm" routerLink="/cadastro">Cadastrar novo usuario</a>
-        <button class="btn btn-primary w-full sm:w-auto" type="submit">
-          Entrar
+        <button class="btn btn-primary w-full sm:w-auto" type="submit" [disabled]="pending()">
+          @if (pending()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Entrando...
+          } @else {
+            Entrar
+          }
         </button>
       </div>
     </form>
