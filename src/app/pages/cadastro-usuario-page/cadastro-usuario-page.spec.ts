@@ -1,5 +1,6 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Observable, Subject, of } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { RegistrationDetail, RegisterRequest } from '../../auth/auth.models';
 import { AuthService } from '../../auth/auth.service';
@@ -106,6 +107,18 @@ describe('CadastroUsuarioPage', () => {
     expect(register).toHaveBeenCalledWith(expected);
   });
 
+  it('requires CRF again after changing from intern back to pharmacist', () => {
+    selectInternProfile();
+    fillCommonFields();
+    selectPharmacistProfile(false);
+
+    submit();
+
+    expect(register).not.toHaveBeenCalled();
+    expect(fieldError('registration-crf')).toContain('CRF é obrigatório');
+    expect(input('#crf').getAttribute('aria-invalid')).toBe('true');
+  });
+
   it('keeps mismatched password confirmation on the client and does not register', () => {
     fillCommonFields();
     setInputValue('#crf', 'PR-12345');
@@ -129,6 +142,82 @@ describe('CadastroUsuarioPage', () => {
     expect(fieldError('registration-email')).toContain('E-mail é obrigatório');
     expect(fieldError('registration-password')).toContain('Senha é obrigatória');
     expect(fieldError('registration-crf')).toContain('CRF é obrigatório');
+  });
+
+  it('shows nearby feedback and aria-invalid for values beyond backend limits', () => {
+    const longPassword = 's'.repeat(73);
+    setInputValue('#nome', 'N'.repeat(151));
+    setInputValue('#cpf', '12345678901');
+    setInputValue('#email', `ana@${'e'.repeat(248)}.br`);
+    setInputValue('#senha', longPassword);
+    setInputValue('#confirmarSenha', longPassword);
+    setInputValue('#crf', 'C'.repeat(21));
+
+    submit();
+
+    expect(register).not.toHaveBeenCalled();
+    expect(fieldError('registration-name')).toContain('no máximo 150 caracteres');
+    expect(fieldError('registration-email')).toContain('no máximo 254 caracteres');
+    expect(fieldError('registration-password')).toContain('no máximo 72 caracteres');
+    expect(fieldError('registration-crf')).toContain('no máximo 20 caracteres');
+    expect(input('#nome').getAttribute('aria-invalid')).toBe('true');
+    expect(input('#email').getAttribute('aria-invalid')).toBe('true');
+    expect(input('#senha').getAttribute('aria-invalid')).toBe('true');
+    expect(input('#crf').getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it.each([
+    {
+      status: 400,
+      code: 'VALIDATION_ERROR',
+      message: 'Dados inválidos',
+      fieldErrors: { email: 'Informe um e-mail válido', cpf: 'Informe um CPF válido' },
+    },
+    {
+      status: 409,
+      code: 'CONFLICT',
+      message: 'E-mail já cadastrado',
+      fieldErrors: {},
+    },
+  ])('shows safe ApiError feedback returned with status $status', (apiError) => {
+    registerResult = throwError(
+      () =>
+        new HttpErrorResponse({
+          status: apiError.status,
+          error: { timestamp: '2026-08-21T23:00:00Z', ...apiError },
+        }),
+    );
+    fillCommonFields();
+    setInputValue('#crf', 'PR-12345');
+
+    submit();
+    fixture.detectChanges();
+
+    const feedback = nativeElement().querySelector('[data-registration-error]')?.textContent ?? '';
+    expect(feedback).toContain(apiError.message);
+    for (const fieldError of Object.values(apiError.fieldErrors)) {
+      expect(feedback).toContain(fieldError);
+    }
+  });
+
+  it('uses generic feedback for unexpected errors without exposing internal details', () => {
+    registerResult = throwError(
+      () =>
+        new HttpErrorResponse({
+          status: 500,
+          error: { message: 'org.hibernate.ConstraintViolationException: internal detail' },
+        }),
+    );
+    fillCommonFields();
+    setInputValue('#crf', 'PR-12345');
+
+    submit();
+    fixture.detectChanges();
+
+    const feedback = nativeElement().querySelector('[data-registration-error]')?.textContent ?? '';
+    expect(feedback).toContain('Revise os dados informados e tente novamente');
+    expect(feedback).not.toContain('hibernate');
+    expect(feedback).not.toContain('internal detail');
   });
 
   it('shows pending-approval confirmation after success without logging in', () => {
@@ -165,14 +254,32 @@ describe('CadastroUsuarioPage', () => {
     fixture.detectChanges();
   }
 
+  function selectPharmacistProfile(detectChanges = true): void {
+    const button = nativeElement().querySelector<HTMLButtonElement>(
+      '[data-profile="farmaceutico"]',
+    );
+    if (!button) {
+      throw new Error('Expected pharmacist profile button.');
+    }
+    button.click();
+    if (detectChanges) {
+      fixture.detectChanges();
+    }
+  }
+
   function setInputValue(selector: string, value: string): void {
-    const input = nativeElement().querySelector<HTMLInputElement>(selector);
-    if (!input) {
+    const element = input(selector);
+    element.value = value;
+    element.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  }
+
+  function input(selector: string): HTMLInputElement {
+    const element = nativeElement().querySelector<HTMLInputElement>(selector);
+    if (!element) {
       throw new Error(`Expected input ${selector}.`);
     }
-    input.value = value;
-    input.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
+    return element;
   }
 
   function setSelectValue(selector: string, value: string): void {

@@ -38,3 +38,11 @@ export interface RegistrationDetail {
   role: RegistrationRole;
   situacao: 'PENDENTE';
 }
+
+export interface ApiError {
+  timestamp: string;
+  status: number;
+  code: string;
+  message: string;
+  fieldErrors: Record<string, string>;
+}

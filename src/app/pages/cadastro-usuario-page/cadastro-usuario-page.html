@@ -40,12 +40,16 @@
           </div>
         }
 
-        @if (registrationFailed()) {
+        @if (registrationErrorMessages().length > 0) {
           <div class="alert alert-danger" role="alert" aria-live="polite" data-registration-error>
             <span class="marker marker-danger"></span>
             <div>
               <p class="alert-title">Não foi possível enviar o cadastro</p>
-              <p class="alert-description">Revise os dados informados e tente novamente.</p>
+              <ul class="alert-description grid gap-1">
+                @for (message of registrationErrorMessages(); track $index) {
+                  <li>{{ message }}</li>
+                }
+              </ul>
             </div>
           </div>
         }
@@ -61,11 +65,15 @@
                 formControlName="nome"
                 autocomplete="name"
                 placeholder="Nome do usuario"
-                [attr.aria-invalid]="hasError('nome', 'required')"
+                [attr.aria-invalid]="hasError('nome', 'required') || hasError('nome', 'maxlength')"
               />
               @if (hasError('nome', 'required')) {
                 <p class="field-error" data-field-error="registration-name">
                   Nome completo é obrigatório.
+                </p>
+              } @else if (hasError('nome', 'maxlength')) {
+                <p class="field-error" data-field-error="registration-name">
+                  O nome deve ter no máximo 150 caracteres.
                 </p>
               }
             </div>
@@ -110,11 +118,19 @@
                 formControlName="email"
                 autocomplete="email"
                 placeholder="seu.email@uem.br"
-                [attr.aria-invalid]="hasError('email', 'required') || hasError('email', 'email')"
+                [attr.aria-invalid]="
+                  hasError('email', 'required') ||
+                  hasError('email', 'maxlength') ||
+                  hasError('email', 'email')
+                "
               />
               @if (hasError('email', 'required')) {
                 <p class="field-error" data-field-error="registration-email">
                   E-mail é obrigatório.
+                </p>
+              } @else if (hasError('email', 'maxlength')) {
+                <p class="field-error" data-field-error="registration-email">
+                  O e-mail deve ter no máximo 254 caracteres.
                 </p>
               } @else if (hasError('email', 'email')) {
                 <p class="field-error" data-field-error="registration-email">
@@ -133,7 +149,9 @@
                 autocomplete="new-password"
                 placeholder="Crie uma senha"
                 [attr.aria-invalid]="
-                  hasError('senha', 'required') || hasError('senha', 'minlength')
+                  hasError('senha', 'required') ||
+                  hasError('senha', 'minlength') ||
+                  hasError('senha', 'maxlength')
                 "
               />
               @if (hasError('senha', 'required')) {
@@ -143,6 +161,10 @@
               } @else if (hasError('senha', 'minlength')) {
                 <p class="field-error" data-field-error="registration-password">
                   A senha deve ter pelo menos 8 caracteres.
+                </p>
+              } @else if (hasError('senha', 'maxlength')) {
+                <p class="field-error" data-field-error="registration-password">
+                  A senha deve ter no máximo 72 caracteres.
                 </p>
               }
             </div>
@@ -210,11 +232,15 @@
                   formControlName="crf"
                   maxlength="20"
                   placeholder="Ex.: PR-00000"
-                  [attr.aria-invalid]="hasError('crf', 'required')"
+                  [attr.aria-invalid]="hasError('crf', 'required') || hasError('crf', 'maxlength')"
                 />
                 <p class="field-description">Registro profissional unico do farmacêutico.</p>
                 @if (hasError('crf', 'required')) {
                   <p class="field-error" data-field-error="registration-crf">CRF é obrigatório.</p>
+                } @else if (hasError('crf', 'maxlength')) {
+                  <p class="field-error" data-field-error="registration-crf">
+                    O CRF deve ter no máximo 20 caracteres.
+                  </p>
                 }
               </div>
 

@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import {
   AbstractControl,
@@ -7,7 +8,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { finalize } from 'rxjs';
-import { InternshipType, RegisterRequest } from '../../auth/auth.models';
+import { ApiError, InternshipType, RegisterRequest } from '../../auth/auth.models';
 import { AuthService } from '../../auth/auth.service';
 import { RegistrationService, SupervisorOption } from '../../auth/registration.service';
 
@@ -24,10 +25,46 @@ type RegistrationControlName =
   | 'inicioVigencia'
   | 'fimVigencia';
 
+const GENERIC_REGISTRATION_ERROR = 'Revise os dados informados e tente novamente.';
+
 function matchingPasswords(control: AbstractControl): ValidationErrors | null {
   return control.get('senha')?.value === control.get('confirmarSenha')?.value
     ? null
     : { passwordMismatch: true };
+}
+
+function registrationErrorMessages(error: unknown): string[] {
+  if (
+    !(error instanceof HttpErrorResponse) ||
+    ![400, 409].includes(error.status) ||
+    !isApiError(error.error, error.status)
+  ) {
+    return [GENERIC_REGISTRATION_ERROR];
+  }
+
+  const messages = [error.error.message, ...Object.values(error.error.fieldErrors)]
+    .map((message) => message.trim())
+    .filter((message) => message.length > 0);
+
+  return messages.length > 0 ? Array.from(new Set(messages)) : [GENERIC_REGISTRATION_ERROR];
+}
+
+function isApiError(value: unknown, expectedStatus: number): value is ApiError {
+  if (!isRecord(value) || !isRecord(value['fieldErrors'])) {
+    return false;
+  }
+
+  return (
+    typeof value['timestamp'] === 'string' &&
+    value['status'] === expectedStatus &&
+    typeof value['code'] === 'string' &&
+    typeof value['message'] === 'string' &&
+    Object.values(value['fieldErrors']).every((message) => typeof message === 'string')
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 @Component({
@@ -46,7 +83,7 @@ export class CadastroUsuarioPage {
   protected readonly supervisorsFailed = signal(false);
   protected readonly submitted = signal(false);
   protected readonly pending = signal(false);
-  protected readonly registrationFailed = signal(false);
+  protected readonly registrationErrorMessages = signal<string[]>([]);
   protected readonly registrationSucceeded = signal(false);
 
   protected readonly registrationForm = this.formBuilder.nonNullable.group(
@@ -84,7 +121,7 @@ export class CadastroUsuarioPage {
 
     this.selectedProfile.set(profile);
     this.updateRoleValidators(profile);
-    this.registrationFailed.set(false);
+    this.registrationErrorMessages.set([]);
     this.registrationSucceeded.set(false);
   }
 
@@ -94,7 +131,7 @@ export class CadastroUsuarioPage {
     }
 
     this.submitted.set(true);
-    this.registrationFailed.set(false);
+    this.registrationErrorMessages.set([]);
     this.registrationSucceeded.set(false);
 
     if (this.registrationForm.invalid) {
@@ -108,7 +145,8 @@ export class CadastroUsuarioPage {
       .pipe(finalize(() => this.pending.set(false)))
       .subscribe({
         next: () => this.registrationSucceeded.set(true),
-        error: () => this.registrationFailed.set(true),
+        error: (error: unknown) =>
+          this.registrationErrorMessages.set(registrationErrorMessages(error)),
       });
   }
 
@@ -136,6 +174,7 @@ export class CadastroUsuarioPage {
 
     if (profile === 'farmaceutico') {
       controls.crf.setValidators([Validators.required, Validators.maxLength(20)]);
+      controls.crf.updateValueAndValidity({ emitEvent: false });
       for (const control of internControls) {
         control.clearValidators();
         control.reset('', { emitEvent: false });
