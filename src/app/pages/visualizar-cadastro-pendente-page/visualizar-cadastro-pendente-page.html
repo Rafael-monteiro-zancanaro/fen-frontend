@@ -3,6 +3,7 @@
     class="app-container grid gap-6"
     data-pending-registration-background
     [attr.inert]="pendingDecision() ? '' : null"
+    [attr.aria-hidden]="pendingDecision() ? 'true' : null"
   >
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>

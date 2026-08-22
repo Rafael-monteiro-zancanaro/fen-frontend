@@ -4,6 +4,7 @@ import {
   ElementRef,
   inject,
   Injector,
+  OnDestroy,
   signal,
   viewChild,
 } from '@angular/core';
@@ -14,6 +15,7 @@ import {
   PendingRegistrationDetail,
 } from '../../auth/admin-registration.service';
 import { InternshipType, RegistrationRole } from '../../auth/auth.models';
+import { ModalIsolationService } from '../../modal-isolation.service';
 
 type RegistrationDecision = 'approve' | 'reject';
 
@@ -22,11 +24,12 @@ type RegistrationDecision = 'approve' | 'reject';
   imports: [RouterLink],
   templateUrl: './visualizar-cadastro-pendente-page.html',
 })
-export class VisualizarCadastroPendentePage {
+export class VisualizarCadastroPendentePage implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly adminRegistration = inject(AdminRegistrationService);
   private readonly injector = inject(Injector);
+  private readonly modalIsolation = inject(ModalIsolationService);
   private readonly registrationId = this.route.snapshot.paramMap.get('id') ?? '';
   private readonly decisionDialog = viewChild<ElementRef<HTMLElement>>('decisionDialog');
   private readonly cancelDecisionButton =
@@ -62,6 +65,7 @@ export class VisualizarCadastroPendentePage {
     this.actionErrorMessage.set('');
     this.decisionTrigger = trigger;
     this.pendingDecision.set(decision);
+    this.modalIsolation.activate();
     afterNextRender(
       { write: () => this.cancelDecisionButton()?.nativeElement.focus() },
       { injector: this.injector },
@@ -141,7 +145,12 @@ export class VisualizarCadastroPendentePage {
     const trigger = this.decisionTrigger;
     this.pendingDecision.set(null);
     this.decisionTrigger = null;
+    this.modalIsolation.deactivate();
     afterNextRender({ write: () => trigger?.focus() }, { injector: this.injector });
+  }
+
+  ngOnDestroy(): void {
+    this.modalIsolation.deactivate();
   }
 
   protected isApproveDecision(): boolean {

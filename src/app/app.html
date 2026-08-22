@@ -1,5 +1,9 @@
 <div class="app-shell flex min-h-screen flex-col">
-  <header class="app-navbar">
+  <header
+    class="app-navbar"
+    [attr.inert]="modalIsolation.active() ? '' : null"
+    [attr.aria-hidden]="modalIsolation.active() ? 'true' : null"
+  >
     <div class="app-container flex flex-wrap items-center justify-between gap-4 py-3">
       <a
         class="flex items-center gap-3 font-semibold text-white"

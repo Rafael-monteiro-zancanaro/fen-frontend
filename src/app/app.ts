@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { AuthService } from './auth/auth.service';
+import { ModalIsolationService } from './modal-isolation.service';
 
 @Component({
   selector: 'app-root',
@@ -12,6 +13,7 @@ export class App {
   constructor(
     private readonly auth: AuthService,
     private readonly router: Router,
+    protected readonly modalIsolation: ModalIsolationService,
   ) {}
 
   protected isInternalNavigation(): boolean {
