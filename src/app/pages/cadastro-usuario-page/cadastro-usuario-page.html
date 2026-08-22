@@ -151,7 +151,8 @@
                 [attr.aria-invalid]="
                   hasError('senha', 'required') ||
                   hasError('senha', 'minlength') ||
-                  hasError('senha', 'maxlength')
+                  hasError('senha', 'maxlength') ||
+                  hasError('senha', 'utf8ByteLength')
                 "
               />
               @if (hasError('senha', 'required')) {
@@ -162,9 +163,9 @@
                 <p class="field-error" data-field-error="registration-password">
                   A senha deve ter pelo menos 8 caracteres.
                 </p>
-              } @else if (hasError('senha', 'maxlength')) {
+              } @else if (hasError('senha', 'maxlength') || hasError('senha', 'utf8ByteLength')) {
                 <p class="field-error" data-field-error="registration-password">
-                  A senha deve ter no máximo 72 caracteres.
+                  A senha deve ter no máximo 72 bytes em UTF-8.
                 </p>
               }
             </div>

@@ -10,6 +10,7 @@ import {
 import { finalize } from 'rxjs';
 import { ApiError, InternshipType, RegisterRequest } from '../../auth/auth.models';
 import { AuthService } from '../../auth/auth.service';
+import { utf8ByteLength } from '../../auth/password.validators';
 import { RegistrationService, SupervisorOption } from '../../auth/registration.service';
 
 type UserProfile = 'farmaceutico' | 'estagiario';
@@ -92,7 +93,15 @@ export class CadastroUsuarioPage {
       cpf: ['', [Validators.required, Validators.pattern(/^\d{11}$/)]],
       dataNascimento: [''],
       email: ['', [Validators.required, Validators.email, Validators.maxLength(254)]],
-      senha: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(72)]],
+      senha: [
+        '',
+        [
+          Validators.required,
+          Validators.minLength(8),
+          Validators.maxLength(72),
+          utf8ByteLength(72),
+        ],
+      ],
       confirmarSenha: ['', Validators.required],
       crf: ['', [Validators.required, Validators.maxLength(20)]],
       responsavelTecnico: [false],

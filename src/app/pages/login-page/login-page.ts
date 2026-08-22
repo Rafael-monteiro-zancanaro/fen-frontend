@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../auth/auth.service';
+import { utf8ByteLength } from '../../auth/password.validators';
 
 @Component({
   selector: 'app-login-page',
@@ -16,7 +17,7 @@ export class LoginPage {
 
   protected readonly loginForm = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
-    senha: ['', Validators.required],
+    senha: ['', [Validators.required, Validators.maxLength(72), utf8ByteLength(72)]],
   });
   protected readonly submitted = signal(false);
   protected readonly pending = signal(false);
@@ -55,6 +56,14 @@ export class LoginPage {
 
   protected isPasswordRequired(): boolean {
     return this.shouldShowError('senha') && this.loginForm.controls.senha.hasError('required');
+  }
+
+  protected isPasswordTooLong(): boolean {
+    return (
+      this.shouldShowError('senha') &&
+      (this.loginForm.controls.senha.hasError('maxlength') ||
+        this.loginForm.controls.senha.hasError('utf8ByteLength'))
+    );
   }
 
   private shouldShowError(controlName: 'email' | 'senha'): boolean {

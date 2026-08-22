@@ -89,6 +89,23 @@ describe('LoginPage', () => {
     ).toContain('Senha é obrigatória');
   });
 
+  it('blocks a password above the BCrypt 72-byte UTF-8 limit', () => {
+    fillCredentials('usuario@fen.br', 'é'.repeat(37));
+
+    submit();
+
+    expect(login).not.toHaveBeenCalled();
+    expect(
+      nativeElement().querySelector('[data-field-error="login-password"]')?.textContent,
+    ).toContain('72 bytes');
+    expect(input('#senha').getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('does not render a nonfunctional access-persistence checkbox', () => {
+    expect(nativeElement().querySelector('input[type="checkbox"]')).toBeNull();
+    expect(nativeElement().textContent).not.toContain('Manter meu acesso');
+  });
+
   it('does not expose the temporary role selector', () => {
     expect(nativeElement().querySelector('#perfilTemporario')).toBeNull();
     expect(nativeElement().textContent).not.toContain('Perfil de acesso');
@@ -100,15 +117,19 @@ describe('LoginPage', () => {
   }
 
   function setInputValue(selector: string, value: string): void {
-    const input = nativeElement().querySelector<HTMLInputElement>(selector);
+    const element = input(selector);
 
-    if (!input) {
+    element.value = value;
+    element.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  }
+
+  function input(selector: string): HTMLInputElement {
+    const element = nativeElement().querySelector<HTMLInputElement>(selector);
+    if (!element) {
       throw new Error(`Expected input ${selector}.`);
     }
-
-    input.value = value;
-    input.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
+    return element;
   }
 
   function submit(): void {

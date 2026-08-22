@@ -46,17 +46,16 @@
             formControlName="senha"
             autocomplete="current-password"
             placeholder="Digite sua senha"
-            [attr.aria-invalid]="isPasswordRequired()"
+            [attr.aria-invalid]="isPasswordRequired() || isPasswordTooLong()"
           />
           @if (isPasswordRequired()) {
             <p class="field-error" data-field-error="login-password">Senha é obrigatória.</p>
+          } @else if (isPasswordTooLong()) {
+            <p class="field-error" data-field-error="login-password">
+              A senha deve ter no máximo 72 bytes em UTF-8.
+            </p>
           }
         </div>
-
-        <label class="flex items-center gap-2 text-sm text-app-muted-foreground">
-          <input class="checkbox" type="checkbox" />
-          Manter meu acesso neste dispositivo
-        </label>
 
         @if (loginFailed()) {
           <div class="alert alert-danger" role="alert" aria-live="polite" data-login-error>

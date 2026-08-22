@@ -158,12 +158,26 @@ describe('CadastroUsuarioPage', () => {
     expect(register).not.toHaveBeenCalled();
     expect(fieldError('registration-name')).toContain('no máximo 150 caracteres');
     expect(fieldError('registration-email')).toContain('no máximo 254 caracteres');
-    expect(fieldError('registration-password')).toContain('no máximo 72 caracteres');
+    expect(fieldError('registration-password')).toContain('no máximo 72 bytes');
     expect(fieldError('registration-crf')).toContain('no máximo 20 caracteres');
     expect(input('#nome').getAttribute('aria-invalid')).toBe('true');
     expect(input('#email').getAttribute('aria-invalid')).toBe('true');
     expect(input('#senha').getAttribute('aria-invalid')).toBe('true');
     expect(input('#crf').getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('blocks a password above the BCrypt 72-byte UTF-8 limit', () => {
+    const password = 'é'.repeat(37);
+    fillCommonFields();
+    setInputValue('#senha', password);
+    setInputValue('#confirmarSenha', password);
+    setInputValue('#crf', 'PR-12345');
+
+    submit();
+
+    expect(register).not.toHaveBeenCalled();
+    expect(fieldError('registration-password')).toContain('72 bytes');
+    expect(input('#senha').getAttribute('aria-invalid')).toBe('true');
   });
 
   it.each([
