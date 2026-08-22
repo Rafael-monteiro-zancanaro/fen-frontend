@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { TemporaryUserRole } from './temporary-access-control';
+import { UserRole } from '../auth/auth.models';
 
 export type InternshipType = 'Obrigatório' | 'Não obrigatório';
 export type EmployeeStatus = 'Ativo' | 'Inativo';
@@ -10,7 +10,7 @@ export interface BasePharmacyEmployee {
   email: string;
   cpf: string;
   birthDate: string;
-  role: TemporaryUserRole;
+  role: UserRole;
   status: EmployeeStatus;
 }
 

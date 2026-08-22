@@ -1,0 +1,79 @@
+<main data-page="cadastros-pendentes" class="flex-1 bg-app-background px-4 py-6 md:py-8">
+  <section class="app-container grid gap-6">
+    <div>
+      <p class="mb-2 text-sm font-semibold text-uem-700">Administração</p>
+      <h1 class="text-2xl font-semibold text-app-foreground md:text-3xl">Cadastros pendentes</h1>
+      <p class="mt-2 max-w-2xl text-sm leading-6 text-app-muted-foreground">
+        Analise os dados dos profissionais antes de aprovar ou rejeitar o acesso ao sistema.
+      </p>
+    </div>
+
+    @if (isLoading()) {
+      <section
+        class="card p-5"
+        data-pending-registrations-loading
+        aria-label="Carregando cadastros pendentes"
+      >
+        <div class="skeleton h-6 w-52"></div>
+        <div class="mt-4 grid gap-3">
+          <div class="skeleton h-10 w-full"></div>
+          <div class="skeleton h-10 w-full"></div>
+        </div>
+      </section>
+    } @else if (hasLoadError()) {
+      <div class="alert alert-danger" data-pending-registrations-error>
+        <span class="marker marker-danger"></span>
+        <div>
+          <p class="alert-title">Não foi possível carregar os cadastros pendentes</p>
+          <p class="alert-description">Tente novamente mais tarde.</p>
+        </div>
+      </div>
+    } @else if (pendingRegistrations().length === 0) {
+      <section class="empty" data-pending-registrations-empty>
+        <h2 class="empty-title">Nenhum cadastro pendente.</h2>
+        <p class="empty-description">Novos cadastros aparecerão aqui para análise.</p>
+      </section>
+    } @else {
+      <section class="card">
+        <div class="card-content">
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>Perfil</th>
+                  <th>Data da solicitação</th>
+                  <th class="w-28">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (registration of pendingRegistrations(); track registration.id) {
+                  <tr>
+                    <td class="font-semibold text-app-foreground">{{ registration.nome }}</td>
+                    <td>{{ registration.email }}</td>
+                    <td>
+                      <span class="badge badge-warning">{{ roleLabel(registration.role) }}</span>
+                    </td>
+                    <td>{{ formatDate(registration.solicitadoEm) }}</td>
+                    <td>
+                      <a
+                        class="btn btn-secondary btn-icon btn-sm"
+                        [routerLink]="['/admin/cadastros-pendentes', registration.id]"
+                        [attr.data-pending-registration-id]="registration.id"
+                        aria-label="Analisar cadastro"
+                        title="Analisar cadastro"
+                      >
+                        <ng-icon name="bootstrapEye" size="1rem" />
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    }
+  </section>
+</main>

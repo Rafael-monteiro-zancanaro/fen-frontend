@@ -15,8 +15,45 @@
       </div>
     </div>
 
-    <form id="cadastro" class="card w-full" aria-labelledby="cadastro-title">
+    <form
+      id="cadastro"
+      class="card w-full"
+      aria-labelledby="cadastro-title"
+      [formGroup]="registrationForm"
+      (ngSubmit)="submit()"
+    >
       <div class="card-content flex flex-col gap-6">
+        @if (registrationSucceeded()) {
+          <div
+            class="alert alert-success"
+            role="status"
+            aria-live="polite"
+            data-registration-success
+          >
+            <span class="marker marker-success"></span>
+            <div>
+              <p class="alert-title">Cadastro enviado</p>
+              <p class="alert-description">
+                Seu cadastro aguarda aprovação administrativa antes do primeiro acesso.
+              </p>
+            </div>
+          </div>
+        }
+
+        @if (registrationErrorMessages().length > 0) {
+          <div class="alert alert-danger" role="alert" aria-live="polite" data-registration-error>
+            <span class="marker marker-danger"></span>
+            <div>
+              <p class="alert-title">Não foi possível enviar o cadastro</p>
+              <ul class="alert-description grid gap-1">
+                @for (message of registrationErrorMessages(); track $index) {
+                  <li>{{ message }}</li>
+                }
+              </ul>
+            </div>
+          </div>
+        }
+
         <fieldset class="grid gap-4">
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div class="field">
@@ -25,10 +62,20 @@
                 id="nome"
                 class="input"
                 type="text"
+                formControlName="nome"
                 autocomplete="name"
                 placeholder="Nome do usuario"
-                required
+                [attr.aria-invalid]="hasError('nome', 'required') || hasError('nome', 'maxlength')"
               />
+              @if (hasError('nome', 'required')) {
+                <p class="field-error" data-field-error="registration-name">
+                  Nome completo é obrigatório.
+                </p>
+              } @else if (hasError('nome', 'maxlength')) {
+                <p class="field-error" data-field-error="registration-name">
+                  O nome deve ter no máximo 150 caracteres.
+                </p>
+              }
             </div>
 
             <div class="field">
@@ -37,16 +84,29 @@
                 id="cpf"
                 class="input"
                 type="text"
+                formControlName="cpf"
                 inputmode="numeric"
                 maxlength="11"
                 placeholder="Somente numeros"
-                required
+                [attr.aria-invalid]="hasError('cpf', 'required') || hasError('cpf', 'pattern')"
               />
+              @if (hasError('cpf', 'required')) {
+                <p class="field-error" data-field-error="registration-cpf">CPF é obrigatório.</p>
+              } @else if (hasError('cpf', 'pattern')) {
+                <p class="field-error" data-field-error="registration-cpf">
+                  Informe um CPF com 11 dígitos.
+                </p>
+              }
             </div>
 
             <div class="field">
               <label for="dataNascimento" class="label">Data de nascimento</label>
-              <input id="dataNascimento" class="input" type="date" />
+              <input
+                id="dataNascimento"
+                class="input"
+                type="date"
+                formControlName="dataNascimento"
+              />
             </div>
 
             <div class="field">
@@ -55,10 +115,28 @@
                 id="email"
                 class="input"
                 type="email"
+                formControlName="email"
                 autocomplete="email"
                 placeholder="seu.email@uem.br"
-                required
+                [attr.aria-invalid]="
+                  hasError('email', 'required') ||
+                  hasError('email', 'maxlength') ||
+                  hasError('email', 'email')
+                "
               />
+              @if (hasError('email', 'required')) {
+                <p class="field-error" data-field-error="registration-email">
+                  E-mail é obrigatório.
+                </p>
+              } @else if (hasError('email', 'maxlength')) {
+                <p class="field-error" data-field-error="registration-email">
+                  O e-mail deve ter no máximo 254 caracteres.
+                </p>
+              } @else if (hasError('email', 'email')) {
+                <p class="field-error" data-field-error="registration-email">
+                  Informe um e-mail válido.
+                </p>
+              }
             </div>
 
             <div class="field">
@@ -67,10 +145,29 @@
                 id="senha"
                 class="input"
                 type="password"
+                formControlName="senha"
                 autocomplete="new-password"
                 placeholder="Crie uma senha"
-                required
+                [attr.aria-invalid]="
+                  hasError('senha', 'required') ||
+                  hasError('senha', 'minlength') ||
+                  hasError('senha', 'maxlength') ||
+                  hasError('senha', 'utf8ByteLength')
+                "
               />
+              @if (hasError('senha', 'required')) {
+                <p class="field-error" data-field-error="registration-password">
+                  Senha é obrigatória.
+                </p>
+              } @else if (hasError('senha', 'minlength')) {
+                <p class="field-error" data-field-error="registration-password">
+                  A senha deve ter pelo menos 8 caracteres.
+                </p>
+              } @else if (hasError('senha', 'maxlength') || hasError('senha', 'utf8ByteLength')) {
+                <p class="field-error" data-field-error="registration-password">
+                  A senha deve ter no máximo 72 bytes em UTF-8.
+                </p>
+              }
             </div>
 
             <div class="field">
@@ -79,10 +176,22 @@
                 id="confirmarSenha"
                 class="input"
                 type="password"
+                formControlName="confirmarSenha"
                 autocomplete="new-password"
                 placeholder="Repita a senha"
-                required
+                [attr.aria-invalid]="
+                  hasError('confirmarSenha', 'required') || hasPasswordMismatch()
+                "
               />
+              @if (hasError('confirmarSenha', 'required')) {
+                <p class="field-error" data-field-error="registration-password-confirmation">
+                  Confirme a senha.
+                </p>
+              } @else if (hasPasswordMismatch()) {
+                <p class="field-error" data-field-error="registration-password-confirmation">
+                  As senhas devem ser iguais.
+                </p>
+              }
             </div>
           </div>
         </fieldset>
@@ -114,57 +223,139 @@
           </div>
 
           @if (selectedProfile() === 'farmaceutico') {
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div class="field">
-              <label for="crf" class="label label-required">CRF</label>
-              <input id="crf" class="input" type="text" placeholder="Ex.: PR-00000" required />
-              <p class="field-description">Registro profissional unico do farmacêutico.</p>
-            </div>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div class="field">
+                <label for="crf" class="label label-required">CRF</label>
+                <input
+                  id="crf"
+                  class="input"
+                  type="text"
+                  formControlName="crf"
+                  maxlength="20"
+                  placeholder="Ex.: PR-00000"
+                  [attr.aria-invalid]="hasError('crf', 'required') || hasError('crf', 'maxlength')"
+                />
+                <p class="field-description">Registro profissional unico do farmacêutico.</p>
+                @if (hasError('crf', 'required')) {
+                  <p class="field-error" data-field-error="registration-crf">CRF é obrigatório.</p>
+                } @else if (hasError('crf', 'maxlength')) {
+                  <p class="field-error" data-field-error="registration-crf">
+                    O CRF deve ter no máximo 20 caracteres.
+                  </p>
+                }
+              </div>
 
-            <div class="field justify-end">
-              <label
-                class="flex min-h-10 items-center gap-2 rounded-md border bg-app-surface px-3 text-sm text-app-muted-foreground"
-                for="responsavelTecnico"
-              >
-                <input id="responsavelTecnico" class="checkbox" type="checkbox" />
-                <span class="font-semibold text-app-foreground">Responsável técnico</span>
-              </label>
+              <div class="field justify-end">
+                <label
+                  class="flex min-h-10 items-center gap-2 rounded-md border bg-app-surface px-3 text-sm text-app-muted-foreground"
+                  for="responsavelTecnico"
+                >
+                  <input
+                    id="responsavelTecnico"
+                    class="checkbox"
+                    type="checkbox"
+                    formControlName="responsavelTecnico"
+                  />
+                  <span class="font-semibold text-app-foreground">Responsável técnico</span>
+                </label>
+              </div>
             </div>
-          </div>
           } @else {
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div class="field">
-              <label for="tipoEstagio" class="label label-required">Tipo de estágio</label>
-              <select id="tipoEstagio" class="native-select" required>
-                <option value="">Selecione</option>
-                <option value="obrigatorio">Obrigatório</option>
-                <option value="nao-obrigatorio">Não obrigatório</option>
-              </select>
-            </div>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div class="field">
+                <label for="tipoEstagio" class="label label-required">Tipo de estágio</label>
+                <select
+                  id="tipoEstagio"
+                  class="native-select"
+                  formControlName="tipoEstagio"
+                  [attr.aria-invalid]="hasError('tipoEstagio', 'required')"
+                >
+                  <option value="">Selecione</option>
+                  <option value="OBRIGATORIO">Obrigatório</option>
+                  <option value="NAO_OBRIGATORIO">Não obrigatório</option>
+                </select>
+                @if (hasError('tipoEstagio', 'required')) {
+                  <p class="field-error" data-field-error="registration-internship-type">
+                    Tipo de estágio é obrigatório.
+                  </p>
+                }
+              </div>
 
-            <div class="field">
-              <label for="supervisor" class="label label-required">Supervisor</label>
-              <select id="supervisor" class="native-select" required>
-                <option value="">Selecione um farmacêutico</option>
-              </select>
-            </div>
+              <div class="field">
+                <label for="supervisor" class="label label-required">Supervisor</label>
+                <select
+                  id="supervisor"
+                  class="native-select"
+                  formControlName="supervisorId"
+                  [attr.aria-invalid]="hasError('supervisorId', 'required')"
+                >
+                  <option value="">
+                    {{
+                      supervisorsLoading()
+                        ? 'Carregando farmacêuticos...'
+                        : 'Selecione um farmacêutico'
+                    }}
+                  </option>
+                  @for (supervisor of supervisors(); track supervisor.id) {
+                    <option [value]="supervisor.id">{{ supervisor.nome }}</option>
+                  }
+                </select>
+                @if (supervisorsFailed()) {
+                  <p class="field-error" data-supervisors-error>
+                    Não foi possível carregar os supervisores.
+                  </p>
+                } @else if (hasError('supervisorId', 'required')) {
+                  <p class="field-error" data-field-error="registration-supervisor">
+                    Supervisor é obrigatório.
+                  </p>
+                }
+              </div>
 
-            <div class="field">
-              <label for="inicioVigencia" class="label label-required">Inicio da vigência</label>
-              <input id="inicioVigencia" class="input" type="date" required />
-            </div>
+              <div class="field">
+                <label for="inicioVigencia" class="label label-required">Inicio da vigência</label>
+                <input
+                  id="inicioVigencia"
+                  class="input"
+                  type="date"
+                  formControlName="inicioVigencia"
+                  [attr.aria-invalid]="hasError('inicioVigencia', 'required')"
+                />
+                @if (hasError('inicioVigencia', 'required')) {
+                  <p class="field-error" data-field-error="registration-start-date">
+                    Início da vigência é obrigatório.
+                  </p>
+                }
+              </div>
 
-            <div class="field">
-              <label for="fimVigencia" class="label label-required">Fim da vigência</label>
-              <input id="fimVigencia" class="input" type="date" required />
+              <div class="field">
+                <label for="fimVigencia" class="label label-required">Fim da vigência</label>
+                <input
+                  id="fimVigencia"
+                  class="input"
+                  type="date"
+                  formControlName="fimVigencia"
+                  [attr.aria-invalid]="hasError('fimVigencia', 'required')"
+                />
+                @if (hasError('fimVigencia', 'required')) {
+                  <p class="field-error" data-field-error="registration-end-date">
+                    Fim da vigência é obrigatório.
+                  </p>
+                }
+              </div>
             </div>
-          </div>
           }
         </fieldset>
       </div>
 
       <div class="card-footer flex-col items-stretch sm:flex-row sm:justify-end">
-        <button class="btn btn-primary w-full sm:w-auto" type="submit">Cadastrar usuario</button>
+        <button class="btn btn-primary w-full sm:w-auto" type="submit" [disabled]="pending()">
+          @if (pending()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Enviando...
+          } @else {
+            Cadastrar usuario
+          }
+        </button>
       </div>
     </form>
   </section>
