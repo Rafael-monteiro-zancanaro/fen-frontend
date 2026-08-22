@@ -1,5 +1,9 @@
 <main data-page="visualizar-cadastro-pendente" class="flex-1 bg-app-background px-4 py-6 md:py-8">
-  <section class="app-container grid gap-6">
+  <section
+    class="app-container grid gap-6"
+    data-pending-registration-background
+    [attr.inert]="pendingDecision() ? '' : null"
+  >
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="mb-2 text-sm font-semibold text-uem-700">Administração</p>
@@ -142,20 +146,22 @@
 
         <div class="card-footer flex flex-wrap justify-end gap-3">
           <button
+            #rejectRegistrationButton
             class="btn btn-danger"
             type="button"
             data-reject-registration
             [disabled]="decisionInProgress()"
-            (click)="askToReject()"
+            (click)="askToReject(rejectRegistrationButton)"
           >
             Rejeitar cadastro
           </button>
           <button
+            #approveRegistrationButton
             class="btn btn-primary"
             type="button"
             data-approve-registration
             [disabled]="decisionInProgress()"
-            (click)="askToApprove()"
+            (click)="askToApprove(approveRegistrationButton)"
           >
             Aprovar cadastro
           </button>
@@ -166,12 +172,20 @@
 
   @if (pendingDecision()) {
     <div class="alert-dialog-overlay" (click)="cancelDecision()"></div>
-    <section class="alert-dialog" role="alertdialog" aria-modal="true">
+    <section
+      #decisionDialog
+      class="alert-dialog"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="pending-registration-dialog-title"
+      aria-describedby="pending-registration-dialog-description"
+      (keydown)="handleDecisionKeydown($event)"
+    >
       <div class="alert-dialog-header">
-        <h2 class="alert-dialog-title">
+        <h2 id="pending-registration-dialog-title" class="alert-dialog-title">
           {{ isApproveDecision() ? 'Aprovar cadastro?' : 'Rejeitar cadastro?' }}
         </h2>
-        <p class="alert-dialog-description">
+        <p id="pending-registration-dialog-description" class="alert-dialog-description">
           @if (isApproveDecision()) {
             O profissional poderá acessar o sistema depois da aprovação.
           } @else {
@@ -181,8 +195,10 @@
       </div>
       <div class="alert-dialog-footer">
         <button
+          #cancelDecisionButton
           class="btn btn-secondary"
           type="button"
+          data-cancel-registration-decision
           [disabled]="decisionInProgress()"
           (click)="cancelDecision()"
         >

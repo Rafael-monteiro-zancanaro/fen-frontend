@@ -1,4 +1,12 @@
-import { Component, inject, signal } from '@angular/core';
+import {
+  afterNextRender,
+  Component,
+  ElementRef,
+  inject,
+  Injector,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import {
@@ -18,7 +26,12 @@ export class VisualizarCadastroPendentePage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly adminRegistration = inject(AdminRegistrationService);
+  private readonly injector = inject(Injector);
   private readonly registrationId = this.route.snapshot.paramMap.get('id') ?? '';
+  private readonly decisionDialog = viewChild<ElementRef<HTMLElement>>('decisionDialog');
+  private readonly cancelDecisionButton =
+    viewChild<ElementRef<HTMLButtonElement>>('cancelDecisionButton');
+  private decisionTrigger: HTMLElement | null = null;
 
   protected readonly registration = signal<PendingRegistrationDetail | null>(null);
   protected readonly isLoading = signal(true);
@@ -37,19 +50,65 @@ export class VisualizarCadastroPendentePage {
       });
   }
 
-  protected askToApprove(): void {
-    this.actionErrorMessage.set('');
-    this.pendingDecision.set('approve');
+  protected askToApprove(trigger: HTMLElement): void {
+    this.openDecision('approve', trigger);
   }
 
-  protected askToReject(): void {
+  protected askToReject(trigger: HTMLElement): void {
+    this.openDecision('reject', trigger);
+  }
+
+  private openDecision(decision: RegistrationDecision, trigger: HTMLElement): void {
     this.actionErrorMessage.set('');
-    this.pendingDecision.set('reject');
+    this.decisionTrigger = trigger;
+    this.pendingDecision.set(decision);
+    afterNextRender(
+      { write: () => this.cancelDecisionButton()?.nativeElement.focus() },
+      { injector: this.injector },
+    );
   }
 
   protected cancelDecision(): void {
     if (!this.decisionInProgress()) {
-      this.pendingDecision.set(null);
+      this.closeDecisionAndRestoreFocus();
+    }
+  }
+
+  protected handleDecisionKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.cancelDecision();
+      return;
+    }
+
+    if (event.key !== 'Tab') {
+      return;
+    }
+
+    const dialog = this.decisionDialog()?.nativeElement;
+    const focusableElements = dialog
+      ? Array.from(dialog.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]'))
+      : [];
+
+    if (!dialog || focusableElements.length === 0) {
+      event.preventDefault();
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    const activeElement = document.activeElement;
+
+    if (event.shiftKey && (activeElement === firstElement || !dialog.contains(activeElement))) {
+      event.preventDefault();
+      lastElement.focus();
+    } else if (
+      !event.shiftKey &&
+      (activeElement === lastElement || !dialog.contains(activeElement))
+    ) {
+      event.preventDefault();
+      firstElement.focus();
     }
   }
 
@@ -68,7 +127,7 @@ export class VisualizarCadastroPendentePage {
     request.pipe(finalize(() => this.decisionInProgress.set(false))).subscribe({
       next: () => void this.router.navigateByUrl('/admin/cadastros-pendentes'),
       error: () => {
-        this.pendingDecision.set(null);
+        this.closeDecisionAndRestoreFocus();
         this.actionErrorMessage.set(
           decision === 'approve'
             ? 'Não foi possível aprovar o cadastro. Tente novamente.'
@@ -76,6 +135,13 @@ export class VisualizarCadastroPendentePage {
         );
       },
     });
+  }
+
+  private closeDecisionAndRestoreFocus(): void {
+    const trigger = this.decisionTrigger;
+    this.pendingDecision.set(null);
+    this.decisionTrigger = null;
+    afterNextRender({ write: () => trigger?.focus() }, { injector: this.injector });
   }
 
   protected isApproveDecision(): boolean {
