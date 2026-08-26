@@ -1,9 +1,6 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import {
-  PharmacyEmployee,
-  TemporaryPharmacyEmployeeStore,
-} from '../../domain/temporary-pharmacy-employee-store';
+import { PharmacyEmployee, FuncionarioService } from '../../domain/funcionario.service';
 
 @Component({
   selector: 'app-visualizar-funcionario-page',
@@ -12,13 +9,27 @@ import {
 })
 export class VisualizarFuncionarioPage {
   private readonly route = inject(ActivatedRoute);
-  private readonly employeeStore = inject(TemporaryPharmacyEmployeeStore);
+  private readonly employeeService = inject(FuncionarioService);
   private readonly employeeId = this.route.snapshot.paramMap.get('id') ?? '';
 
   protected readonly successMessage = signal('');
+  protected readonly errorMessage = signal('');
+  protected readonly isLoading = signal(true);
   protected readonly isUpdatingTechnicalResponsible = signal(false);
   protected readonly showTechnicalResponsibleDialog = signal(false);
-  protected readonly employee = computed(() => this.employeeStore.getEmployee(this.employeeId));
+  protected readonly employee = signal<PharmacyEmployee | undefined>(undefined);
+  constructor() {
+    this.employeeService.get(this.employeeId).subscribe({
+      next: (employee) => {
+        this.employee.set(employee);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.errorMessage.set('Não foi possível carregar o funcionário.');
+        this.isLoading.set(false);
+      },
+    });
+  }
 
   protected roleLabel(employee: PharmacyEmployee): string {
     if (employee.role === 'ADMIN') {
@@ -65,9 +76,21 @@ export class VisualizarFuncionarioPage {
     }
 
     this.isUpdatingTechnicalResponsible.set(true);
-    this.employeeStore.toggleTechnicalResponsible(this.employeeId);
-    this.isUpdatingTechnicalResponsible.set(false);
-    this.showTechnicalResponsibleDialog.set(false);
-    this.successMessage.set('Responsabilidade técnica atualizada com sucesso.');
+    const employee = this.employee();
+    if (!employee || employee.role === 'ESTAGIARIO') return;
+    this.employeeService
+      .alterarResponsavelTecnico(this.employeeId, !employee.isTechnicalResponsible)
+      .subscribe({
+        next: (updated) => {
+          this.employee.set(updated);
+          this.isUpdatingTechnicalResponsible.set(false);
+          this.showTechnicalResponsibleDialog.set(false);
+          this.successMessage.set('Responsabilidade técnica atualizada com sucesso.');
+        },
+        error: () => {
+          this.errorMessage.set('Não foi possível atualizar a responsabilidade técnica.');
+          this.isUpdatingTechnicalResponsible.set(false);
+        },
+      });
   }
 }

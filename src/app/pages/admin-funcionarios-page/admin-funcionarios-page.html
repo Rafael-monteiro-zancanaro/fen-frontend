@@ -50,7 +50,7 @@
             </div>
           </div>
 
-          @if (filteredEmployees().length === 0) {
+          @if (employees().length === 0) {
             <div class="empty">
               <h2 class="empty-title">Nenhum resultado encontrado</h2>
               <p class="empty-description">
@@ -70,7 +70,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @for (employee of paginatedEmployees(); track employee.id) {
+                  @for (employee of employees(); track employee.id) {
                     <tr>
                       <td class="font-semibold text-app-foreground">
                         <div class="flex flex-wrap items-center gap-2">
@@ -82,7 +82,9 @@
                       </td>
                       <td>{{ employee.email }}</td>
                       <td>{{ roleLabel(employee) }}</td>
-                      <td><span class="badge badge-success">{{ employee.status }}</span></td>
+                      <td>
+                        <span class="badge badge-success">{{ employee.status }}</span>
+                      </td>
                       <td>
                         <div class="flex flex-nowrap gap-2" data-employee-actions>
                           <a
