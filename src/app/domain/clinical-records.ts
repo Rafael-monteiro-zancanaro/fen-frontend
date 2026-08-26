@@ -54,6 +54,7 @@ export interface Patient {
   phone: string;
   responsibleName: string;
   comorbidityIds: string[];
+  comorbidities?: ComorbiditySummary[];
   createdAt: string;
 }
 

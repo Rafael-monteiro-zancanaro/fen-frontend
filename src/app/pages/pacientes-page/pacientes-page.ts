@@ -9,9 +9,8 @@ import {
   PageSize,
   buildPagination,
   normalizePageSize,
-  paginateItems,
 } from '../../domain/pagination';
-import { TemporaryPharmaceuticalServiceStore } from '../../domain/temporary-pharmaceutical-service-store';
+import { PatientService } from '../../domain/patient.service';
 
 @Component({
   selector: 'app-pacientes-page',
@@ -28,34 +27,37 @@ export class PacientesPage {
   protected readonly searchTerm = signal('');
   protected readonly currentPage = signal(1);
   protected readonly pageSize = signal<PageSize>(10);
-  protected readonly patients = computed(() => this.store.patients());
-  protected readonly filteredPatients = computed(() => this.store.searchPatients(this.searchTerm()));
+  protected readonly patients = signal<Patient[]>([]);
+  protected readonly filteredPatients = computed(() => this.patients());
+  private readonly totalElements = signal(0);
   protected readonly pagination = computed(() =>
-    buildPagination(this.filteredPatients().length, this.currentPage(), this.pageSize()),
+    buildPagination(this.totalElements(), this.currentPage(), this.pageSize()),
   );
   protected readonly paginatedPatients = computed(() =>
-    paginateItems(this.filteredPatients(), this.currentPage(), this.pageSize()),
+    this.patients(),
   );
 
-  constructor(private readonly store: TemporaryPharmaceuticalServiceStore) {}
+  constructor(private readonly service: PatientService) { this.load(); }
 
   protected updateSearchTerm(term: string): void {
     this.searchTerm.set(term);
     this.currentPage.set(1);
+    this.load();
   }
 
   protected updatePageSize(value: string | number): void {
     this.pageSize.set(normalizePageSize(Number(value)));
     this.currentPage.set(1);
+    this.load();
   }
 
   protected goToPreviousPage(): void {
-    this.currentPage.set(Math.max(1, this.pagination().currentPage - 1));
+    this.currentPage.set(Math.max(1, this.pagination().currentPage - 1)); this.load();
   }
 
   protected goToNextPage(): void {
     const pagination = this.pagination();
-    this.currentPage.set(Math.min(pagination.totalPages, pagination.currentPage + 1));
+    this.currentPage.set(Math.min(pagination.totalPages, pagination.currentPage + 1)); this.load();
   }
 
   protected formatCpf(cpf: string): string {
@@ -79,4 +81,6 @@ export class PacientesPage {
   protected comorbidityCount(patient: Patient): number {
     return patient.comorbidityIds.length;
   }
+
+  private load(): void { this.service.list(this.searchTerm(), this.currentPage() - 1, this.pageSize()).subscribe({ next: (page) => { this.patients.set(page.content ?? []); this.totalElements.set(page.totalElements ?? 0); } }); }
 }

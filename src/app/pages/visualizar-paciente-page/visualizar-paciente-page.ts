@@ -1,7 +1,7 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { TemporaryPharmaceuticalServiceStore } from '../../domain/temporary-pharmaceutical-service-store';
-import { ComorbiditySummary } from '../../domain/clinical-records';
+import { ComorbiditySummary, Patient } from '../../domain/clinical-records';
+import { PatientService } from '../../domain/patient.service';
 import { ComorbidityService } from '../../domain/comorbidity.service';
 
 @Component({
@@ -11,17 +11,20 @@ import { ComorbidityService } from '../../domain/comorbidity.service';
 })
 export class VisualizarPacientePage {
   private readonly route = inject(ActivatedRoute);
-  protected readonly store = inject(TemporaryPharmaceuticalServiceStore);
+  private readonly patientService = inject(PatientService);
   private readonly comorbidityService = inject(ComorbidityService);
   private readonly patientId = this.route.snapshot.paramMap.get('id') ?? '';
 
-  protected readonly patient = computed(() => this.store.getPatient(this.patientId));
+  protected readonly patient = signal<Patient | null>(null);
   protected readonly comorbidities = signal<ComorbiditySummary[]>([]);
 
   constructor() {
-    const ids = new Set(this.patient()?.comorbidityIds ?? []);
-    this.comorbidityService.list('', 0, 100).subscribe((page) =>
-      this.comorbidities.set(page.content.filter((item) => ids.has(item.id))));
+    this.patientService.get(this.patientId).subscribe({ next: (patient) => {
+      this.patient.set(patient);
+      if (patient.comorbidities) { this.comorbidities.set(patient.comorbidities); return; }
+      const ids = new Set(patient.comorbidityIds);
+      this.comorbidityService.list('', 0, 100).subscribe((page) => this.comorbidities.set(page.content.filter((item) => ids.has(item.id))));
+    } });
   }
 
   protected formatCpf(cpf: string): string {

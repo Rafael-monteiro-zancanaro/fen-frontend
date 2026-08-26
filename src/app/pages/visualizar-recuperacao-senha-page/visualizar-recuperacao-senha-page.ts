@@ -1,6 +1,6 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { TemporaryPasswordRecoveryStore } from '../../domain/temporary-password-recovery-store';
+import { PasswordRecoveryRequest, PasswordRecoveryService } from '../../domain/password-recovery.service';
 
 @Component({
   selector: 'app-visualizar-recuperacao-senha-page',
@@ -9,10 +9,12 @@ import { TemporaryPasswordRecoveryStore } from '../../domain/temporary-password-
 })
 export class VisualizarRecuperacaoSenhaPage {
   private readonly route = inject(ActivatedRoute);
-  protected readonly recoveryStore = inject(TemporaryPasswordRecoveryStore);
+  private readonly recoveryService = inject(PasswordRecoveryService);
   private readonly requestId = this.route.snapshot.paramMap.get('id') ?? '';
 
-  protected readonly request = computed(() => this.recoveryStore.getRequest(this.requestId));
+  protected readonly request = signal<PasswordRecoveryRequest | null>(null);
+
+  constructor() { if (this.requestId) this.recoveryService.get(this.requestId).subscribe({ next: (value) => this.request.set(value) }); }
 
   protected formatDate(value: string): string {
     return new Intl.DateTimeFormat('pt-BR', {

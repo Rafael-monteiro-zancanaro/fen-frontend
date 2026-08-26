@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { BRAZILIAN_STATES } from '../../domain/br-address';
 import { Patient, PatientInput } from '../../domain/clinical-records';
 import { maskBrazilianPhone, maskCep, maskCpf, onlyDigits } from '../../domain/text-masks';
-import { TemporaryPharmaceuticalServiceStore } from '../../domain/temporary-pharmaceutical-service-store';
+import { PatientService } from '../../domain/patient.service';
 import { ViaCepAddress, ViaCepService } from '../../domain/via-cep.service';
 
 @Component({
@@ -27,7 +27,7 @@ export class PatientForm {
   private lastAutoFilledAddress: ViaCepAddress | null = null;
 
   constructor(
-    private readonly store: TemporaryPharmaceuticalServiceStore,
+    private readonly patientService: PatientService,
     private readonly viaCep: ViaCepService,
     private readonly changeDetector: ChangeDetectorRef,
   ) {}
@@ -45,9 +45,11 @@ export class PatientForm {
     }
 
     delete this.errors['patient.cpf'];
-    const existingPatient = this.store.findPatientByCpf(cpf);
-
-    if (existingPatient) {
+    this.patientService.findByCpf(cpf).subscribe({
+      next: (existingPatient) => {
+      if (!existingPatient || !existingPatient.id) {
+        this.patientLookupVariant = 'success'; this.patientLookupMessage = 'CPF não encontrado. Preencha os dados para cadastrar um novo paciente.'; this.patientSelected.emit(null); return;
+      }
       this.patient.name = existingPatient.name;
       this.patient.birthDate = existingPatient.birthDate;
       this.patient.cellPhone = maskBrazilianPhone(existingPatient.cellPhone);
@@ -65,13 +67,13 @@ export class PatientForm {
       this.patientLookupMessage =
         'Paciente encontrado. Os dados foram preenchidos automaticamente.';
       this.patientSelected.emit(existingPatient);
-      return;
-    }
-
-    this.patientLookupVariant = 'success';
-    this.patientLookupMessage =
-      'CPF não encontrado. Preencha os dados para cadastrar um novo paciente.';
-    this.patientSelected.emit(null);
+      },
+      error: (response) => {
+        if (response.status === 404) {
+          this.patientLookupVariant = 'success'; this.patientLookupMessage = 'CPF não encontrado. Preencha os dados para cadastrar um novo paciente.'; this.patientSelected.emit(null);
+        } else { this.patientLookupVariant = 'info'; this.patientLookupMessage = 'Não foi possível consultar o CPF. Tente novamente.'; this.patientSelected.emit(null); }
+      },
+    });
   }
 
   protected updateCpf(input: HTMLInputElement): void {

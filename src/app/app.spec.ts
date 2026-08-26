@@ -1,8 +1,5 @@
-<<<<<<< Updated upstream
-=======
-import { inject, signal, WritableSignal } from '@angular/core';
+import { inject } from '@angular/core';
 import { HttpInterceptorFn, HttpResponse, provideHttpClient, withInterceptors } from '@angular/common/http';
->>>>>>> Stashed changes
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { vi } from 'vitest';
@@ -13,11 +10,14 @@ import { TemporaryPasswordRecoveryStore } from './domain/temporary-password-reco
 import { TemporaryClinicalRecordsStore } from './domain/temporary-clinical-records-store';
 import { TemporaryPharmacyEmployeeStore } from './domain/temporary-pharmacy-employee-store';
 import { TemporaryPharmaceuticalServiceStore } from './domain/temporary-pharmaceutical-service-store';
+import { AuthService } from './domain/auth.service';
 import { of } from 'rxjs';
 import { MEDICATION_AUTOCOMPLETE_DEBOUNCE } from './domain/medication.service';
 
 const clinicalRecordsTestInterceptor: HttpInterceptorFn = (request) => {
   const store = inject(TemporaryClinicalRecordsStore);
+  const patientStore = inject(TemporaryPharmaceuticalServiceStore);
+  const recoveryStore = inject(TemporaryPasswordRecoveryStore);
   const url = new URL(request.urlWithParams, 'http://localhost');
   const parts = url.pathname.split('/').filter(Boolean);
   const id = parts[2];
@@ -60,6 +60,24 @@ const clinicalRecordsTestInterceptor: HttpInterceptorFn = (request) => {
     );
     return of(new HttpResponse({ body: pairs }));
   }
+  if (url.pathname.startsWith('/api/pacientes')) {
+    const cpf = parts[3];
+    if (request.method === 'GET' && cpf && parts[2] === 'cpf') {
+      const patient = patientStore.findPatientByCpf(cpf);
+      return of(new HttpResponse({ status: patient ? 200 : 404, body: patient ?? null }));
+    }
+    if (request.method === 'GET' && id) return of(new HttpResponse({ body: patientStore.getPatient(id) }));
+    if (request.method === 'GET') return of(paged(patientStore.searchPatients(query)));
+    if (request.method === 'POST') return of(new HttpResponse({ status: 201, body: patientStore.createPatient(request.body as never) }));
+    if (request.method === 'PUT') return of(new HttpResponse({ body: patientStore.updatePatient(id, request.body as never) }));
+  }
+  if (url.pathname.startsWith('/api/recuperacoes-senha')) {
+    if (request.method === 'GET' && id) return of(new HttpResponse({ body: recoveryStore.getRequest(id) && ({ ...recoveryStore.getRequest(id), createdAt: recoveryStore.getRequest(id)?.requestedAt }) }));
+    if (request.method === 'GET') return of(paged(recoveryStore.pendingRequests().map((item) => ({ ...item, createdAt: item.requestedAt }))));
+    if (request.method === 'POST' && parts[3] === 'aprovar') { recoveryStore.approveRequest(id); return of(new HttpResponse({ body: {} })); }
+    if (request.method === 'POST' && parts[3] === 'rejeitar') { recoveryStore.rejectRequest(id); return of(new HttpResponse({ body: {} })); }
+    if (request.method === 'POST') return of(new HttpResponse({ status: 201, body: { ...recoveryStore.createRequest((request.body as { email: string }).email), createdAt: new Date().toISOString() } }));
+  }
   return of(new HttpResponse({ body: [] }));
 };
 
@@ -69,24 +87,13 @@ describe('App', () => {
 
     await TestBed.configureTestingModule({
       imports: [App],
-<<<<<<< Updated upstream
-      providers: [provideRouter(routes)],
-=======
       providers: [
         provideRouter(routes),
         provideHttpClient(withInterceptors([clinicalRecordsTestInterceptor])),
         TemporaryClinicalRecordsStore,
         { provide: MEDICATION_AUTOCOMPLETE_DEBOUNCE, useValue: 0 },
-        {
-          provide: AuthService,
-          useValue: {
-            isAuthenticated: () => currentUser() !== null,
-            currentUser,
-            logout,
-          },
-        },
+        { provide: AuthService, useFactory: (access: TemporaryAccessControl) => ({ isAdmin: () => access.canAccessAdminModules(), token: () => null, login: () => of(null) }), deps: [TemporaryAccessControl] },
       ],
->>>>>>> Stashed changes
     }).compileComponents();
   });
 
