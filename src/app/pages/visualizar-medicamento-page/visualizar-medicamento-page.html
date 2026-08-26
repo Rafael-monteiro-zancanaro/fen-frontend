@@ -1,6 +1,8 @@
 <main data-page="visualizar-medicamento" class="flex-1 bg-app-background px-4 py-6 md:py-8">
   <section class="app-container grid gap-6">
-    @if (medication(); as currentMedication) {
+    @if (loading()) {
+      <section class="card"><div class="card-content">Carregando medicamento...</div></section>
+    } @else if (medication(); as currentMedication) {
       <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p class="mb-2 text-sm font-semibold text-uem-700">Medicamentos</p>

@@ -1,6 +1,8 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TemporaryPharmaceuticalServiceStore } from '../../domain/temporary-pharmaceutical-service-store';
+import { ComorbiditySummary } from '../../domain/clinical-records';
+import { ComorbidityService } from '../../domain/comorbidity.service';
 
 @Component({
   selector: 'app-visualizar-paciente-page',
@@ -10,10 +12,17 @@ import { TemporaryPharmaceuticalServiceStore } from '../../domain/temporary-phar
 export class VisualizarPacientePage {
   private readonly route = inject(ActivatedRoute);
   protected readonly store = inject(TemporaryPharmaceuticalServiceStore);
+  private readonly comorbidityService = inject(ComorbidityService);
   private readonly patientId = this.route.snapshot.paramMap.get('id') ?? '';
 
   protected readonly patient = computed(() => this.store.getPatient(this.patientId));
-  protected readonly comorbidities = computed(() => this.store.getPatientComorbidities(this.patientId));
+  protected readonly comorbidities = signal<ComorbiditySummary[]>([]);
+
+  constructor() {
+    const ids = new Set(this.patient()?.comorbidityIds ?? []);
+    this.comorbidityService.list('', 0, 100).subscribe((page) =>
+      this.comorbidities.set(page.content.filter((item) => ids.has(item.id))));
+  }
 
   protected formatCpf(cpf: string): string {
     return cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');

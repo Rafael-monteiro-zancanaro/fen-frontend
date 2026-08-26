@@ -61,18 +61,7 @@
             </div>
 
             <div class="card-content grid gap-5">
-              @if (clinicalStore.comorbidities().length === 0) {
-                <div class="alert alert-info">
-                  <span class="marker marker-info"></span>
-                  <div>
-                    <p class="alert-title">Nenhuma comorbidade cadastrada</p>
-                    <p class="alert-description">
-                      Cadastre comorbidades no módulo correspondente antes de associá-las a pacientes.
-                    </p>
-                  </div>
-                </div>
-              } @else {
-                <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.75fr)]">
+              <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.75fr)]">
                   <div class="grid gap-3">
                     <div class="field">
                       <label for="patientComorbiditySearch" class="label">Pesquisar comorbidades</label>
@@ -99,7 +88,7 @@
                             <div class="item-content">
                               <p class="item-title">{{ comorbidity.name }}</p>
                               <p class="item-description">
-                                {{ comorbidity.medicationInteractionIds.length }} interação(ões)
+                                {{ comorbidity.interactionCount }} interação(ões)
                               </p>
                             </div>
                             <button
@@ -137,7 +126,7 @@
                             <div class="attachment-content">
                               <p class="attachment-name">{{ comorbidity.name }}</p>
                               <p class="attachment-meta">
-                                {{ comorbidity.medicationInteractionIds.length }} interação(ões)
+                                {{ comorbidity.interactionCount }} interação(ões)
                               </p>
                             </div>
                             <button
@@ -154,7 +143,6 @@
                     }
                   </aside>
                 </div>
-              }
             </div>
           </section>
         }

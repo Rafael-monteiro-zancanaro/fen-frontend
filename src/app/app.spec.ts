@@ -1,3 +1,8 @@
+<<<<<<< Updated upstream
+=======
+import { inject, signal, WritableSignal } from '@angular/core';
+import { HttpInterceptorFn, HttpResponse, provideHttpClient, withInterceptors } from '@angular/common/http';
+>>>>>>> Stashed changes
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { vi } from 'vitest';
@@ -8,6 +13,55 @@ import { TemporaryPasswordRecoveryStore } from './domain/temporary-password-reco
 import { TemporaryClinicalRecordsStore } from './domain/temporary-clinical-records-store';
 import { TemporaryPharmacyEmployeeStore } from './domain/temporary-pharmacy-employee-store';
 import { TemporaryPharmaceuticalServiceStore } from './domain/temporary-pharmaceutical-service-store';
+import { of } from 'rxjs';
+import { MEDICATION_AUTOCOMPLETE_DEBOUNCE } from './domain/medication.service';
+
+const clinicalRecordsTestInterceptor: HttpInterceptorFn = (request) => {
+  const store = inject(TemporaryClinicalRecordsStore);
+  const url = new URL(request.urlWithParams, 'http://localhost');
+  const parts = url.pathname.split('/').filter(Boolean);
+  const id = parts[2];
+  const page = Number(url.searchParams.get('page') ?? 0);
+  const size = Number(url.searchParams.get('size') ?? 10);
+  const query = url.searchParams.get('query') ?? '';
+  const paged = <T>(items: T[]) => new HttpResponse({ body: {
+    content: items.slice(page * size, page * size + size), number: page, size,
+    totalElements: items.length, totalPages: Math.ceil(items.length / size),
+  }});
+
+  if (url.pathname.startsWith('/api/medicamentos')) {
+    if (parts[2] === 'autocomplete') return of(new HttpResponse({ body: store.searchMedications(query).slice(0, 8) }));
+    if (request.method === 'GET' && id) return of(new HttpResponse({ body: store.getMedication(id) }));
+    if (request.method === 'GET') return of(paged(store.searchMedications(query)));
+    if (request.method === 'POST') return of(new HttpResponse({ status: 201, body: store.createMedication(request.body as never) }));
+    if (request.method === 'PUT') return of(new HttpResponse({ body: store.updateMedication(id, request.body as never) }));
+    if (request.method === 'DELETE') { store.deleteMedication(id); return of(new HttpResponse({ status: 204 })); }
+  }
+  if (url.pathname.startsWith('/api/comorbidades')) {
+    const detail = (item: ReturnType<typeof store.getComorbidity>) => item ? ({ ...item,
+      interactionMedications: store.getInteractionMedications(item) }) : undefined;
+    if (request.method === 'GET' && id) return of(new HttpResponse({ body: detail(store.getComorbidity(id)) }));
+    if (request.method === 'GET') return of(paged(store.searchComorbidities(query).map((item) => ({
+      id: item.id, name: item.name, interactionCount: item.medicationInteractionIds.length, createdAt: item.createdAt,
+    }))));
+    if (request.method === 'POST') return of(new HttpResponse({ status: 201, body: detail(store.createComorbidity(request.body as never)) }));
+    if (request.method === 'PUT') return of(new HttpResponse({ body: detail(store.updateComorbidity(id, request.body as never)) }));
+    if (request.method === 'DELETE') { store.deleteComorbidity(id); return of(new HttpResponse({ status: 204 })); }
+  }
+  if (url.pathname.startsWith('/api/interacoes')) {
+    const medicationIds = new Set((url.searchParams.get('medicamentoIds') ?? '').split(','));
+    const comorbidityIds = new Set((url.searchParams.get('comorbidadeIds') ?? '').split(','));
+    const pairs = store.comorbidities().flatMap((comorbidity) =>
+      comorbidityIds.has(comorbidity.id)
+        ? store.getInteractionMedications(comorbidity)
+            .filter((medication) => medicationIds.has(medication.id))
+            .map((medication) => ({ medication, comorbidity }))
+        : [],
+    );
+    return of(new HttpResponse({ body: pairs }));
+  }
+  return of(new HttpResponse({ body: [] }));
+};
 
 describe('App', () => {
   beforeEach(async () => {
@@ -15,7 +69,24 @@ describe('App', () => {
 
     await TestBed.configureTestingModule({
       imports: [App],
+<<<<<<< Updated upstream
       providers: [provideRouter(routes)],
+=======
+      providers: [
+        provideRouter(routes),
+        provideHttpClient(withInterceptors([clinicalRecordsTestInterceptor])),
+        TemporaryClinicalRecordsStore,
+        { provide: MEDICATION_AUTOCOMPLETE_DEBOUNCE, useValue: 0 },
+        {
+          provide: AuthService,
+          useValue: {
+            isAuthenticated: () => currentUser() !== null,
+            currentUser,
+            logout,
+          },
+        },
+      ],
+>>>>>>> Stashed changes
     }).compileComponents();
   });
 

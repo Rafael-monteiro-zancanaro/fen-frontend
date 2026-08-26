@@ -64,18 +64,7 @@
         </div>
 
         <div class="card-content grid gap-5">
-          @if (store.medications().length === 0) {
-            <div class="alert alert-info">
-              <span class="marker marker-info"></span>
-              <div>
-                <p class="alert-title">Nenhum medicamento cadastrado</p>
-                <p class="alert-description">
-                  Cadastre medicamentos antes de associar interações a uma comorbidade.
-                </p>
-              </div>
-            </div>
-          } @else {
-            <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.75fr)]">
+          <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.75fr)]">
               <div class="grid gap-3">
                 <div class="field">
                   <label for="interactionMedicationSearch" class="label">Pesquisar medicamentos</label>
@@ -157,13 +146,12 @@
                 }
               </aside>
             </div>
-          }
         </div>
       </section>
 
       <div class="card-footer flex-col items-stretch rounded-xl border sm:flex-row sm:justify-end">
         <a class="btn btn-secondary w-full sm:w-auto" routerLink="/comorbidades">Cancelar</a>
-        <button class="btn btn-primary w-full sm:w-auto" type="submit">
+        <button class="btn btn-primary w-full sm:w-auto" type="submit" [disabled]="saving()">
           {{ isEditMode() ? 'Salvar alterações' : 'Salvar comorbidade' }}
         </button>
       </div>

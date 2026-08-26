@@ -89,7 +89,7 @@
 
       <div class="card-footer flex-col items-stretch sm:flex-row sm:justify-end">
         <a class="btn btn-secondary w-full sm:w-auto" routerLink="/medicamentos">Cancelar</a>
-        <button class="btn btn-primary w-full sm:w-auto" type="submit">
+        <button class="btn btn-primary w-full sm:w-auto" type="submit" [disabled]="saving()">
           {{ isEditMode() ? 'Salvar alterações' : 'Salvar medicamento' }}
         </button>
       </div>

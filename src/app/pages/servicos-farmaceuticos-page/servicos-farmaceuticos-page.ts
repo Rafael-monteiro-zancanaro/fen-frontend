@@ -29,11 +29,8 @@ import {
   ServiceMedicationItem,
 } from '../../domain/clinical-records';
 import { maskBrazilianPhone, maskCep, maskCpf, onlyDigits } from '../../domain/text-masks';
-import { TemporaryClinicalRecordsStore } from '../../domain/temporary-clinical-records-store';
-import {
-  PatientMedicationInteraction,
-  TemporaryPharmaceuticalServiceStore,
-} from '../../domain/temporary-pharmaceutical-service-store';
+import { InteractionService, MedicationInteractionPair } from '../../domain/interaction.service';
+import { TemporaryPharmaceuticalServiceStore } from '../../domain/temporary-pharmaceutical-service-store';
 
 type OptionalStep =
   | 'cuidados-farmaceuticos'
@@ -136,6 +133,10 @@ export class ServicosFarmaceuticosPage {
     inhalotherapy: [],
     complementary: [],
   };
+  private readonly selectedMedications: Partial<Record<MedicationSection, Medication>> = {};
+  private readonly interactionWarnings: Record<MedicationSection, MedicationInteractionPair[]> = {
+    injectable: [], inhalotherapy: [], complementary: [],
+  };
   protected readonly errors: Record<string, string> = {};
   protected readonly medicationErrors: Record<
     MedicationSection,
@@ -152,7 +153,7 @@ export class ServicosFarmaceuticosPage {
 
   constructor(
     private readonly store: TemporaryPharmaceuticalServiceStore,
-    private readonly clinicalRecordsStore: TemporaryClinicalRecordsStore,
+    private readonly interactions: InteractionService,
     private readonly router: Router,
     route: ActivatedRoute,
   ) {
@@ -238,14 +239,14 @@ export class ServicosFarmaceuticosPage {
     this.medicationDrafts[section].medicationId = medication.id;
     this.medicationDrafts[section].medicationConcentration = this.formatMedication(medication);
     delete this.medicationErrors[section].medicationConcentration;
+    this.selectedMedications[section] = medication;
+    this.loadInteractionWarnings(section);
   }
 
   protected updateMedicationQuery(section: MedicationSection, value: string): void {
     const draft = this.medicationDrafts[section];
     draft.medicationConcentration = value;
-    const selectedMedication = draft.medicationId
-      ? this.clinicalRecordsStore.getMedication(draft.medicationId)
-      : null;
+    const selectedMedication = this.selectedMedications[section] ?? null;
 
     if (
       selectedMedication &&
@@ -255,18 +256,27 @@ export class ServicosFarmaceuticosPage {
     }
 
     draft.medicationId = '';
+    delete this.selectedMedications[section];
+    this.interactionWarnings[section] = [];
   }
 
   protected medicationInteractionWarnings(
     section: MedicationSection,
-  ): PatientMedicationInteraction[] {
+  ): MedicationInteractionPair[] {
     const medicationId = this.medicationDrafts[section].medicationId;
 
     if (!this.selectedPatientId || !medicationId) {
       return [];
     }
 
-    return this.store.getPatientMedicationInteractions(this.selectedPatientId, medicationId);
+    return this.interactionWarnings[section];
+  }
+
+  private loadInteractionWarnings(section: MedicationSection): void {
+    const medicationId = this.medicationDrafts[section].medicationId;
+    const patient = this.store.getPatient(this.selectedPatientId);
+    this.interactions.findPairs(medicationId ? [medicationId] : [], patient?.comorbidityIds ?? [])
+      .subscribe((pairs) => this.interactionWarnings[section] = pairs);
   }
 
   protected hasBloodGlucoseWarning(): boolean {

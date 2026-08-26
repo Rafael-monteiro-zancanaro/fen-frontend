@@ -12,7 +12,11 @@
       <a class="btn btn-primary" routerLink="/medicamentos/novo">Cadastrar medicamento</a>
     </div>
 
-    @if (medications().length === 0) {
+    @if (loading()) {
+      <section class="card"><div class="card-content">Carregando medicamentos...</div></section>
+    } @else if (loadError()) {
+      <div class="alert alert-danger"><p class="alert-title">Não foi possível carregar os medicamentos.</p></div>
+    } @else if (medications().length === 0) {
       <section class="empty">
         <div class="empty-icon" aria-hidden="true">+</div>
         <h2 class="empty-title">Nenhum medicamento cadastrado</h2>
@@ -119,8 +123,7 @@
       <div class="alert-dialog-header">
         <h2 class="alert-dialog-title">Excluir medicamento</h2>
         <p class="alert-dialog-description">
-          Confirme a exclusão de {{ medication.name }}. Esta ação também remove sua associação de
-          interações em comorbidades cadastradas.
+          Confirme a exclusão de {{ medication.name }}. Registros referenciados não poderão ser excluídos.
         </p>
       </div>
       <div class="alert-dialog-footer">
