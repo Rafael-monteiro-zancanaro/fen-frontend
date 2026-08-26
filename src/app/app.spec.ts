@@ -1,5 +1,10 @@
 import { inject } from '@angular/core';
-import { HttpInterceptorFn, HttpResponse, provideHttpClient, withInterceptors } from '@angular/common/http';
+import {
+  HttpInterceptorFn,
+  HttpResponse,
+  provideHttpClient,
+  withInterceptors,
+} from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { vi } from 'vitest';
@@ -8,7 +13,7 @@ import { routes } from './app.routes';
 import { TemporaryAccessControl } from './domain/temporary-access-control';
 import { TemporaryPasswordRecoveryStore } from './domain/temporary-password-recovery-store';
 import { TemporaryClinicalRecordsStore } from './domain/temporary-clinical-records-store';
-import { TemporaryPharmacyEmployeeStore } from './domain/temporary-pharmacy-employee-store';
+import { PharmacyEmployeeFixture } from './testing/pharmacy-employee-fixture';
 import { TemporaryPharmaceuticalServiceStore } from './domain/temporary-pharmaceutical-service-store';
 import { AuthService } from './domain/auth.service';
 import { of } from 'rxjs';
@@ -18,42 +23,80 @@ const clinicalRecordsTestInterceptor: HttpInterceptorFn = (request) => {
   const store = inject(TemporaryClinicalRecordsStore);
   const patientStore = inject(TemporaryPharmaceuticalServiceStore);
   const recoveryStore = inject(TemporaryPasswordRecoveryStore);
+  const employeeStore = inject(PharmacyEmployeeFixture);
   const url = new URL(request.urlWithParams, 'http://localhost');
   const parts = url.pathname.split('/').filter(Boolean);
   const id = parts[2];
   const page = Number(url.searchParams.get('page') ?? 0);
   const size = Number(url.searchParams.get('size') ?? 10);
   const query = url.searchParams.get('query') ?? '';
-  const paged = <T>(items: T[]) => new HttpResponse({ body: {
-    content: items.slice(page * size, page * size + size), number: page, size,
-    totalElements: items.length, totalPages: Math.ceil(items.length / size),
-  }});
+  const paged = <T>(items: T[]) =>
+    new HttpResponse({
+      body: {
+        content: items.slice(page * size, page * size + size),
+        number: page,
+        size,
+        totalElements: items.length,
+        totalPages: Math.ceil(items.length / size),
+      },
+    });
 
   if (url.pathname.startsWith('/api/medicamentos')) {
-    if (parts[2] === 'autocomplete') return of(new HttpResponse({ body: store.searchMedications(query).slice(0, 8) }));
-    if (request.method === 'GET' && id) return of(new HttpResponse({ body: store.getMedication(id) }));
+    if (parts[2] === 'autocomplete')
+      return of(new HttpResponse({ body: store.searchMedications(query).slice(0, 8) }));
+    if (request.method === 'GET' && id)
+      return of(new HttpResponse({ body: store.getMedication(id) }));
     if (request.method === 'GET') return of(paged(store.searchMedications(query)));
-    if (request.method === 'POST') return of(new HttpResponse({ status: 201, body: store.createMedication(request.body as never) }));
-    if (request.method === 'PUT') return of(new HttpResponse({ body: store.updateMedication(id, request.body as never) }));
-    if (request.method === 'DELETE') { store.deleteMedication(id); return of(new HttpResponse({ status: 204 })); }
+    if (request.method === 'POST')
+      return of(
+        new HttpResponse({ status: 201, body: store.createMedication(request.body as never) }),
+      );
+    if (request.method === 'PUT')
+      return of(new HttpResponse({ body: store.updateMedication(id, request.body as never) }));
+    if (request.method === 'DELETE') {
+      store.deleteMedication(id);
+      return of(new HttpResponse({ status: 204 }));
+    }
   }
   if (url.pathname.startsWith('/api/comorbidades')) {
-    const detail = (item: ReturnType<typeof store.getComorbidity>) => item ? ({ ...item,
-      interactionMedications: store.getInteractionMedications(item) }) : undefined;
-    if (request.method === 'GET' && id) return of(new HttpResponse({ body: detail(store.getComorbidity(id)) }));
-    if (request.method === 'GET') return of(paged(store.searchComorbidities(query).map((item) => ({
-      id: item.id, name: item.name, interactionCount: item.medicationInteractionIds.length, createdAt: item.createdAt,
-    }))));
-    if (request.method === 'POST') return of(new HttpResponse({ status: 201, body: detail(store.createComorbidity(request.body as never)) }));
-    if (request.method === 'PUT') return of(new HttpResponse({ body: detail(store.updateComorbidity(id, request.body as never)) }));
-    if (request.method === 'DELETE') { store.deleteComorbidity(id); return of(new HttpResponse({ status: 204 })); }
+    const detail = (item: ReturnType<typeof store.getComorbidity>) =>
+      item ? { ...item, interactionMedications: store.getInteractionMedications(item) } : undefined;
+    if (request.method === 'GET' && id)
+      return of(new HttpResponse({ body: detail(store.getComorbidity(id)) }));
+    if (request.method === 'GET')
+      return of(
+        paged(
+          store.searchComorbidities(query).map((item) => ({
+            id: item.id,
+            name: item.name,
+            interactionCount: item.medicationInteractionIds.length,
+            createdAt: item.createdAt,
+          })),
+        ),
+      );
+    if (request.method === 'POST')
+      return of(
+        new HttpResponse({
+          status: 201,
+          body: detail(store.createComorbidity(request.body as never)),
+        }),
+      );
+    if (request.method === 'PUT')
+      return of(
+        new HttpResponse({ body: detail(store.updateComorbidity(id, request.body as never)) }),
+      );
+    if (request.method === 'DELETE') {
+      store.deleteComorbidity(id);
+      return of(new HttpResponse({ status: 204 }));
+    }
   }
   if (url.pathname.startsWith('/api/interacoes')) {
     const medicationIds = new Set((url.searchParams.get('medicamentoIds') ?? '').split(','));
     const comorbidityIds = new Set((url.searchParams.get('comorbidadeIds') ?? '').split(','));
     const pairs = store.comorbidities().flatMap((comorbidity) =>
       comorbidityIds.has(comorbidity.id)
-        ? store.getInteractionMedications(comorbidity)
+        ? store
+            .getInteractionMedications(comorbidity)
             .filter((medication) => medicationIds.has(medication.id))
             .map((medication) => ({ medication, comorbidity }))
         : [],
@@ -66,17 +109,88 @@ const clinicalRecordsTestInterceptor: HttpInterceptorFn = (request) => {
       const patient = patientStore.findPatientByCpf(cpf);
       return of(new HttpResponse({ status: patient ? 200 : 404, body: patient ?? null }));
     }
-    if (request.method === 'GET' && id) return of(new HttpResponse({ body: patientStore.getPatient(id) }));
+    if (request.method === 'GET' && id)
+      return of(new HttpResponse({ body: patientStore.getPatient(id) }));
     if (request.method === 'GET') return of(paged(patientStore.searchPatients(query)));
-    if (request.method === 'POST') return of(new HttpResponse({ status: 201, body: patientStore.createPatient(request.body as never) }));
-    if (request.method === 'PUT') return of(new HttpResponse({ body: patientStore.updatePatient(id, request.body as never) }));
+    if (request.method === 'POST')
+      return of(
+        new HttpResponse({ status: 201, body: patientStore.createPatient(request.body as never) }),
+      );
+    if (request.method === 'PUT')
+      return of(new HttpResponse({ body: patientStore.updatePatient(id, request.body as never) }));
   }
   if (url.pathname.startsWith('/api/recuperacoes-senha')) {
-    if (request.method === 'GET' && id) return of(new HttpResponse({ body: recoveryStore.getRequest(id) && ({ ...recoveryStore.getRequest(id), createdAt: recoveryStore.getRequest(id)?.requestedAt }) }));
-    if (request.method === 'GET') return of(paged(recoveryStore.pendingRequests().map((item) => ({ ...item, createdAt: item.requestedAt }))));
-    if (request.method === 'POST' && parts[3] === 'aprovar') { recoveryStore.approveRequest(id); return of(new HttpResponse({ body: {} })); }
-    if (request.method === 'POST' && parts[3] === 'rejeitar') { recoveryStore.rejectRequest(id); return of(new HttpResponse({ body: {} })); }
-    if (request.method === 'POST') return of(new HttpResponse({ status: 201, body: { ...recoveryStore.createRequest((request.body as { email: string }).email), createdAt: new Date().toISOString() } }));
+    if (request.method === 'GET' && id)
+      return of(
+        new HttpResponse({
+          body: recoveryStore.getRequest(id) && {
+            ...recoveryStore.getRequest(id),
+            createdAt: recoveryStore.getRequest(id)?.requestedAt,
+          },
+        }),
+      );
+    if (request.method === 'GET')
+      return of(
+        paged(
+          recoveryStore.pendingRequests().map((item) => ({ ...item, createdAt: item.requestedAt })),
+        ),
+      );
+    if (request.method === 'POST' && parts[3] === 'aprovar') {
+      recoveryStore.approveRequest(id);
+      return of(new HttpResponse({ body: {} }));
+    }
+    if (request.method === 'POST' && parts[3] === 'rejeitar') {
+      recoveryStore.rejectRequest(id);
+      return of(new HttpResponse({ body: {} }));
+    }
+    if (request.method === 'POST')
+      return of(
+        new HttpResponse({
+          status: 201,
+          body: {
+            ...recoveryStore.createRequest((request.body as { email: string }).email),
+            createdAt: new Date().toISOString(),
+          },
+        }),
+      );
+  }
+  if (url.pathname.startsWith('/api/admin/funcionarios')) {
+    const employeeId = parts[3];
+    const toApiEmployee = (employee: ReturnType<typeof employeeStore.getEmployee>) => {
+      if (!employee) return undefined;
+      const base = {
+        id: employee.id,
+        nome: employee.name,
+        email: employee.email,
+        cpf: employee.cpf,
+        dataNascimento: employee.birthDate,
+        role: employee.role,
+        situacao: employee.status === 'Ativo' ? 'ATIVO' : 'PENDENTE',
+      };
+      return employee.role === 'ESTAGIARIO'
+        ? {
+            ...base,
+            tipoEstagio:
+              employee.internshipType === 'Obrigatório' ? 'OBRIGATORIO' : 'NAO_OBRIGATORIO',
+            supervisor: { nome: employee.supervisorName },
+            inicioVigencia: employee.internshipStartDate,
+            fimVigencia: employee.internshipEndDate,
+          }
+        : { ...base, crf: employee.crf, responsavelTecnico: employee.isTechnicalResponsible };
+    };
+    if (request.method === 'GET' && employeeId) {
+      return of(new HttpResponse({ body: toApiEmployee(employeeStore.getEmployee(employeeId)) }));
+    }
+    if (request.method === 'PATCH' && employeeId) {
+      const employee = employeeStore.getEmployee(employeeId);
+      if (employee && employee.role !== 'ESTAGIARIO') {
+        employeeStore.toggleTechnicalResponsible(employeeId);
+      }
+      return of(new HttpResponse({ body: toApiEmployee(employeeStore.getEmployee(employeeId)) }));
+    }
+    if (request.method === 'GET') {
+      return of(paged(employeeStore.searchEmployees(query).map(toApiEmployee)));
+    }
   }
   return of(new HttpResponse({ body: [] }));
 };
@@ -91,8 +205,17 @@ describe('App', () => {
         provideRouter(routes),
         provideHttpClient(withInterceptors([clinicalRecordsTestInterceptor])),
         TemporaryClinicalRecordsStore,
+        PharmacyEmployeeFixture,
         { provide: MEDICATION_AUTOCOMPLETE_DEBOUNCE, useValue: 0 },
-        { provide: AuthService, useFactory: (access: TemporaryAccessControl) => ({ isAdmin: () => access.canAccessAdminModules(), token: () => null, login: () => of(null) }), deps: [TemporaryAccessControl] },
+        {
+          provide: AuthService,
+          useFactory: (access: TemporaryAccessControl) => ({
+            isAdmin: () => access.canAccessAdminModules(),
+            token: () => null,
+            login: () => of(null),
+          }),
+          deps: [TemporaryAccessControl],
+        },
       ],
     }).compileComponents();
   });
@@ -363,7 +486,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
     const accessControl = TestBed.inject(TemporaryAccessControl);
-    const employeeStore = TestBed.inject(TemporaryPharmacyEmployeeStore);
+    const employeeStore = TestBed.inject(PharmacyEmployeeFixture);
     const pharmacist = employeeStore
       .employees()
       .find((employee) => employee.role === 'FARMACEUTICO' && !employee.isTechnicalResponsible);
@@ -420,7 +543,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
     const accessControl = TestBed.inject(TemporaryAccessControl);
-    const employeeStore = TestBed.inject(TemporaryPharmacyEmployeeStore);
+    const employeeStore = TestBed.inject(PharmacyEmployeeFixture);
     const intern = employeeStore.employees().find((employee) => employee.role === 'ESTAGIARIO');
 
     if (!intern || intern.role !== 'ESTAGIARIO') {

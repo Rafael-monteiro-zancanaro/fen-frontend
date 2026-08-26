@@ -1,20 +1,12 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { bootstrapEye } from '@ng-icons/bootstrap-icons';
 import { PaginationControls } from '../../components/pagination-controls/pagination-controls';
-import {
-  PAGE_SIZE_OPTIONS,
-  PageSize,
-  buildPagination,
-  normalizePageSize,
-  paginateItems,
-} from '../../domain/pagination';
-import {
-  PharmacyEmployee,
-  TemporaryPharmacyEmployeeStore,
-} from '../../domain/temporary-pharmacy-employee-store';
+import { PAGE_SIZE_OPTIONS, PageSize, normalizePageSize } from '../../domain/pagination';
+import { PharmacyEmployee, FuncionarioService } from '../../domain/funcionario.service';
+import { PaginationState } from '../../domain/pagination';
 
 @Component({
   selector: 'app-admin-funcionarios-page',
@@ -33,36 +25,41 @@ export class AdminFuncionariosPage {
   protected readonly searchTerm = signal('');
   protected readonly currentPage = signal(1);
   protected readonly pageSize = signal<PageSize>(10);
-  protected readonly employees = computed(() => this.employeeStore.employees());
-  protected readonly filteredEmployees = computed(() =>
-    this.employeeStore.searchEmployees(this.searchTerm()),
-  );
-  protected readonly pagination = computed(() =>
-    buildPagination(this.filteredEmployees().length, this.currentPage(), this.pageSize()),
-  );
-  protected readonly paginatedEmployees = computed(() =>
-    paginateItems(this.filteredEmployees(), this.currentPage(), this.pageSize()),
-  );
+  protected readonly employees = signal<PharmacyEmployee[]>([]);
+  protected readonly pagination = signal<PaginationState>({
+    currentPage: 1,
+    pageSize: 10,
+    totalItems: 0,
+    totalPages: 1,
+    startItem: 0,
+    endItem: 0,
+  });
 
-  constructor(private readonly employeeStore: TemporaryPharmacyEmployeeStore) {}
+  constructor(private readonly employeeService: FuncionarioService) {
+    this.load();
+  }
 
   protected updateSearchTerm(term: string): void {
     this.searchTerm.set(term);
     this.currentPage.set(1);
+    this.load();
   }
 
   protected updatePageSize(value: string | number): void {
     this.pageSize.set(normalizePageSize(Number(value)));
     this.currentPage.set(1);
+    this.load();
   }
 
   protected goToPreviousPage(): void {
     this.currentPage.set(Math.max(1, this.pagination().currentPage - 1));
+    this.load();
   }
 
   protected goToNextPage(): void {
     const pagination = this.pagination();
     this.currentPage.set(Math.min(pagination.totalPages, pagination.currentPage + 1));
+    this.load();
   }
 
   protected roleLabel(employee: PharmacyEmployee): string {
@@ -79,5 +76,30 @@ export class AdminFuncionariosPage {
 
   protected isTechnicalResponsible(employee: PharmacyEmployee): boolean {
     return employee.role !== 'ESTAGIARIO' && employee.isTechnicalResponsible;
+  }
+  private load(): void {
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+    this.employeeService
+      .list(this.searchTerm(), this.currentPage() - 1, this.pageSize())
+      .subscribe({
+        next: (page) => {
+          const currentPage = page.number + 1;
+          this.employees.set(page.content);
+          this.pagination.set({
+            currentPage,
+            pageSize: this.pageSize(),
+            totalItems: page.totalElements,
+            totalPages: Math.max(1, page.totalPages),
+            startItem: page.totalElements ? page.number * page.size + 1 : 0,
+            endItem: Math.min((page.number + 1) * page.size, page.totalElements),
+          });
+          this.isLoading.set(false);
+        },
+        error: () => {
+          this.errorMessage.set('Não foi possível consultar o servidor.');
+          this.isLoading.set(false);
+        },
+      });
   }
 }

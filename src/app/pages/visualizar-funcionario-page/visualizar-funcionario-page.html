@@ -1,5 +1,16 @@
 <main data-page="visualizar-funcionario" class="flex-1 bg-app-background px-4 py-6 md:py-8">
   <section class="app-container grid gap-6">
+    @if (errorMessage()) {
+      <div class="alert alert-danger">
+        <span class="marker marker-danger"></span>
+        <div>
+          <p class="alert-title">{{ errorMessage() }}</p>
+        </div>
+      </div>
+    }
+    @if (isLoading()) {
+      <section class="card p-5"><div class="skeleton h-6 w-52"></div></section>
+    }
     @if (employee(); as currentEmployee) {
       <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -41,7 +52,9 @@
 
           <div>
             <p class="text-xs font-bold uppercase text-app-muted-foreground">CPF</p>
-            <p class="mt-1 font-semibold text-app-foreground">{{ formatCpf(currentEmployee.cpf) }}</p>
+            <p class="mt-1 font-semibold text-app-foreground">
+              {{ formatCpf(currentEmployee.cpf) }}
+            </p>
           </div>
 
           <div>
@@ -58,7 +71,9 @@
 
           <div>
             <p class="text-xs font-bold uppercase text-app-muted-foreground">Situação</p>
-            <p class="mt-1"><span class="badge badge-success">{{ currentEmployee.status }}</span></p>
+            <p class="mt-1">
+              <span class="badge badge-success">{{ currentEmployee.status }}</span>
+            </p>
           </div>
         </div>
       </section>
@@ -77,9 +92,15 @@
             </div>
 
             <div>
-              <p class="text-xs font-bold uppercase text-app-muted-foreground">Responsável técnico</p>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">
+                Responsável técnico
+              </p>
               <p class="mt-1">
-                <span class="badge" [class.badge-success]="currentEmployee.isTechnicalResponsible" [class.badge-secondary]="!currentEmployee.isTechnicalResponsible">
+                <span
+                  class="badge"
+                  [class.badge-success]="currentEmployee.isTechnicalResponsible"
+                  [class.badge-secondary]="!currentEmployee.isTechnicalResponsible"
+                >
                   {{ currentEmployee.isTechnicalResponsible ? 'Sim' : 'Não' }}
                 </span>
               </p>
@@ -113,16 +134,22 @@
           <div class="card-content grid gap-4 sm:grid-cols-2">
             <div>
               <p class="text-xs font-bold uppercase text-app-muted-foreground">Tipo do estágio</p>
-              <p class="mt-1 font-semibold text-app-foreground">{{ currentEmployee.internshipType }}</p>
+              <p class="mt-1 font-semibold text-app-foreground">
+                {{ currentEmployee.internshipType }}
+              </p>
             </div>
 
             <div>
               <p class="text-xs font-bold uppercase text-app-muted-foreground">Supervisor</p>
-              <p class="mt-1 font-semibold text-app-foreground">{{ currentEmployee.supervisorName }}</p>
+              <p class="mt-1 font-semibold text-app-foreground">
+                {{ currentEmployee.supervisorName }}
+              </p>
             </div>
 
             <div>
-              <p class="text-xs font-bold uppercase text-app-muted-foreground">Início da vigência</p>
+              <p class="text-xs font-bold uppercase text-app-muted-foreground">
+                Início da vigência
+              </p>
               <p class="mt-1 font-semibold text-app-foreground">
                 {{ formatDate(currentEmployee.internshipStartDate) }}
               </p>
