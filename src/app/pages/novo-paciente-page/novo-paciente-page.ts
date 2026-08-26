@@ -5,7 +5,7 @@ import { PatientForm } from '../../components/patient-form/patient-form';
 import { ComorbiditySummary, PatientInput } from '../../domain/clinical-records';
 import { onlyDigits } from '../../domain/text-masks';
 import { ComorbidityService } from '../../domain/comorbidity.service';
-import { TemporaryPharmaceuticalServiceStore } from '../../domain/temporary-pharmaceutical-service-store';
+import { PatientService } from '../../domain/patient.service';
 
 @Component({
   selector: 'app-novo-paciente-page',
@@ -43,7 +43,7 @@ export class NovoPacientePage implements OnInit {
 
   constructor(
     private readonly router: Router,
-    private readonly patientStore: TemporaryPharmaceuticalServiceStore,
+    private readonly patientService: PatientService,
     private readonly comorbidityService: ComorbidityService,
   ) { this.loadComorbidities(''); }
 
@@ -52,19 +52,7 @@ export class NovoPacientePage implements OnInit {
       return;
     }
 
-    const patient = this.patientStore.getPatient(this.patientId);
-
-    if (!patient) {
-      this.recordNotFound.set(true);
-      return;
-    }
-
-    Object.assign(this.patient, {
-      ...patient,
-      comorbidityIds: [...patient.comorbidityIds],
-    });
-    this.selectedComorbidityIds.set([...patient.comorbidityIds]);
-    this.loadComorbidities(this.comorbiditySearchTerm());
+    this.patientService.get(this.patientId).subscribe({ next: (patient) => { Object.assign(this.patient, { ...patient, comorbidityIds: [...patient.comorbidityIds] }); this.selectedComorbidityIds.set([...patient.comorbidityIds]); this.loadComorbidities(this.comorbiditySearchTerm()); }, error: () => this.recordNotFound.set(true) });
   }
 
   protected updateComorbiditySearch(term: string): void {
@@ -119,19 +107,11 @@ export class NovoPacientePage implements OnInit {
     };
 
     if (this.patientId) {
-      const patient = this.patientStore.updatePatient(this.patientId, input);
-
-      if (!patient) {
-        this.saveError = 'Não foi possível salvar. Verifique se o CPF já pertence a outro paciente.';
-        return;
-      }
-
-      void this.router.navigateByUrl('/pacientes');
+      this.patientService.update(this.patientId, input).subscribe({ next: () => void this.router.navigateByUrl('/pacientes'), error: () => this.saveError = 'Não foi possível salvar. Verifique se o CPF já pertence a outro paciente.' });
       return;
     }
 
-    const patient = this.patientStore.createPatient(input);
-    void this.router.navigateByUrl(`/pacientes/${patient.id}/editar`);
+    this.patientService.create(input).subscribe({ next: (patient) => void this.router.navigateByUrl(`/pacientes/${patient.id}/editar`), error: () => this.saveError = 'Não foi possível salvar. Verifique os dados informados.' });
   }
 
   private validatePatient(): boolean {

@@ -24,6 +24,8 @@
             autocomplete="email"
             placeholder="seu.email@uem.br"
             required
+            name="email"
+            [(ngModel)]="email"
           />
         </div>
 
@@ -40,6 +42,8 @@
             autocomplete="current-password"
             placeholder="Digite sua senha"
             required
+            name="senha"
+            [(ngModel)]="senha"
           />
         </div>
 
@@ -48,27 +52,12 @@
           Manter meu acesso neste dispositivo
         </label>
 
-        <div class="field">
-          <label for="perfilTemporario" class="label">Perfil de acesso</label>
-          <select
-            id="perfilTemporario"
-            class="native-select"
-            name="perfilTemporario"
-            [(ngModel)]="selectedRole"
-          >
-            <option value="FARMACEUTICO">Farmacêutico</option>
-            <option value="ESTAGIARIO">Estagiário</option>
-            <option value="ADMIN">Administrador</option>
-          </select>
-          <p class="field-description">
-            Seleção temporária até a integração com autenticação e autorização reais.
-          </p>
-        </div>
+        @if (error) { <p class="field-error">{{ error }}</p> }
       </div>
 
       <div class="card-footer flex-col items-stretch sm:flex-row sm:justify-between">
         <a class="btn btn-link text-sm" routerLink="/cadastro">Cadastrar novo usuario</a>
-        <button class="btn btn-primary w-full sm:w-auto" type="submit">
+        <button class="btn btn-primary w-full sm:w-auto" type="submit" [disabled]="loading">
           Entrar
         </button>
       </div>

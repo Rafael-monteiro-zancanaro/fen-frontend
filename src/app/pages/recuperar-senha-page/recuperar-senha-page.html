@@ -25,6 +25,7 @@
             </div>
           </div>
         }
+        @if (errorMessage()) { <div class="alert alert-danger"><span class="marker marker-danger"></span><p class="alert-title">{{ errorMessage() }}</p></div> }
 
         <div class="field">
           <label for="recoveryEmail" class="label label-required">E-mail</label>
@@ -54,10 +55,14 @@
             name="newPassword"
             autocomplete="new-password"
             [(ngModel)]="newPassword"
-            [attr.aria-invalid]="isNewPasswordInvalid()"
+            [attr.aria-invalid]="isNewPasswordInvalid() || isNewPasswordLengthInvalid()"
           />
           @if (isNewPasswordInvalid()) {
             <p class="field-error" data-field-error="new-password">Nova senha é obrigatória.</p>
+          } @else if (isNewPasswordLengthInvalid()) {
+            <p class="field-error" data-field-error="new-password">
+              A nova senha deve ter entre 8 e 72 caracteres.
+            </p>
           }
         </div>
 
@@ -86,7 +91,7 @@
 
       <div class="card-footer flex-col items-stretch sm:flex-row sm:justify-between">
         <a class="btn btn-link text-sm" routerLink="/login">Voltar ao login</a>
-        <button class="btn btn-primary w-full sm:w-auto" type="submit">
+        <button class="btn btn-primary w-full sm:w-auto" type="submit" [disabled]="isSubmitting()">
           Enviar solicitação
         </button>
       </div>

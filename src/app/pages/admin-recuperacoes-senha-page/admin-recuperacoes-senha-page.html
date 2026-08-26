@@ -62,7 +62,7 @@
                 @for (request of paginatedPendingRequests(); track request.id) {
                   <tr>
                     <td class="font-semibold text-app-foreground">{{ request.email }}</td>
-                    <td>{{ formatDate(request.requestedAt) }}</td>
+                    <td>{{ formatDate(request.createdAt) }}</td>
                     <td><span class="badge badge-warning">{{ request.status }}</span></td>
                     <td>
                       <div class="flex flex-nowrap gap-2" data-recovery-actions>

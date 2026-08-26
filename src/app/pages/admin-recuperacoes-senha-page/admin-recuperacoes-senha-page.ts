@@ -8,12 +8,8 @@ import {
   PageSize,
   buildPagination,
   normalizePageSize,
-  paginateItems,
 } from '../../domain/pagination';
-import {
-  PasswordRecoveryRequest,
-  TemporaryPasswordRecoveryStore,
-} from '../../domain/temporary-password-recovery-store';
+import { PasswordRecoveryRequest, PasswordRecoveryService } from '../../domain/password-recovery.service';
 
 type RecoveryAction = 'approve' | 'reject';
 
@@ -43,15 +39,16 @@ export class AdminRecuperacoesSenhaPage {
   protected readonly pageSize = signal<PageSize>(10);
   protected readonly pendingAction = signal<PendingAction | null>(null);
   protected readonly operationInProgressId = signal<string | null>(null);
-  protected readonly pendingRequests = computed(() => this.recoveryStore.pendingRequests());
+  protected readonly pendingRequests = signal<PasswordRecoveryRequest[]>([]);
+  private readonly totalElements = signal(0);
   protected readonly pagination = computed(() =>
-    buildPagination(this.pendingRequests().length, this.currentPage(), this.pageSize()),
+    buildPagination(this.totalElements(), this.currentPage(), this.pageSize()),
   );
   protected readonly paginatedPendingRequests = computed(() =>
-    paginateItems(this.pendingRequests(), this.currentPage(), this.pageSize()),
+    this.pendingRequests(),
   );
 
-  constructor(private readonly recoveryStore: TemporaryPasswordRecoveryStore) {}
+  constructor(private readonly recoveryService: PasswordRecoveryService) { this.load(); }
 
   protected formatDate(value: string): string {
     return new Intl.DateTimeFormat('pt-BR', {
@@ -63,15 +60,16 @@ export class AdminRecuperacoesSenhaPage {
   protected updatePageSize(value: string | number): void {
     this.pageSize.set(normalizePageSize(Number(value)));
     this.currentPage.set(1);
+    this.load();
   }
 
   protected goToPreviousPage(): void {
-    this.currentPage.set(Math.max(1, this.pagination().currentPage - 1));
+    this.currentPage.set(Math.max(1, this.pagination().currentPage - 1)); this.load();
   }
 
   protected goToNextPage(): void {
     const pagination = this.pagination();
-    this.currentPage.set(Math.min(pagination.totalPages, pagination.currentPage + 1));
+    this.currentPage.set(Math.min(pagination.totalPages, pagination.currentPage + 1)); this.load();
   }
 
   protected askToApprove(request: PasswordRecoveryRequest): void {
@@ -97,20 +95,19 @@ export class AdminRecuperacoesSenhaPage {
 
     this.operationInProgressId.set(pendingAction.request.id);
 
-    if (pendingAction.action === 'approve') {
-      this.recoveryStore.approveRequest(pendingAction.request.id);
-      this.successMessage.set('Solicitação aprovada com sucesso.');
-    } else {
-      this.recoveryStore.rejectRequest(pendingAction.request.id);
-      this.successMessage.set('Solicitação rejeitada com sucesso.');
-    }
-
-    this.operationInProgressId.set(null);
-    this.pendingAction.set(null);
-    this.currentPage.set(this.pagination().currentPage);
+    const operation = pendingAction.action === 'approve' ? this.recoveryService.approve(pendingAction.request.id) : this.recoveryService.reject(pendingAction.request.id);
+    operation.subscribe({ next: () => { this.successMessage.set(pendingAction.action === 'approve' ? 'Solicitação aprovada com sucesso.' : 'Solicitação rejeitada com sucesso.'); this.operationInProgressId.set(null); this.pendingAction.set(null); this.load(); }, error: () => { this.errorMessage.set('Não foi possível processar a solicitação.'); this.operationInProgressId.set(null); } });
   }
 
   protected isApproveAction(): boolean {
     return this.pendingAction()?.action === 'approve';
+  }
+
+  private load(): void {
+    this.isLoading.set(true); this.errorMessage.set('');
+    this.recoveryService.list('', 'PENDENTE', this.currentPage() - 1, this.pageSize()).subscribe({
+      next: (page) => { this.pendingRequests.set(page.content); this.totalElements.set(page.totalElements); this.isLoading.set(false); },
+      error: () => { this.errorMessage.set('Tente novamente em instantes.'); this.isLoading.set(false); },
+    });
   }
 }
