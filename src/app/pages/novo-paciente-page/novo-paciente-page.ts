@@ -2,9 +2,9 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PatientForm } from '../../components/patient-form/patient-form';
-import { Comorbidity, PatientInput } from '../../domain/clinical-records';
+import { ComorbiditySummary, PatientInput } from '../../domain/clinical-records';
 import { onlyDigits } from '../../domain/text-masks';
-import { TemporaryClinicalRecordsStore } from '../../domain/temporary-clinical-records-store';
+import { ComorbidityService } from '../../domain/comorbidity.service';
 import { TemporaryPharmaceuticalServiceStore } from '../../domain/temporary-pharmaceutical-service-store';
 
 @Component({
@@ -37,22 +37,15 @@ export class NovoPacientePage implements OnInit {
     comorbidityIds: [],
   };
 
-  protected readonly comorbidityResults = computed(() =>
-    this.clinicalStore.searchComorbidities(this.comorbiditySearchTerm()),
-  );
-
-  protected readonly selectedComorbidities = computed(() =>
-    this.selectedComorbidityIds().flatMap((comorbidityId) => {
-      const comorbidity = this.clinicalStore.getComorbidity(comorbidityId);
-      return comorbidity ? [comorbidity] : [];
-    }),
-  );
+  protected readonly comorbidityResults = signal<ComorbiditySummary[]>([]);
+  private readonly selectedItems = signal<ComorbiditySummary[]>([]);
+  protected readonly selectedComorbidities = computed(() => this.selectedItems());
 
   constructor(
     private readonly router: Router,
     private readonly patientStore: TemporaryPharmaceuticalServiceStore,
-    protected readonly clinicalStore: TemporaryClinicalRecordsStore,
-  ) {}
+    private readonly comorbidityService: ComorbidityService,
+  ) { this.loadComorbidities(''); }
 
   ngOnInit(): void {
     if (!this.patientId) {
@@ -71,24 +64,37 @@ export class NovoPacientePage implements OnInit {
       comorbidityIds: [...patient.comorbidityIds],
     });
     this.selectedComorbidityIds.set([...patient.comorbidityIds]);
+    this.loadComorbidities(this.comorbiditySearchTerm());
   }
 
   protected updateComorbiditySearch(term: string): void {
     this.comorbiditySearchTerm.set(term);
+    this.loadComorbidities(term);
   }
 
-  protected addComorbidity(comorbidity: Comorbidity): void {
+  protected addComorbidity(comorbidity: ComorbiditySummary): void {
     if (this.selectedComorbidityIds().includes(comorbidity.id)) {
       return;
     }
 
     this.selectedComorbidityIds.set([...this.selectedComorbidityIds(), comorbidity.id]);
+    this.selectedItems.set([...this.selectedItems(), comorbidity]);
   }
 
   protected removeComorbidity(comorbidityId: string): void {
     this.selectedComorbidityIds.set(
       this.selectedComorbidityIds().filter((selectedId) => selectedId !== comorbidityId),
     );
+    this.selectedItems.set(this.selectedItems().filter((item) => item.id !== comorbidityId));
+  }
+
+  private loadComorbidities(term: string): void {
+    this.comorbidityService.list(term, 0, 100).subscribe((page) => {
+      this.comorbidityResults.set(page.content);
+      const selected = new Set(this.selectedComorbidityIds());
+      const additions = page.content.filter((item) => selected.has(item.id));
+      if (additions.length) this.selectedItems.set(additions);
+    });
   }
 
   protected isSelected(comorbidityId: string): boolean {

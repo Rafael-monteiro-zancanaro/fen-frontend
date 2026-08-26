@@ -1,7 +1,9 @@
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, Input, Output, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Medication } from '../../domain/clinical-records';
-import { TemporaryClinicalRecordsStore } from '../../domain/temporary-clinical-records-store';
+import { MEDICATION_AUTOCOMPLETE_DEBOUNCE, MedicationService } from '../../domain/medication.service';
+import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-medication-autocomplete',
@@ -20,18 +22,28 @@ export class MedicationAutocomplete {
   @Output() medicationSelected = new EventEmitter<Medication>();
 
   protected readonly isOpen = signal(false);
-  protected results(): Medication[] {
-    const term = this.value.trim();
+  protected readonly results = signal<Medication[]>([]);
+  private readonly terms = new Subject<string>();
+  private readonly debounceMs = inject(MEDICATION_AUTOCOMPLETE_DEBOUNCE);
+  private readonly destroyRef = inject(DestroyRef);
 
-    return term ? this.store.searchMedications(term).slice(0, 8) : [];
+  constructor(private readonly service: MedicationService) {
+    this.terms.pipe(debounceTime(this.debounceMs), distinctUntilChanged(),
+      switchMap((term) => this.service.autocomplete(term, 8)), takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (items) => this.results.set(items), error: () => this.results.set([]) });
   }
-
-  constructor(private readonly store: TemporaryClinicalRecordsStore) {}
 
   protected updateValue(value: string): void {
     this.value = value;
     this.valueChange.emit(value);
     this.isOpen.set(Boolean(value.trim()));
+    if (!value.trim()) {
+      this.results.set([]);
+    } else if (this.debounceMs === 0) {
+      this.service.autocomplete(value.trim(), 8).subscribe((items) => this.results.set(items));
+    } else {
+      this.terms.next(value.trim());
+    }
   }
 
   protected selectMedication(medication: Medication): void {

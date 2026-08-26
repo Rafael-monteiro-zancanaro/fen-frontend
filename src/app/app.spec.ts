@@ -1,33 +1,82 @@
-import { signal, WritableSignal } from '@angular/core';
+<<<<<<< Updated upstream
+=======
+import { inject, signal, WritableSignal } from '@angular/core';
+import { HttpInterceptorFn, HttpResponse, provideHttpClient, withInterceptors } from '@angular/common/http';
+>>>>>>> Stashed changes
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { vi } from 'vitest';
 import { App } from './app';
 import { routes } from './app.routes';
-import { AuthUser } from './auth/auth.models';
-import { AuthService } from './auth/auth.service';
+import { TemporaryAccessControl } from './domain/temporary-access-control';
 import { TemporaryPasswordRecoveryStore } from './domain/temporary-password-recovery-store';
 import { TemporaryClinicalRecordsStore } from './domain/temporary-clinical-records-store';
 import { TemporaryPharmacyEmployeeStore } from './domain/temporary-pharmacy-employee-store';
 import { TemporaryPharmaceuticalServiceStore } from './domain/temporary-pharmaceutical-service-store';
+import { of } from 'rxjs';
+import { MEDICATION_AUTOCOMPLETE_DEBOUNCE } from './domain/medication.service';
+
+const clinicalRecordsTestInterceptor: HttpInterceptorFn = (request) => {
+  const store = inject(TemporaryClinicalRecordsStore);
+  const url = new URL(request.urlWithParams, 'http://localhost');
+  const parts = url.pathname.split('/').filter(Boolean);
+  const id = parts[2];
+  const page = Number(url.searchParams.get('page') ?? 0);
+  const size = Number(url.searchParams.get('size') ?? 10);
+  const query = url.searchParams.get('query') ?? '';
+  const paged = <T>(items: T[]) => new HttpResponse({ body: {
+    content: items.slice(page * size, page * size + size), number: page, size,
+    totalElements: items.length, totalPages: Math.ceil(items.length / size),
+  }});
+
+  if (url.pathname.startsWith('/api/medicamentos')) {
+    if (parts[2] === 'autocomplete') return of(new HttpResponse({ body: store.searchMedications(query).slice(0, 8) }));
+    if (request.method === 'GET' && id) return of(new HttpResponse({ body: store.getMedication(id) }));
+    if (request.method === 'GET') return of(paged(store.searchMedications(query)));
+    if (request.method === 'POST') return of(new HttpResponse({ status: 201, body: store.createMedication(request.body as never) }));
+    if (request.method === 'PUT') return of(new HttpResponse({ body: store.updateMedication(id, request.body as never) }));
+    if (request.method === 'DELETE') { store.deleteMedication(id); return of(new HttpResponse({ status: 204 })); }
+  }
+  if (url.pathname.startsWith('/api/comorbidades')) {
+    const detail = (item: ReturnType<typeof store.getComorbidity>) => item ? ({ ...item,
+      interactionMedications: store.getInteractionMedications(item) }) : undefined;
+    if (request.method === 'GET' && id) return of(new HttpResponse({ body: detail(store.getComorbidity(id)) }));
+    if (request.method === 'GET') return of(paged(store.searchComorbidities(query).map((item) => ({
+      id: item.id, name: item.name, interactionCount: item.medicationInteractionIds.length, createdAt: item.createdAt,
+    }))));
+    if (request.method === 'POST') return of(new HttpResponse({ status: 201, body: detail(store.createComorbidity(request.body as never)) }));
+    if (request.method === 'PUT') return of(new HttpResponse({ body: detail(store.updateComorbidity(id, request.body as never)) }));
+    if (request.method === 'DELETE') { store.deleteComorbidity(id); return of(new HttpResponse({ status: 204 })); }
+  }
+  if (url.pathname.startsWith('/api/interacoes')) {
+    const medicationIds = new Set((url.searchParams.get('medicamentoIds') ?? '').split(','));
+    const comorbidityIds = new Set((url.searchParams.get('comorbidadeIds') ?? '').split(','));
+    const pairs = store.comorbidities().flatMap((comorbidity) =>
+      comorbidityIds.has(comorbidity.id)
+        ? store.getInteractionMedications(comorbidity)
+            .filter((medication) => medicationIds.has(medication.id))
+            .map((medication) => ({ medication, comorbidity }))
+        : [],
+    );
+    return of(new HttpResponse({ body: pairs }));
+  }
+  return of(new HttpResponse({ body: [] }));
+};
 
 describe('App', () => {
-  let currentUser: WritableSignal<AuthUser | null>;
-  let logout: ReturnType<typeof vi.fn>;
-
   beforeEach(async () => {
     localStorage.clear();
-    currentUser = signal<AuthUser | null>({
-      id: '00000000-0000-0000-0000-000000000001',
-      email: 'usuario@fen.br',
-      role: 'FARMACEUTICO',
-    });
-    logout = vi.fn(() => currentUser.set(null));
 
     await TestBed.configureTestingModule({
       imports: [App],
+<<<<<<< Updated upstream
+      providers: [provideRouter(routes)],
+=======
       providers: [
         provideRouter(routes),
+        provideHttpClient(withInterceptors([clinicalRecordsTestInterceptor])),
+        TemporaryClinicalRecordsStore,
+        { provide: MEDICATION_AUTOCOMPLETE_DEBOUNCE, useValue: 0 },
         {
           provide: AuthService,
           useValue: {
@@ -37,6 +86,7 @@ describe('App', () => {
           },
         },
       ],
+>>>>>>> Stashed changes
     }).compileComponents();
   });
 
@@ -214,57 +264,12 @@ describe('App', () => {
     ).toBeTruthy();
   });
 
-  it('should show administrative links only for the current ADMIN user', async () => {
-    const fixture = TestBed.createComponent(App);
-    const router = TestBed.inject(Router);
-
-    await router.navigateByUrl('/inicio');
-    fixture.detectChanges();
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-
-    expect(compiled.querySelector('header nav')?.textContent).not.toContain(
-      'Recuperações de senha',
-    );
-    expect(compiled.querySelector('header nav')?.textContent).not.toContain('Cadastros pendentes');
-    expect(compiled.querySelector('header nav')?.textContent).not.toContain('Funcionários');
-
-    authenticateAs('ADMIN');
-    fixture.detectChanges();
-
-    expect(compiled.querySelector('header nav')?.textContent).toContain('Recuperações de senha');
-    expect(compiled.querySelector('header nav')?.textContent).toContain('Cadastros pendentes');
-    expect(compiled.querySelector('header nav')?.textContent).toContain('Funcionários');
-  });
-
-  it('should log out and navigate to login from the internal shell', async () => {
-    const fixture = TestBed.createComponent(App);
-    const router = TestBed.inject(Router);
-
-    await router.navigateByUrl('/inicio');
-    fixture.detectChanges();
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const logoutButton = compiled.querySelector<HTMLButtonElement>('[data-action="logout"]');
-
-    if (!logoutButton) {
-      throw new Error('Expected logout action in internal navigation.');
-    }
-
-    logoutButton.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(logout).toHaveBeenCalledOnce();
-    expect(currentUser()).toBeNull();
-    expect(router.url).toBe('/login');
-  });
-
   it('should block password recovery admin routes for non-admin roles', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
+    const accessControl = TestBed.inject(TemporaryAccessControl);
 
-    authenticateAs('FARMACEUTICO');
+    accessControl.setRole('FARMACEUTICO');
 
     await router.navigateByUrl('/admin/recuperacoes-senha');
     fixture.detectChanges();
@@ -278,8 +283,9 @@ describe('App', () => {
   it('should block pharmacy employee admin routes for non-admin roles', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
+    const accessControl = TestBed.inject(TemporaryAccessControl);
 
-    authenticateAs('ESTAGIARIO');
+    accessControl.setRole('ESTAGIARIO');
 
     await router.navigateByUrl('/admin/funcionarios');
     fixture.detectChanges();
@@ -293,8 +299,9 @@ describe('App', () => {
   it('should let ADMIN list and search pharmacy employees', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
+    const accessControl = TestBed.inject(TemporaryAccessControl);
 
-    authenticateAs('ADMIN');
+    accessControl.setRole('ADMIN');
 
     await router.navigateByUrl('/admin/funcionarios');
     fixture.detectChanges();
@@ -330,8 +337,9 @@ describe('App', () => {
   it('should render employee pagination controls with the default page size', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
+    const accessControl = TestBed.inject(TemporaryAccessControl);
 
-    authenticateAs('ADMIN');
+    accessControl.setRole('ADMIN');
 
     await router.navigateByUrl('/admin/funcionarios');
     fixture.detectChanges();
@@ -347,6 +355,7 @@ describe('App', () => {
   it('should show pharmacist details and confirm technical responsibility changes', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
+    const accessControl = TestBed.inject(TemporaryAccessControl);
     const employeeStore = TestBed.inject(TemporaryPharmacyEmployeeStore);
     const pharmacist = employeeStore
       .employees()
@@ -356,7 +365,7 @@ describe('App', () => {
       throw new Error('Expected seeded pharmacist employee.');
     }
 
-    authenticateAs('ADMIN');
+    accessControl.setRole('ADMIN');
 
     await router.navigateByUrl(`/admin/funcionarios/${pharmacist.id}`);
     fixture.detectChanges();
@@ -403,6 +412,7 @@ describe('App', () => {
   it('should show intern details without technical responsibility actions', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
+    const accessControl = TestBed.inject(TemporaryAccessControl);
     const employeeStore = TestBed.inject(TemporaryPharmacyEmployeeStore);
     const intern = employeeStore.employees().find((employee) => employee.role === 'ESTAGIARIO');
 
@@ -410,7 +420,7 @@ describe('App', () => {
       throw new Error('Expected seeded intern employee.');
     }
 
-    authenticateAs('ADMIN');
+    accessControl.setRole('ADMIN');
 
     await router.navigateByUrl(`/admin/funcionarios/${intern.id}`);
     fixture.detectChanges();
@@ -435,9 +445,10 @@ describe('App', () => {
   it('should let ADMIN list, inspect, approve and reject password recovery requests', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
+    const accessControl = TestBed.inject(TemporaryAccessControl);
     const recoveryStore = TestBed.inject(TemporaryPasswordRecoveryStore);
 
-    authenticateAs('ADMIN');
+    accessControl.setRole('ADMIN');
     const requestToApprove = recoveryStore.createRequest('aprovar@uem.br');
     const requestToReject = recoveryStore.createRequest('rejeitar@uem.br');
 
@@ -515,9 +526,10 @@ describe('App', () => {
   it('should paginate password recovery requests with a default page size of 10', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
+    const accessControl = TestBed.inject(TemporaryAccessControl);
     const recoveryStore = TestBed.inject(TemporaryPasswordRecoveryStore);
 
-    authenticateAs('ADMIN');
+    accessControl.setRole('ADMIN');
 
     for (let index = 1; index <= 12; index += 1) {
       recoveryStore.createRequest(`recuperacao-${index}@uem.br`);
@@ -2455,12 +2467,4 @@ describe('App', () => {
       compiled.querySelector('[data-medication-interaction-warning="injectable"]'),
     ).toBeTruthy();
   });
-
-  function authenticateAs(role: AuthUser['role']): void {
-    currentUser.set({
-      id: '00000000-0000-0000-0000-000000000001',
-      email: 'usuario@fen.br',
-      role,
-    });
-  }
 });

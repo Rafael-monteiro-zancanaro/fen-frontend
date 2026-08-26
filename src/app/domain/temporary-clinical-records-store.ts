@@ -13,7 +13,7 @@ interface TemporaryClinicalRecordsState {
 
 const STORAGE_KEY = 'fen-temporary-clinical-records';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class TemporaryClinicalRecordsStore {
   private readonly state = signal<TemporaryClinicalRecordsState>(this.readInitialState());
 

@@ -10,6 +10,14 @@ export interface Comorbidity {
   id: string;
   name: string;
   medicationInteractionIds: string[];
+  interactionMedications?: Medication[];
+  createdAt: string;
+}
+
+export interface ComorbiditySummary {
+  id: string;
+  name: string;
+  interactionCount: number;
   createdAt: string;
 }
 

@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
-import { AuthService } from './auth/auth.service';
-import { ModalIsolationService } from './modal-isolation.service';
+import { TemporaryAccessControl } from './domain/temporary-access-control';
 
 @Component({
   selector: 'app-root',
@@ -11,9 +10,8 @@ import { ModalIsolationService } from './modal-isolation.service';
 })
 export class App {
   constructor(
-    private readonly auth: AuthService,
+    private readonly accessControl: TemporaryAccessControl,
     private readonly router: Router,
-    protected readonly modalIsolation: ModalIsolationService,
   ) {}
 
   protected isInternalNavigation(): boolean {
@@ -28,11 +26,6 @@ export class App {
   }
 
   protected canManagePasswordRecovery(): boolean {
-    return this.auth.currentUser()?.role === 'ADMIN';
-  }
-
-  protected logout(): void {
-    this.auth.logout();
-    void this.router.navigateByUrl('/login');
+    return this.accessControl.canAccessAdminModules();
   }
 }

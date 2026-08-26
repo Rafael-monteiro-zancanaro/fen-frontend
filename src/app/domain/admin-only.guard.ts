@@ -1,14 +1,10 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { AuthService } from '../auth/auth.service';
+import { TemporaryAccessControl } from './temporary-access-control';
 
 export const adminOnlyGuard: CanActivateFn = () => {
-  const auth = inject(AuthService);
+  const accessControl = inject(TemporaryAccessControl);
   const router = inject(Router);
 
-  if (!auth.isAuthenticated()) {
-    return router.createUrlTree(['/login']);
-  }
-
-  return auth.currentUser()?.role === 'ADMIN' || router.createUrlTree(['/inicio']);
+  return accessControl.canManagePasswordRecovery() || router.createUrlTree(['/inicio']);
 };

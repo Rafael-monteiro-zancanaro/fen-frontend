@@ -1,9 +1,5 @@
 <div class="app-shell flex min-h-screen flex-col">
-  <header
-    class="app-navbar"
-    [attr.inert]="modalIsolation.active() ? '' : null"
-    [attr.aria-hidden]="modalIsolation.active() ? 'true' : null"
-  >
+  <header class="app-navbar">
     <div class="app-container flex flex-wrap items-center justify-between gap-4 py-3">
       <a
         class="flex items-center gap-3 font-semibold text-white"
@@ -56,12 +52,6 @@
           @if (canManagePasswordRecovery()) {
             <a
               class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
-              routerLink="/admin/cadastros-pendentes"
-            >
-              Cadastros pendentes
-            </a>
-            <a
-              class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
               routerLink="/admin/recuperacoes-senha"
             >
               Recuperações de senha
@@ -79,14 +69,12 @@
           >
             Pacientes
           </a>
-          <button
-            type="button"
-            data-action="logout"
+          <a
             class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
-            (click)="logout()"
+            routerLink="/login"
           >
             Sair
-          </button>
+          </a>
         } @else {
           <a
             class="rounded-md px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"

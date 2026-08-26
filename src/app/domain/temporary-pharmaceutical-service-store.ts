@@ -4,18 +4,15 @@ import {
   AdvancedAttendanceSearchResult,
   AttendanceStatus,
   AttendanceStatusFilter,
-  Comorbidity,
   CreatePharmaceuticalServiceAttendanceInput,
   FollowUpHistoryEntry,
   FollowUpProgress,
-  Medication,
   Patient,
   PatientInput,
   PharmaceuticalServiceAttendance,
   PharmaceuticalServiceKey,
   ServiceMedicationItem,
 } from './clinical-records';
-import { TemporaryClinicalRecordsStore } from './temporary-clinical-records-store';
 
 interface TemporaryPharmaceuticalServiceState {
   patients: Patient[];
@@ -37,19 +34,12 @@ export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
   EXPIRADO: 'Expirado',
 };
 
-export interface PatientMedicationInteraction {
-  medication: Medication;
-  comorbidity: Comorbidity;
-}
-
 @Injectable({ providedIn: 'root' })
 export class TemporaryPharmaceuticalServiceStore {
   private readonly state = signal<TemporaryPharmaceuticalServiceState>(this.readInitialState());
 
   readonly patients = computed(() => this.state().patients);
   readonly attendances = computed(() => this.state().attendances);
-
-  constructor(private readonly clinicalRecordsStore: TemporaryClinicalRecordsStore) {}
 
   findPatientByCpf(cpf: string): Patient | undefined {
     const normalizedCpf = this.onlyDigits(cpf);
@@ -117,37 +107,6 @@ export class TemporaryPharmaceuticalServiceStore {
     return this.state().patients.filter((patient) =>
       this.normalize(`${patient.name} ${patient.cpf}`).includes(query),
     );
-  }
-
-  getPatientComorbidities(id: string): Comorbidity[] {
-    const patient = this.getPatient(id);
-
-    if (!patient) {
-      return [];
-    }
-
-    return patient.comorbidityIds.flatMap((comorbidityId) => {
-      const comorbidity = this.clinicalRecordsStore.getComorbidity(comorbidityId);
-      return comorbidity ? [comorbidity] : [];
-    });
-  }
-
-  getPatientMedicationInteractions(
-    patientId: string,
-    medicationId: string,
-  ): PatientMedicationInteraction[] {
-    const medication = this.clinicalRecordsStore.getMedication(medicationId);
-
-    if (!medication) {
-      return [];
-    }
-
-    return this.getPatientComorbidities(patientId)
-      .filter((comorbidity) => comorbidity.medicationInteractionIds.includes(medication.id))
-      .map((comorbidity) => ({
-        medication,
-        comorbidity,
-      }));
   }
 
   createAttendance(
@@ -455,7 +414,7 @@ export class TemporaryPharmaceuticalServiceStore {
     const uniqueIds: string[] = [];
 
     for (const id of ids) {
-      if (this.clinicalRecordsStore.getComorbidity(id) && !uniqueIds.includes(id)) {
+      if (id && !uniqueIds.includes(id)) {
         uniqueIds.push(id);
       }
     }

@@ -124,25 +124,9 @@ describe('TemporaryPharmaceuticalServiceStore', () => {
     expect(store.findPatientByCpf('123.456.789-01')?.cellPhone).toBe('44888888888');
   });
 
-  it('keeps patient comorbidity associations unique and resolves medication interactions', () => {
-    const dipirona = clinicalStore.createMedication({
-      name: 'Dipirona',
-      measurementUnit: '500 mg',
-      administrationRoute: 'Oral',
-    });
-    const insulina = clinicalStore.createMedication({
-      name: 'Insulina',
-      measurementUnit: 'dose',
-      administrationRoute: 'Subcutânea',
-    });
-    const diabetes = clinicalStore.createComorbidity({
-      name: 'Diabetes mellitus',
-      medicationInteractionIds: [dipirona.id],
-    });
-    const hipertensao = clinicalStore.createComorbidity({
-      name: 'Hipertensão',
-      medicationInteractionIds: [insulina.id],
-    });
+  it('keeps patient comorbidity ids unique while their validation belongs to the API', () => {
+    const diabetesId = '11111111-1111-4111-8111-111111111111';
+    const hipertensaoId = '22222222-2222-4222-8222-222222222222';
     const patient = store.createPatient({
       name: 'João Pereira',
       cpf: '98765432100',
@@ -154,22 +138,14 @@ describe('TemporaryPharmaceuticalServiceStore', () => {
       state: 'PR',
       phone: '',
       responsibleName: '',
-      comorbidityIds: [diabetes.id, diabetes.id, 'inexistente'],
+      comorbidityIds: [diabetesId, diabetesId],
     });
 
-    expect(patient.comorbidityIds).toEqual([diabetes.id]);
+    expect(patient.comorbidityIds).toEqual([diabetesId]);
 
-    store.updatePatientComorbidities(patient.id, [diabetes.id, hipertensao.id, diabetes.id]);
+    store.updatePatientComorbidities(patient.id, [diabetesId, hipertensaoId, diabetesId]);
 
-    expect(store.getPatient(patient.id)?.comorbidityIds).toEqual([diabetes.id, hipertensao.id]);
-    expect(
-      store.getPatientComorbidities(patient.id).map((comorbidity) => comorbidity.name),
-    ).toEqual(['Diabetes mellitus', 'Hipertensão']);
-    expect(
-      store
-        .getPatientMedicationInteractions(patient.id, dipirona.id)
-        .map((interaction) => interaction.comorbidity.name),
-    ).toEqual(['Diabetes mellitus']);
+    expect(store.getPatient(patient.id)?.comorbidityIds).toEqual([diabetesId, hipertensaoId]);
   });
 
   it('sets attendance status from follow-up and closes expired attendances', () => {

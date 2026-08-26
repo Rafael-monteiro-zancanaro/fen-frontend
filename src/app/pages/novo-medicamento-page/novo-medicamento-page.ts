@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { TemporaryClinicalRecordsStore } from '../../domain/temporary-clinical-records-store';
+import { MedicationService } from '../../domain/medication.service';
 
 @Component({
   selector: 'app-novo-medicamento-page',
@@ -12,6 +12,8 @@ export class NovoMedicamentoPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   protected readonly submitted = signal(false);
   protected readonly recordNotFound = signal(false);
+  protected readonly saving = signal(false);
+  protected readonly saveError = signal(false);
   private readonly medicationId = this.route.snapshot.paramMap.get('id');
   protected readonly isEditMode = computed(() => Boolean(this.medicationId));
   protected name = '';
@@ -20,7 +22,7 @@ export class NovoMedicamentoPage implements OnInit {
 
   constructor(
     private readonly router: Router,
-    private readonly store: TemporaryClinicalRecordsStore,
+    private readonly service: MedicationService,
   ) {}
 
   ngOnInit(): void {
@@ -28,16 +30,14 @@ export class NovoMedicamentoPage implements OnInit {
       return;
     }
 
-    const medication = this.store.getMedication(this.medicationId);
-
-    if (!medication) {
-      this.recordNotFound.set(true);
-      return;
-    }
-
-    this.name = medication.name;
-    this.measurementUnit = medication.measurementUnit;
-    this.administrationRoute = medication.administrationRoute;
+    this.service.get(this.medicationId).subscribe({
+      next: (medication) => {
+        this.name = medication.name;
+        this.measurementUnit = medication.measurementUnit;
+        this.administrationRoute = medication.administrationRoute;
+      },
+      error: () => this.recordNotFound.set(true),
+    });
   }
 
   protected saveMedication(): void {
@@ -46,6 +46,8 @@ export class NovoMedicamentoPage implements OnInit {
     if (!this.isValid()) {
       return;
     }
+    if (this.saving()) return;
+    this.saving.set(true); this.saveError.set(false);
 
     const input = {
       name: this.name,
@@ -54,12 +56,10 @@ export class NovoMedicamentoPage implements OnInit {
     };
 
     if (this.medicationId) {
-      this.store.updateMedication(this.medicationId, input);
+      this.service.update(this.medicationId, input).subscribe({ next: () => void this.router.navigateByUrl('/medicamentos'), error: () => { this.saving.set(false); this.saveError.set(true); } });
     } else {
-      this.store.createMedication(input);
+      this.service.create(input).subscribe({ next: () => void this.router.navigateByUrl('/medicamentos'), error: () => { this.saving.set(false); this.saveError.set(true); } });
     }
-
-    void this.router.navigateByUrl('/medicamentos');
   }
 
   protected isNameInvalid(): boolean {
