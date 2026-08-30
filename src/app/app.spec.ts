@@ -14,14 +14,14 @@ import { TemporaryAccessControl } from './domain/temporary-access-control';
 import { TemporaryPasswordRecoveryStore } from './domain/temporary-password-recovery-store';
 import { TemporaryClinicalRecordsStore } from './domain/temporary-clinical-records-store';
 import { PharmacyEmployeeFixture } from './testing/pharmacy-employee-fixture';
-import { TemporaryPharmaceuticalServiceStore } from './domain/temporary-pharmaceutical-service-store';
+import { PharmaceuticalServiceFixture } from './testing/pharmaceutical-service-fixture';
 import { AuthService } from './domain/auth.service';
 import { of } from 'rxjs';
 import { MEDICATION_AUTOCOMPLETE_DEBOUNCE } from './domain/medication.service';
 
 const clinicalRecordsTestInterceptor: HttpInterceptorFn = (request) => {
   const store = inject(TemporaryClinicalRecordsStore);
-  const patientStore = inject(TemporaryPharmaceuticalServiceStore);
+  const patientStore = inject(PharmaceuticalServiceFixture);
   const recoveryStore = inject(TemporaryPasswordRecoveryStore);
   const employeeStore = inject(PharmacyEmployeeFixture);
   const url = new URL(request.urlWithParams, 'http://localhost');
@@ -105,12 +105,29 @@ const clinicalRecordsTestInterceptor: HttpInterceptorFn = (request) => {
   }
   if (url.pathname.startsWith('/api/pacientes')) {
     const cpf = parts[3];
+    const detail = (patient: ReturnType<typeof patientStore.getPatient>) =>
+      patient && {
+        ...patient,
+        comorbidities: patient.comorbidityIds.flatMap((comorbidityId) => {
+          const comorbidity = store.getComorbidity(comorbidityId);
+          return comorbidity
+            ? [
+                {
+                  id: comorbidity.id,
+                  name: comorbidity.name,
+                  interactionCount: comorbidity.medicationInteractionIds.length,
+                  createdAt: comorbidity.createdAt,
+                },
+              ]
+            : [];
+        }),
+      };
     if (request.method === 'GET' && cpf && parts[2] === 'cpf') {
       const patient = patientStore.findPatientByCpf(cpf);
-      return of(new HttpResponse({ status: patient ? 200 : 404, body: patient ?? null }));
+      return of(new HttpResponse({ status: patient ? 200 : 404, body: detail(patient) ?? null }));
     }
     if (request.method === 'GET' && id)
-      return of(new HttpResponse({ body: patientStore.getPatient(id) }));
+      return of(new HttpResponse({ body: detail(patientStore.getPatient(id)) }));
     if (request.method === 'GET') return of(paged(patientStore.searchPatients(query)));
     if (request.method === 'POST')
       return of(
@@ -118,6 +135,115 @@ const clinicalRecordsTestInterceptor: HttpInterceptorFn = (request) => {
       );
     if (request.method === 'PUT')
       return of(new HttpResponse({ body: patientStore.updatePatient(id, request.body as never) }));
+  }
+  if (url.pathname.startsWith('/api/servicos-farmaceuticos')) {
+    const toDetail = (attendance: ReturnType<typeof patientStore.getAttendance>) =>
+      attendance && {
+        ...attendance,
+        attendanceDate: attendance.createdAt,
+        followUpProgress: patientStore.followUpProgress(attendance.id),
+        followUpHistory: patientStore.followUpHistory(attendance.id),
+        editAllowed: true,
+      };
+    const toSummary = (attendance: NonNullable<ReturnType<typeof patientStore.getAttendance>>) => {
+      const progress = patientStore.followUpProgress(attendance.id);
+      return {
+        id: attendance.id,
+        codigo: attendance.codigo,
+        patientId: attendance.patient.id,
+        patientName: attendance.patient.name,
+        patientCpf: attendance.patient.cpf,
+        attendanceDate: attendance.createdAt,
+        status: attendance.status,
+        selectedServices: attendance.selectedServices,
+        canContinue: progress.canContinue,
+        nextReturnNumber: progress.nextReturnNumber,
+        returnCount: progress.returnCount || null,
+        editAllowed: true,
+      };
+    };
+    const requestBody = (request.body ?? {}) as {
+      patientId?: string;
+      patient?: Parameters<typeof patientStore.createAttendance>[0]['patient'];
+    };
+    const selectedServices = [
+      ...(request.body && (request.body as { care?: unknown }).care
+        ? ['cuidados-farmaceuticos']
+        : []),
+      ...(request.body && (request.body as { injectable?: unknown }).injectable
+        ? ['aplicacao-injetaveis']
+        : []),
+      ...(request.body && (request.body as { inhalotherapy?: unknown }).inhalotherapy
+        ? ['inaloterapia']
+        : []),
+      ...(request.body &&
+      (request.body as { complementaryServices?: unknown }).complementaryServices
+        ? ['servicos-farmaceuticos']
+        : []),
+    ] as Parameters<typeof patientStore.createAttendance>[0]['selectedServices'];
+    const inputWithPatient = {
+      ...(request.body as object),
+      patient: requestBody.patient ?? patientStore.getPatient(requestBody.patientId ?? ''),
+      selectedServices,
+    } as Parameters<typeof patientStore.createAttendance>[0];
+
+    if (request.method === 'GET' && parts[3] === 'continuacao') {
+      const attendance = patientStore.getAttendance(id);
+      if (!attendance) return of(new HttpResponse({ status: 404, body: null }));
+      const progress = patientStore.followUpProgress(id);
+      return of(
+        new HttpResponse({
+          status: progress.canContinue ? 200 : 409,
+          body: progress.canContinue
+            ? {
+                previousAttendanceId: attendance.id,
+                previousAttendanceCode: attendance.codigo,
+                patient: attendance.patient,
+                followUpProgress: progress,
+              }
+            : null,
+        }),
+      );
+    }
+    if (request.method === 'POST' && parts[3] === 'retornos') {
+      const attendance = patientStore.createFollowUpReturn(id, inputWithPatient);
+      return of(new HttpResponse({ status: attendance ? 201 : 409, body: toDetail(attendance) }));
+    }
+    if (request.method === 'POST' && parts[3] === 'encerrar') {
+      const attendance = patientStore.closeExpiredAttendance(id)
+        ? patientStore.getAttendance(id)
+        : undefined;
+      return of(new HttpResponse({ status: attendance ? 200 : 409, body: toDetail(attendance) }));
+    }
+    if (request.method === 'GET' && parts[2] === 'busca-avancada') {
+      const results = patientStore
+        .searchAttendancesAdvanced({
+          cpfPaciente: url.searchParams.get('cpf') ?? '',
+          medicamentoId: url.searchParams.get('medicamentoId') ?? '',
+          lote: url.searchParams.get('lote') ?? '',
+          dataAtendimento: url.searchParams.get('dataAtendimento') ?? '',
+        })
+        .map((result) => ({
+          attendance: toSummary(result.attendance),
+          matchedMedications: result.matchedMedications,
+        }));
+      return of(paged(results));
+    }
+    if (request.method === 'GET' && id) {
+      return of(new HttpResponse({ body: toDetail(patientStore.getAttendance(id)) }));
+    }
+    if (request.method === 'GET') {
+      const status = url.searchParams.get('status') ?? 'TODOS';
+      return of(paged(patientStore.searchAttendances(query, status as never).map(toSummary)));
+    }
+    if (request.method === 'POST') {
+      return of(
+        new HttpResponse({
+          status: 201,
+          body: toDetail(patientStore.createAttendance(inputWithPatient)),
+        }),
+      );
+    }
   }
   if (url.pathname.startsWith('/api/recuperacoes-senha')) {
     if (request.method === 'GET' && id)
@@ -688,7 +814,7 @@ describe('App', () => {
   it('should list pharmaceutical service attendances with quick filters and pagination', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
 
     attendanceStore.createAttendance({
       patient: {
@@ -741,8 +867,6 @@ describe('App', () => {
             dosage: 'Nebulização',
           },
         ],
-        prescriberName: '',
-        crmCro: '',
       },
       complementaryServices: null,
       followUp: {
@@ -781,10 +905,56 @@ describe('App', () => {
     ).toBe('true');
   });
 
+  it('keeps attendance filters and toolbar when an active filter has no results', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
+
+    attendanceStore.createAttendance({
+      patient: {
+        name: 'Marina Lopes',
+        cpf: '12345678901',
+        birthDate: '1990-04-10',
+        cellPhone: '44999999999',
+        gender: 'feminino',
+        address: '',
+        city: 'Maringá',
+        state: 'PR',
+        phone: '',
+        responsibleName: '',
+      },
+      selectedServices: [],
+      care: null,
+      injectable: null,
+      inhalotherapy: null,
+      complementaryServices: null,
+      followUp: null,
+    });
+
+    await router.navigateByUrl('/atendimentos');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    compiled.querySelector<HTMLButtonElement>('button[data-status-filter="EXPIRADO"]')?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(compiled.querySelector('[data-status-filter="EXPIRADO"]')).toBeTruthy();
+    expect(
+      compiled.querySelector('[data-status-filter="EXPIRADO"]')?.getAttribute('aria-selected'),
+    ).toBe('true');
+    expect(compiled.querySelector('#attendanceSearch')).toBeTruthy();
+    expect(compiled.querySelector('.empty-title')?.textContent).toContain(
+      'Nenhum atendimento encontrado para os filtros selecionados',
+    );
+    expect(compiled.textContent).not.toContain('Nenhum atendimento registrado');
+  });
+
   it('should close expired attendances from the listing with confirmation', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
     const attendance = attendanceStore.createAttendance({
       patient: {
         name: 'Carlos Lima',
@@ -816,8 +986,6 @@ describe('App', () => {
             dosage: '1 vez ao dia',
           },
         ],
-        recordNumber: '',
-        attendanceDate: '2026-08-16',
       },
       followUp: {
         returnIntervalDays: 7,
@@ -828,7 +996,8 @@ describe('App', () => {
 
     await router.navigateByUrl('/atendimentos');
     fixture.detectChanges();
-    await fixture.whenStable();
+    await new Promise<void>((resolve) => setTimeout(resolve));
+    fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
 
     compiled
@@ -841,6 +1010,8 @@ describe('App', () => {
     );
 
     compiled.querySelector<HTMLButtonElement>('button[data-confirm-close-attendance]')?.click();
+    fixture.detectChanges();
+    await new Promise<void>((resolve) => setTimeout(resolve));
     fixture.detectChanges();
 
     expect(attendanceStore.getAttendance(attendance.id)?.status).toBe('CONCLUIDO');
@@ -855,7 +1026,7 @@ describe('App', () => {
   it('should continue a follow-up attendance from the listing as a new linked attendance', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
     const initialAttendance = attendanceStore.createAttendance({
       patient: {
         name: 'Carlos Lima',
@@ -887,8 +1058,6 @@ describe('App', () => {
             dosage: '1 vez ao dia',
           },
         ],
-        recordNumber: '',
-        attendanceDate: '2026-08-16',
       },
       followUp: {
         returnIntervalDays: 7,
@@ -931,6 +1100,10 @@ describe('App', () => {
     expect(compiled.querySelector<HTMLInputElement>('#nomeUsuario')?.value).toBe('Carlos Lima');
     expect(compiled.querySelector('button[data-consult-patient]')).toBeNull();
     expect(compiled.querySelector('#acompanhamento')).toBeNull();
+    expect(compiled.querySelector<HTMLInputElement>('#enableServicosFarmaceuticos')?.checked).toBe(
+      false,
+    );
+    expect(compiled.querySelectorAll('[data-medication-item]').length).toBe(0);
 
     compiled.querySelector<HTMLInputElement>('#enableCuidadosFarmaceuticos')?.click();
     fixture.detectChanges();
@@ -960,10 +1133,107 @@ describe('App', () => {
     expect(attendanceStore.getAttendance(initialAttendance.id)?.status).toBe('CONCLUIDO');
   });
 
+  it('restores saved attendance fields, active steps and medications in edit mode', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
+    const attendance = attendanceStore.createAttendance({
+      patient: {
+        name: 'Renata Alves',
+        cpf: '98765432100',
+        birthDate: '1986-07-15',
+        cellPhone: '44988887777',
+        gender: 'feminino',
+        cep: '87000000',
+        address: 'Rua das Flores',
+        neighborhood: 'Centro',
+        city: 'Maringá',
+        state: 'PR',
+        phone: '4433332222',
+        responsibleName: '',
+      },
+      selectedServices: ['cuidados-farmaceuticos', 'aplicacao-injetaveis', 'inaloterapia'],
+      care: {
+        bloodGlucose: '96',
+        systolicPressure: '118',
+        diastolicPressure: '76',
+        bodyTemperature: '36.5',
+      },
+      injectable: {
+        medications: [
+          {
+            id: 'med-item-1',
+            medicationId: 'medicamento-1',
+            medicationConcentration: 'Dipirona — 500 mg',
+            batch: 'A1',
+            expirationDate: '2027-01-01',
+            dosage: '1 ampola',
+            administrationRoute: 'Intramuscular',
+            prescriberName: 'Dra. Ana',
+            prescriberRegistration: 'CRM 123',
+          },
+          {
+            id: 'med-item-2',
+            medicationId: 'medicamento-2',
+            medicationConcentration: 'Diclofenaco — 75 mg',
+            batch: 'B2',
+            expirationDate: '2027-02-02',
+            dosage: '1 ampola',
+            administrationRoute: 'Intramuscular',
+            prescriberName: 'Dra. Beatriz',
+            prescriberRegistration: 'CRM 456',
+          },
+        ],
+      },
+      inhalotherapy: {
+        medications: [
+          {
+            id: 'med-item-3',
+            medicationId: 'medicamento-3',
+            medicationConcentration: 'Salbutamol — 2,5 mg',
+            batch: 'C3',
+            expirationDate: '2027-03-03',
+            dosage: '2 jatos',
+            administrationRoute: 'Inalatória',
+            prescriberName: 'Dr. Carlos',
+            prescriberRegistration: 'CRM 789',
+          },
+        ],
+      },
+      complementaryServices: null,
+      followUp: { returnIntervalDays: 7, returnCount: 3 },
+    });
+
+    await router.navigateByUrl(`/atendimentos/${attendance.id}/editar`);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector<HTMLInputElement>('#nomeUsuario')?.value).toBe('Renata Alves');
+    expect(compiled.querySelector<HTMLInputElement>('#cpfUsuario')?.value).toBe('987.654.321-00');
+    expect(compiled.querySelector<HTMLInputElement>('#glicemiaCapilar')?.value).toBe('96');
+    expect(compiled.querySelector<HTMLInputElement>('#enableCuidadosFarmaceuticos')?.checked).toBe(
+      true,
+    );
+    expect(compiled.querySelector<HTMLInputElement>('#enableAplicacaoInjetaveis')?.checked).toBe(
+      true,
+    );
+    expect(compiled.querySelector<HTMLInputElement>('#enableInaloterapia')?.checked).toBe(true);
+    expect(compiled.querySelectorAll('[data-medication-item="injectable"]').length).toBe(2);
+    expect(compiled.textContent).toContain('Dipirona — 500 mg · A1 · 01/01/2027 · 1 ampola');
+    expect(compiled.textContent).toContain('Dra. Ana · CRM/CRO: CRM 123');
+    expect(compiled.textContent).toContain('Diclofenaco — 75 mg · B2 · 02/02/2027 · 1 ampola');
+    expect(compiled.textContent).toContain('Dra. Beatriz · CRM/CRO: CRM 456');
+    expect(compiled.textContent).toContain('Salbutamol — 2,5 mg · C3 · 03/03/2027 · 2 jatos');
+    expect(compiled.textContent).toContain('Dr. Carlos · CRM/CRO: CRM 789');
+    expect(compiled.querySelector<HTMLInputElement>('#intervaloRetornos')?.value).toBe('7');
+    expect(compiled.querySelector<HTMLInputElement>('#quantidadeRetornos')?.value).toBe('3');
+  });
+
   it('should search attendances advanced by selected medication and batch without matching different items', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
     const clinicalStore = TestBed.inject(TemporaryClinicalRecordsStore);
     const dipirona = clinicalStore.createMedication({
       name: 'Dipirona',
@@ -1009,9 +1279,6 @@ describe('App', () => {
             dosage: 'Dose única',
           },
         ],
-        administrationRoute: 'Intramuscular',
-        prescriberName: '',
-        crmCro: '',
       },
       inhalotherapy: null,
       complementaryServices: null,
@@ -1051,9 +1318,6 @@ describe('App', () => {
             dosage: 'Dose única',
           },
         ],
-        administrationRoute: 'Intramuscular',
-        prescriberName: '',
-        crmCro: '',
       },
       inhalotherapy: null,
       complementaryServices: null,
@@ -1117,7 +1381,7 @@ describe('App', () => {
   it('should validate empty advanced search and clear filters/results', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
     attendanceStore.createAttendance({
       patient: {
         name: 'Maria Souza',
@@ -1187,7 +1451,7 @@ describe('App', () => {
   it('should show a read-only pharmaceutical service attendance detail page', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
     const attendance = attendanceStore.createAttendance({
       patient: {
         name: 'Bruna Santos',
@@ -1214,8 +1478,6 @@ describe('App', () => {
             dosage: 'Nebulização',
           },
         ],
-        prescriberName: 'Dra. Ana',
-        crmCro: 'CRM 123',
       },
       complementaryServices: null,
       followUp: {
@@ -1250,7 +1512,7 @@ describe('App', () => {
   it('should show business code and follow-up history in attendance details', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
     const initialAttendance = attendanceStore.createAttendance({
       patient: {
         name: 'Bruna Santos',
@@ -1277,8 +1539,6 @@ describe('App', () => {
             dosage: 'Nebulização',
           },
         ],
-        prescriberName: 'Dra. Ana',
-        crmCro: 'CRM 123',
       },
       complementaryServices: null,
       followUp: {
@@ -1326,7 +1586,7 @@ describe('App', () => {
   it('should render the pharmaceutical services form with patient lookup and optional steps', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
 
     attendanceStore.createAttendance({
       patient: {
@@ -1373,6 +1633,8 @@ describe('App', () => {
     expect(compiled.querySelector('#servicos-acompanhamento')).toBeTruthy();
     expect(compiled.querySelector('#acompanhamento')).toBeTruthy();
     expect(compiled.querySelector('#revisao-assinatura')).toBeNull();
+    expect(compiled.querySelector('#numeroFicha')).toBeNull();
+    expect(compiled.querySelector('#dataAtendimento')).toBeNull();
     expect(compiled.querySelector('#cuidados-farmaceuticos .card-description')).toBeNull();
     expect(compiled.querySelector('label[for="nomeUsuario"]')?.textContent).toContain('Nome');
     expect(compiled.querySelector('label[for="cpfUsuario"]')?.textContent).toContain('CPF');
@@ -1418,7 +1680,7 @@ describe('App', () => {
   it('should create an attendance with multiple medications and follow-up from the form', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
     const clinicalStore = TestBed.inject(TemporaryClinicalRecordsStore);
     const soro = clinicalStore.createMedication({
       name: 'Soro fisiológico',
@@ -1524,10 +1786,98 @@ describe('App', () => {
     expect(attendance.followUp?.returnIntervalDays).toBe(7);
   });
 
+  it('should show prescription data and medication administration route in each medication item list', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const clinicalStore = TestBed.inject(TemporaryClinicalRecordsStore);
+    const dipirona = clinicalStore.createMedication({
+      name: 'Dipirona',
+      measurementUnit: '500 mg',
+      administrationRoute: 'Intramuscular',
+    });
+    const salbutamol = clinicalStore.createMedication({
+      name: 'Salbutamol',
+      measurementUnit: '2,5 mg',
+      administrationRoute: 'Inalatória',
+    });
+
+    await router.navigateByUrl('/atendimentos/novo');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const setInput = (selector: string, value: string): void => {
+      const input = compiled.querySelector<HTMLInputElement>(selector);
+
+      if (!input) {
+        throw new Error(`${selector} was not rendered.`);
+      }
+
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    };
+
+    compiled.querySelector<HTMLInputElement>('#enableAplicacaoInjetaveis')?.click();
+    fixture.detectChanges();
+    setInput('#medicamentoInjetavel', 'dipi');
+    compiled
+      .querySelector<HTMLButtonElement>(`button[data-select-medication-id="${dipirona.id}"]`)
+      ?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    setInput('#loteInjetavel', 'INJ-01');
+    setInput('#validadeInjetavel', '2027-01-01');
+    setInput('#posologiaInjetavel', '1 ampola');
+    setInput('#nomePrescritorInjetavel', 'Dra. Ana');
+    setInput('#registroPrescritorInjetavel', 'CRM 12345');
+    compiled.querySelector<HTMLButtonElement>('button[data-add-medication="injectable"]')?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const item = compiled.querySelector('[data-medication-item="injectable"]');
+
+    expect(item?.textContent).toContain('Dipirona — 500 mg');
+    expect(item?.textContent).toContain('INJ-01');
+    expect(item?.textContent).toContain('01/01/2027');
+    expect(item?.textContent).toContain('1 ampola');
+    expect(item?.textContent).toContain('Dra. Ana');
+    expect(item?.textContent).toContain('CRM 12345');
+    expect(item?.textContent).toContain('Intramuscular');
+
+    compiled.querySelector<HTMLInputElement>('#enableInaloterapia')?.click();
+    fixture.detectChanges();
+    setInput('#medicamentoInaloterapia', 'salbutamol');
+    compiled
+      .querySelector<HTMLButtonElement>(`button[data-select-medication-id="${salbutamol.id}"]`)
+      ?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    setInput('#loteInaloterapia', 'INA-01');
+    setInput('#validadeInaloterapia', '2027-02-01');
+    setInput('#posologiaInaloterapia', '2 jatos');
+    setInput('#nomePrescritorInaloterapia', 'Dr. Pedro');
+    setInput('#registroPrescritorInaloterapia', 'CRM 98765');
+    compiled
+      .querySelector<HTMLButtonElement>('button[data-add-medication="inaloterapia"]')
+      ?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const inhalotherapyItem = compiled.querySelector('[data-medication-item="inaloterapia"]');
+
+    expect(inhalotherapyItem?.textContent).toContain('Salbutamol — 2,5 mg');
+    expect(inhalotherapyItem?.textContent).toContain('INA-01');
+    expect(inhalotherapyItem?.textContent).toContain('01/02/2027');
+    expect(inhalotherapyItem?.textContent).toContain('2 jatos');
+    expect(inhalotherapyItem?.textContent).toContain('Dr. Pedro');
+    expect(inhalotherapyItem?.textContent).toContain('CRM 98765');
+    expect(inhalotherapyItem?.textContent).toContain('Inalatória');
+  });
+
   it('should mask CPF, phone and CEP while storing normalized patient data', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
 
     await router.navigateByUrl('/atendimentos/novo');
     fixture.detectChanges();
@@ -1651,7 +2001,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
     const clinicalStore = TestBed.inject(TemporaryClinicalRecordsStore);
-    const attendanceStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
     clinicalStore.createMedication({
       name: 'Dipirona',
       measurementUnit: '500 mg',
@@ -2422,7 +2772,7 @@ describe('App', () => {
   it('should list, create, view and edit patients with comorbidities', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const patientStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const patientStore = TestBed.inject(PharmaceuticalServiceFixture);
     const clinicalStore = TestBed.inject(TemporaryClinicalRecordsStore);
     const diabetes = clinicalStore.createComorbidity({
       name: 'Diabetes mellitus',
@@ -2531,10 +2881,59 @@ describe('App', () => {
     expect(compiled.querySelector('form')).toBeNull();
   });
 
+  it('restores patient data and selected comorbidities in edit mode', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const patientStore = TestBed.inject(PharmaceuticalServiceFixture);
+    const clinicalStore = TestBed.inject(TemporaryClinicalRecordsStore);
+    const diabetes = clinicalStore.createComorbidity({
+      name: 'Diabetes mellitus',
+      medicationInteractionIds: [],
+    });
+    const hypertension = clinicalStore.createComorbidity({
+      name: 'Hipertensão arterial',
+      medicationInteractionIds: [],
+    });
+    const patient = patientStore.createPatient({
+      name: 'Joana Pereira',
+      cpf: '12345678901',
+      birthDate: '1979-03-20',
+      cellPhone: '44999998888',
+      gender: 'feminino',
+      cep: '87020000',
+      address: 'Avenida Brasil',
+      neighborhood: 'Zona 1',
+      city: 'Maringá',
+      state: 'PR',
+      phone: '4432221111',
+      responsibleName: '',
+      comorbidityIds: [diabetes.id, hypertension.id],
+    });
+
+    await router.navigateByUrl(`/pacientes/${patient.id}/editar`);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector<HTMLInputElement>('#nomeUsuario')?.value).toBe('Joana Pereira');
+    expect(compiled.querySelector<HTMLInputElement>('#cpfUsuario')?.value).toBe('123.456.789-01');
+    expect(compiled.querySelector<HTMLInputElement>('#celularUsuario')?.value).toBe(
+      '(44) 99999-8888',
+    );
+    expect(compiled.querySelector<HTMLInputElement>('#cepUsuario')?.value).toBe('87020-000');
+    expect(compiled.querySelector<HTMLInputElement>('#enderecoUsuario')?.value).toBe(
+      'Avenida Brasil',
+    );
+    expect(compiled.querySelector<HTMLSelectElement>('#estadoUsuario')?.value).toBe('PR');
+    expect(compiled.querySelectorAll('[data-selected-patient-comorbidity-id]').length).toBe(2);
+    expect(compiled.textContent).toContain('Diabetes mellitus');
+    expect(compiled.textContent).toContain('Hipertensão arterial');
+  });
+
   it('should show non-blocking medication-comorbidity warnings during pharmaceutical services', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
-    const patientStore = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    const patientStore = TestBed.inject(PharmaceuticalServiceFixture);
     const clinicalStore = TestBed.inject(TemporaryClinicalRecordsStore);
     const dipirona = clinicalStore.createMedication({
       name: 'Dipirona',

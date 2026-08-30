@@ -1,6 +1,14 @@
 <main data-page="visualizar-atendimento" class="flex-1 bg-app-background px-4 py-6 md:py-8">
   <section class="app-container grid gap-6">
-    @if (attendance(); as currentAttendance) {
+    @if (isLoading()) {
+      <section class="card p-5">
+        <div class="skeleton h-6 w-52"></div>
+        <div class="mt-4 grid gap-3">
+          <div class="skeleton h-10 w-full"></div>
+          <div class="skeleton h-10 w-full"></div>
+        </div>
+      </section>
+    } @else if (attendance(); as currentAttendance) {
       <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p class="mb-2 text-sm font-semibold text-uem-700">Atendimento farmacêutico</p>
@@ -111,13 +119,12 @@
             <h2 class="card-title">Aplicação de injetáveis</h2>
           </div>
           <div class="card-content grid gap-4">
-            <p class="text-sm text-app-muted-foreground">
-              Via de administração:
-              {{ currentAttendance.injectable.administrationRoute || 'Não informada' }}
-            </p>
             <ng-container
               [ngTemplateOutlet]="medicationTable"
-              [ngTemplateOutletContext]="{ items: currentAttendance.injectable.medications }"
+              [ngTemplateOutletContext]="{
+                items: currentAttendance.injectable.medications,
+                showPrescription: true,
+              }"
             />
           </div>
         </section>
@@ -129,12 +136,12 @@
             <h2 class="card-title">Inaloterapia</h2>
           </div>
           <div class="card-content grid gap-4">
-            <p class="text-sm text-app-muted-foreground">
-              Prescritor: {{ currentAttendance.inhalotherapy.prescriberName || 'Não informado' }}
-            </p>
             <ng-container
               [ngTemplateOutlet]="medicationTable"
-              [ngTemplateOutletContext]="{ items: currentAttendance.inhalotherapy.medications }"
+              [ngTemplateOutletContext]="{
+                items: currentAttendance.inhalotherapy.medications,
+                showPrescription: true,
+              }"
             />
           </div>
         </section>
@@ -156,6 +163,7 @@
               [ngTemplateOutlet]="medicationTable"
               [ngTemplateOutletContext]="{
                 items: currentAttendance.complementaryServices.medications,
+                showPrescription: false,
               }"
             />
           </div>
@@ -235,7 +243,7 @@
     }
   </section>
 
-  <ng-template #medicationTable let-items="items">
+  <ng-template #medicationTable let-items="items" let-showPrescription="showPrescription">
     @if (hasMedicationItems(items)) {
       <div class="table-wrapper">
         <table class="table">
@@ -245,6 +253,11 @@
               <th>Lote</th>
               <th>Validade</th>
               <th>Posologia</th>
+              @if (showPrescription) {
+                <th>Via de administração</th>
+                <th>Prescritor</th>
+                <th>CRM/CRO</th>
+              }
             </tr>
           </thead>
           <tbody>
@@ -256,6 +269,11 @@
                 <td>{{ item.batch }}</td>
                 <td>{{ formatDate(item.expirationDate) }}</td>
                 <td>{{ item.dosage }}</td>
+                @if (showPrescription) {
+                  <td>{{ item.administrationRoute || 'Não informada' }}</td>
+                  <td>{{ item.prescriberName || 'Não informado' }}</td>
+                  <td>{{ item.prescriberRegistration || 'Não informado' }}</td>
+                }
               </tr>
             }
           </tbody>

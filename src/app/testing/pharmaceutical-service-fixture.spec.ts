@@ -1,19 +1,19 @@
 import { TestBed } from '@angular/core/testing';
-import { TemporaryClinicalRecordsStore } from './temporary-clinical-records-store';
-import { TemporaryPharmaceuticalServiceStore } from './temporary-pharmaceutical-service-store';
+import { TemporaryClinicalRecordsStore } from '../domain/temporary-clinical-records-store';
+import { PharmaceuticalServiceFixture } from './pharmaceutical-service-fixture';
 
-describe('TemporaryPharmaceuticalServiceStore', () => {
-  let store: TemporaryPharmaceuticalServiceStore;
+describe('PharmaceuticalServiceFixture', () => {
+  let store: PharmaceuticalServiceFixture;
   let clinicalStore: TemporaryClinicalRecordsStore;
 
   beforeEach(() => {
     localStorage.clear();
 
     TestBed.configureTestingModule({
-      providers: [TemporaryClinicalRecordsStore, TemporaryPharmaceuticalServiceStore],
+      providers: [TemporaryClinicalRecordsStore, PharmaceuticalServiceFixture],
     });
 
-    store = TestBed.inject(TemporaryPharmaceuticalServiceStore);
+    store = TestBed.inject(PharmaceuticalServiceFixture);
     clinicalStore = TestBed.inject(TemporaryClinicalRecordsStore);
   });
 
@@ -74,8 +74,6 @@ describe('TemporaryPharmaceuticalServiceStore', () => {
             dosage: 'Conforme orientação',
           },
         ],
-        prescriberName: 'Dra. Ana',
-        crmCro: 'CRM 123',
       },
       complementaryServices: null,
       followUp: null,
@@ -180,8 +178,6 @@ describe('TemporaryPharmaceuticalServiceStore', () => {
             dosage: '1 vez ao dia',
           },
         ],
-        recordNumber: 'F-001',
-        attendanceDate: '2026-08-16',
       },
       followUp: {
         returnIntervalDays: 7,
@@ -256,8 +252,6 @@ describe('TemporaryPharmaceuticalServiceStore', () => {
             dosage: '1 vez ao dia',
           },
         ],
-        recordNumber: '',
-        attendanceDate: '2026-08-16',
       },
       followUp: {
         returnIntervalDays: 7,
@@ -442,9 +436,6 @@ describe('TemporaryPharmaceuticalServiceStore', () => {
             dosage: 'Dose única',
           },
         ],
-        administrationRoute: 'Intramuscular',
-        prescriberName: 'Dr. Paulo',
-        crmCro: 'CRM 456',
       },
       inhalotherapy: null,
       complementaryServices: null,
@@ -476,8 +467,6 @@ describe('TemporaryPharmaceuticalServiceStore', () => {
             dosage: 'Nebulização',
           },
         ],
-        prescriberName: '',
-        crmCro: '',
       },
       complementaryServices: null,
       followUp: {
@@ -542,9 +531,6 @@ describe('TemporaryPharmaceuticalServiceStore', () => {
             dosage: 'Dose única',
           },
         ],
-        administrationRoute: 'Intramuscular',
-        prescriberName: 'Dr. Paulo',
-        crmCro: 'CRM 456',
       },
       inhalotherapy: null,
       complementaryServices: null,
@@ -577,8 +563,6 @@ describe('TemporaryPharmaceuticalServiceStore', () => {
             dosage: 'Nebulização',
           },
         ],
-        prescriberName: '',
-        crmCro: '',
       },
       complementaryServices: null,
       followUp: null,
@@ -615,8 +599,6 @@ describe('TemporaryPharmaceuticalServiceStore', () => {
             dosage: '1 vez ao dia',
           },
         ],
-        recordNumber: '',
-        attendanceDate: '2026-08-16',
       },
       followUp: {
         returnIntervalDays: 7,
@@ -644,8 +626,6 @@ describe('TemporaryPharmaceuticalServiceStore', () => {
             dosage: '1 vez ao dia',
           },
         ],
-        recordNumber: '',
-        attendanceDate: '2026-08-23',
       },
       followUp: null,
     });

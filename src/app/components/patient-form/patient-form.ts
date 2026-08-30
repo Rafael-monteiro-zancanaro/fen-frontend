@@ -16,6 +16,7 @@ export class PatientForm {
   @Input() errors: Record<string, string> = {};
   @Input() cpfLookupEnabled = true;
   @Input() cpfReadonly = false;
+  @Input() readonly = false;
   @Output() readonly patientSelected = new EventEmitter<Patient | null>();
 
   protected readonly brazilianStates = BRAZILIAN_STATES;
@@ -47,31 +48,42 @@ export class PatientForm {
     delete this.errors['patient.cpf'];
     this.patientService.findByCpf(cpf).subscribe({
       next: (existingPatient) => {
-      if (!existingPatient || !existingPatient.id) {
-        this.patientLookupVariant = 'success'; this.patientLookupMessage = 'CPF não encontrado. Preencha os dados para cadastrar um novo paciente.'; this.patientSelected.emit(null); return;
-      }
-      this.patient.name = existingPatient.name;
-      this.patient.birthDate = existingPatient.birthDate;
-      this.patient.cellPhone = maskBrazilianPhone(existingPatient.cellPhone);
-      this.patient.gender = existingPatient.gender;
-      this.patient.cep = maskCep(existingPatient.cep ?? '');
-      this.patient.address = existingPatient.address;
-      this.patient.neighborhood = existingPatient.neighborhood ?? '';
-      this.patient.city = existingPatient.city;
-      this.patient.state = existingPatient.state;
-      this.patient.phone = maskBrazilianPhone(existingPatient.phone);
-      this.patient.responsibleName = existingPatient.responsibleName;
-      this.patient.comorbidityIds = [...existingPatient.comorbidityIds];
-      this.syncPatientInputs();
-      this.patientLookupVariant = 'info';
-      this.patientLookupMessage =
-        'Paciente encontrado. Os dados foram preenchidos automaticamente.';
-      this.patientSelected.emit(existingPatient);
+        if (!existingPatient || !existingPatient.id) {
+          this.patientLookupVariant = 'success';
+          this.patientLookupMessage =
+            'CPF não encontrado. Preencha os dados para cadastrar um novo paciente.';
+          this.patientSelected.emit(null);
+          return;
+        }
+        this.patient.name = existingPatient.name;
+        this.patient.birthDate = existingPatient.birthDate;
+        this.patient.cellPhone = maskBrazilianPhone(existingPatient.cellPhone);
+        this.patient.gender = existingPatient.gender;
+        this.patient.cep = maskCep(existingPatient.cep ?? '');
+        this.patient.address = existingPatient.address;
+        this.patient.neighborhood = existingPatient.neighborhood ?? '';
+        this.patient.city = existingPatient.city;
+        this.patient.state = existingPatient.state;
+        this.patient.phone = maskBrazilianPhone(existingPatient.phone);
+        this.patient.responsibleName = existingPatient.responsibleName;
+        this.patient.comorbidityIds = [...existingPatient.comorbidityIds];
+        this.syncPatientInputs();
+        this.patientLookupVariant = 'info';
+        this.patientLookupMessage =
+          'Paciente encontrado. Os dados foram preenchidos automaticamente.';
+        this.patientSelected.emit(existingPatient);
       },
       error: (response) => {
         if (response.status === 404) {
-          this.patientLookupVariant = 'success'; this.patientLookupMessage = 'CPF não encontrado. Preencha os dados para cadastrar um novo paciente.'; this.patientSelected.emit(null);
-        } else { this.patientLookupVariant = 'info'; this.patientLookupMessage = 'Não foi possível consultar o CPF. Tente novamente.'; this.patientSelected.emit(null); }
+          this.patientLookupVariant = 'success';
+          this.patientLookupMessage =
+            'CPF não encontrado. Preencha os dados para cadastrar um novo paciente.';
+          this.patientSelected.emit(null);
+        } else {
+          this.patientLookupVariant = 'info';
+          this.patientLookupMessage = 'Não foi possível consultar o CPF. Tente novamente.';
+          this.patientSelected.emit(null);
+        }
       },
     });
   }

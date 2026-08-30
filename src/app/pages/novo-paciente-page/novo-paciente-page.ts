@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PatientForm } from '../../components/patient-form/patient-form';
 import { ComorbiditySummary, PatientInput } from '../../domain/clinical-records';
-import { onlyDigits } from '../../domain/text-masks';
+import { maskBrazilianPhone, maskCep, maskCpf, onlyDigits } from '../../domain/text-masks';
 import { ComorbidityService } from '../../domain/comorbidity.service';
 import { PatientService } from '../../domain/patient.service';
 
@@ -21,7 +21,7 @@ export class NovoPacientePage implements OnInit {
   protected readonly selectedComorbidityIds = signal<string[]>([]);
   protected readonly errors: Record<string, string> = {};
   protected saveError = '';
-  protected readonly patient: PatientInput = {
+  protected readonly patient = signal<PatientInput>({
     name: '',
     cpf: '',
     birthDate: '',
@@ -35,7 +35,7 @@ export class NovoPacientePage implements OnInit {
     phone: '',
     responsibleName: '',
     comorbidityIds: [],
-  };
+  });
 
   protected readonly comorbidityResults = signal<ComorbiditySummary[]>([]);
   private readonly selectedItems = signal<ComorbiditySummary[]>([]);
@@ -45,14 +45,38 @@ export class NovoPacientePage implements OnInit {
     private readonly router: Router,
     private readonly patientService: PatientService,
     private readonly comorbidityService: ComorbidityService,
-  ) { this.loadComorbidities(''); }
+  ) {
+    this.loadComorbidities('');
+  }
 
   ngOnInit(): void {
     if (!this.patientId) {
       return;
     }
 
-    this.patientService.get(this.patientId).subscribe({ next: (patient) => { Object.assign(this.patient, { ...patient, comorbidityIds: [...patient.comorbidityIds] }); this.selectedComorbidityIds.set([...patient.comorbidityIds]); this.loadComorbidities(this.comorbiditySearchTerm()); }, error: () => this.recordNotFound.set(true) });
+    this.patientService.get(this.patientId).subscribe({
+      next: (patient) => {
+        this.patient.set({
+          name: patient.name,
+          cpf: maskCpf(patient.cpf),
+          birthDate: patient.birthDate,
+          cellPhone: maskBrazilianPhone(patient.cellPhone),
+          gender: patient.gender,
+          cep: maskCep(patient.cep ?? ''),
+          address: patient.address,
+          neighborhood: patient.neighborhood,
+          city: patient.city,
+          state: patient.state,
+          phone: maskBrazilianPhone(patient.phone),
+          responsibleName: patient.responsibleName,
+          comorbidityIds: [...patient.comorbidityIds],
+        });
+        this.selectedComorbidityIds.set([...patient.comorbidityIds]);
+        this.selectedItems.set([...(patient.comorbidities ?? [])]);
+        this.loadComorbidities(this.comorbiditySearchTerm());
+      },
+      error: () => this.recordNotFound.set(true),
+    });
   }
 
   protected updateComorbiditySearch(term: string): void {
@@ -80,8 +104,11 @@ export class NovoPacientePage implements OnInit {
     this.comorbidityService.list(term, 0, 100).subscribe((page) => {
       this.comorbidityResults.set(page.content);
       const selected = new Set(this.selectedComorbidityIds());
-      const additions = page.content.filter((item) => selected.has(item.id));
-      if (additions.length) this.selectedItems.set(additions);
+      const selectedItems = new Map(this.selectedItems().map((item) => [item.id, item]));
+      page.content
+        .filter((item) => selected.has(item.id))
+        .forEach((item) => selectedItems.set(item.id, item));
+      this.selectedItems.set([...selectedItems.values()].filter((item) => selected.has(item.id)));
     });
   }
 
@@ -98,38 +125,47 @@ export class NovoPacientePage implements OnInit {
     }
 
     const input = {
-      ...this.patient,
-      cpf: onlyDigits(this.patient.cpf),
-      cellPhone: onlyDigits(this.patient.cellPhone),
-      cep: onlyDigits(this.patient.cep ?? ''),
-      phone: onlyDigits(this.patient.phone),
+      ...this.patient(),
+      cpf: onlyDigits(this.patient().cpf),
+      cellPhone: onlyDigits(this.patient().cellPhone),
+      cep: onlyDigits(this.patient().cep ?? ''),
+      phone: onlyDigits(this.patient().phone),
       comorbidityIds: this.selectedComorbidityIds(),
     };
 
     if (this.patientId) {
-      this.patientService.update(this.patientId, input).subscribe({ next: () => void this.router.navigateByUrl('/pacientes'), error: () => this.saveError = 'Não foi possível salvar. Verifique se o CPF já pertence a outro paciente.' });
+      this.patientService.update(this.patientId, input).subscribe({
+        next: () => void this.router.navigateByUrl('/pacientes'),
+        error: () =>
+          (this.saveError =
+            'Não foi possível salvar. Verifique se o CPF já pertence a outro paciente.'),
+      });
       return;
     }
 
-    this.patientService.create(input).subscribe({ next: (patient) => void this.router.navigateByUrl(`/pacientes/${patient.id}/editar`), error: () => this.saveError = 'Não foi possível salvar. Verifique os dados informados.' });
+    this.patientService.create(input).subscribe({
+      next: (patient) => void this.router.navigateByUrl(`/pacientes/${patient.id}/editar`),
+      error: () => (this.saveError = 'Não foi possível salvar. Verifique os dados informados.'),
+    });
   }
 
   private validatePatient(): boolean {
-    const cpf = onlyDigits(this.patient.cpf);
+    const patient = this.patient();
+    const cpf = onlyDigits(patient.cpf);
 
     if (cpf.length !== 11) {
       this.errors['patient.cpf'] = 'Informe um CPF com 11 dígitos.';
     }
 
-    if (!this.patient.name.trim()) {
+    if (!patient.name.trim()) {
       this.errors['patient.name'] = 'Nome do paciente é obrigatório.';
     }
 
-    if (!this.patient.birthDate) {
+    if (!patient.birthDate) {
       this.errors['patient.birthDate'] = 'Data de nascimento é obrigatória.';
     }
 
-    if (onlyDigits(this.patient.cellPhone).length < 10) {
+    if (onlyDigits(patient.cellPhone).length < 10) {
       this.errors['patient.cellPhone'] = 'Telefone celular é obrigatório.';
     }
 

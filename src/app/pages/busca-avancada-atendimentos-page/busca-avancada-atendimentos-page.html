@@ -163,16 +163,16 @@
                 </tr>
               </thead>
               <tbody>
-                @for (result of paginatedResults(); track result.attendance.id) {
+                @for (result of results(); track result.attendance.id) {
                   <tr>
                     <td class="font-semibold text-app-foreground">
                       #{{ result.attendance.codigo }}
                     </td>
                     <td class="font-semibold text-app-foreground">
-                      {{ result.attendance.patient.name }}
+                      {{ result.attendance.patientName }}
                     </td>
-                    <td>{{ formatCpf(result.attendance.patient.cpf) }}</td>
-                    <td>{{ formatDate(result.attendance.createdAt) }}</td>
+                    <td>{{ formatCpf(result.attendance.patientCpf) }}</td>
+                    <td>{{ formatDate(result.attendance.attendanceDate) }}</td>
                     <td>{{ matchedMedicationLabel(result) }}</td>
                     <td>{{ matchedBatchLabel(result) }}</td>
                     <td>

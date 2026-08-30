@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -25,12 +26,12 @@ import {
   Patient,
   PatientInput,
   PharmaceuticalServiceAttendance,
-  PharmaceuticalServiceKey,
   ServiceMedicationItem,
 } from '../../domain/clinical-records';
 import { maskBrazilianPhone, maskCep, maskCpf, onlyDigits } from '../../domain/text-masks';
 import { InteractionService, MedicationInteractionPair } from '../../domain/interaction.service';
-import { TemporaryPharmaceuticalServiceStore } from '../../domain/temporary-pharmaceutical-service-store';
+import { ATTENDANCE_FORM_MODES, AttendanceFormMode } from '../../domain/attendance-form-mode';
+import { ServicoFarmaceuticoService } from '../../domain/servico-farmaceutico.service';
 
 type OptionalStep =
   | 'cuidados-farmaceuticos'
@@ -47,11 +48,14 @@ interface MedicationDraft {
   batch: string;
   expirationDate: string;
   dosage: string;
+  administrationRoute: string;
+  prescriberName: string;
+  prescriberRegistration: string;
 }
 
 @Component({
   selector: 'app-servicos-farmaceuticos-page',
-  imports: [FormsModule, MedicationAutocomplete, NgIcon, PatientForm, RouterLink],
+  imports: [DatePipe, FormsModule, MedicationAutocomplete, NgIcon, PatientForm, RouterLink],
   providers: [
     provideIcons({
       bootstrapArrowDownCircle,
@@ -82,7 +86,7 @@ export class ServicosFarmaceuticosPage {
     'servicos-acompanhamento': false,
     acompanhamento: false,
   };
-  protected readonly patient: PatientInput = {
+  protected readonly patient = signal<PatientInput>({
     name: '',
     cpf: '',
     birthDate: '',
@@ -95,29 +99,18 @@ export class ServicosFarmaceuticosPage {
     state: '',
     phone: '',
     responsibleName: '',
-  };
+  });
   protected readonly care: CareServiceData = {
     bloodGlucose: '',
     systolicPressure: '',
     diastolicPressure: '',
     bodyTemperature: '',
   };
-  protected readonly injectable = {
-    administrationRoute: '',
-    prescriberName: '',
-    crmCro: '',
-  };
-  protected readonly inhalotherapy = {
-    prescriberName: '',
-    crmCro: '',
-  };
   protected readonly complementary = {
     homeCare: false,
     pharmacotherapeuticFollowUp: false,
     minorDisorderIndication: false,
     signsAndSymptoms: '',
-    recordNumber: '',
-    attendanceDate: '',
   };
   protected readonly followUp = {
     returnIntervalDays: '',
@@ -135,7 +128,9 @@ export class ServicosFarmaceuticosPage {
   };
   private readonly selectedMedications: Partial<Record<MedicationSection, Medication>> = {};
   private readonly interactionWarnings: Record<MedicationSection, MedicationInteractionPair[]> = {
-    injectable: [], inhalotherapy: [], complementary: [],
+    injectable: [],
+    inhalotherapy: [],
+    complementary: [],
   };
   protected readonly errors: Record<string, string> = {};
   protected readonly medicationErrors: Record<
@@ -146,39 +141,55 @@ export class ServicosFarmaceuticosPage {
     inhalotherapy: {},
     complementary: {},
   };
-  protected readonly previousAttendance: PharmaceuticalServiceAttendance | undefined;
-  protected readonly followUpContext: FollowUpProgress | undefined;
+  protected previousAttendance: PharmaceuticalServiceAttendance | undefined;
+  protected followUpContext: FollowUpProgress | undefined;
   protected selectedPatientId = '';
   protected isSubmitting = false;
+  protected readonly isInitialRecordLoading = signal(false);
+  private readonly formMode: AttendanceFormMode;
+  private editingAttendanceId = '';
+  private editingReturn = false;
+  private nextLocalMedicationKey = 1;
 
   constructor(
-    private readonly store: TemporaryPharmaceuticalServiceStore,
+    private readonly service: ServicoFarmaceuticoService,
     private readonly interactions: InteractionService,
     private readonly router: Router,
     route: ActivatedRoute,
   ) {
-    const previousAttendanceId = route.snapshot.paramMap.get('id');
-    const previousAttendance = previousAttendanceId
-      ? this.store.getAttendance(previousAttendanceId)
-      : undefined;
-    const followUpContext = previousAttendance
-      ? this.store.followUpProgress(previousAttendance.id)
-      : undefined;
-
-    if (
-      previousAttendance?.followUp &&
-      previousAttendance.followUpLink &&
-      followUpContext?.canContinue
-    ) {
-      this.previousAttendance = previousAttendance;
-      this.followUpContext = followUpContext;
-      this.fillPatientFromCurrentRecord(previousAttendance.patient);
-      this.selectedPatientId = previousAttendance.patient.id;
+    this.formMode =
+      (route.snapshot.data['attendanceFormMode'] as AttendanceFormMode | undefined) ??
+      ATTENDANCE_FORM_MODES.CREATE;
+    const attendanceId = route.snapshot.paramMap.get('id');
+    if (this.formMode === ATTENDANCE_FORM_MODES.EDIT && attendanceId) {
+      this.isInitialRecordLoading.set(true);
+      this.loadForEdit(attendanceId);
+    } else if (this.formMode === ATTENDANCE_FORM_MODES.FOLLOW_UP_RETURN && attendanceId) {
+      this.isInitialRecordLoading.set(true);
+      const previousAttendanceId = attendanceId;
+      this.service.continuation(previousAttendanceId).subscribe({
+        next: (context) => {
+          this.previousAttendance = {
+            id: context.previousAttendanceId,
+            codigo: context.previousAttendanceCode,
+            patient: context.patient,
+          } as PharmaceuticalServiceAttendance;
+          this.followUpContext = context.followUpProgress;
+          this.fillPatientFromCurrentRecord(context.patient);
+          this.selectedPatientId = context.patient.id;
+          this.isInitialRecordLoading.set(false);
+        },
+        error: () => {
+          this.errors['submit'] =
+            'Não foi possível prosseguir o atendimento. Atualize a listagem e tente novamente.';
+          this.isInitialRecordLoading.set(false);
+        },
+      });
     }
   }
 
   protected steps(): typeof this.allSteps {
-    if (!this.isFollowUpContinuation()) {
+    if (this.formMode !== ATTENDANCE_FORM_MODES.FOLLOW_UP_RETURN && !this.editingReturn) {
       return this.allSteps;
     }
 
@@ -186,16 +197,40 @@ export class ServicosFarmaceuticosPage {
   }
 
   protected isFollowUpContinuation(): boolean {
-    return Boolean(this.previousAttendance && this.followUpContext?.canContinue);
+    return this.formMode === ATTENDANCE_FORM_MODES.FOLLOW_UP_RETURN;
+  }
+
+  protected hasFollowUpContext(): boolean {
+    return Boolean(this.previousAttendance && this.followUpContext);
+  }
+
+  protected isEditing(): boolean {
+    return this.formMode === ATTENDANCE_FORM_MODES.EDIT;
+  }
+
+  protected isPatientLocked(): boolean {
+    return this.formMode !== ATTENDANCE_FORM_MODES.CREATE;
+  }
+
+  protected isEditingReturn(): boolean {
+    return this.editingReturn;
   }
 
   protected pageTitle(): string {
+    if (this.isEditing()) {
+      return 'Editar atendimento';
+    }
+
     return this.isFollowUpContinuation() ? 'Continuar atendimento' : 'Novo atendimento';
   }
 
   protected pageDescription(): string {
     if (this.isFollowUpContinuation()) {
       return 'Registre os serviços realizados neste retorno. O acompanhamento original será preservado.';
+    }
+
+    if (this.isEditing()) {
+      return 'Atualize os serviços realizados. Os dados cadastrais do paciente permanecem vinculados ao atendimento original.';
     }
 
     return 'Identifique o paciente e selecione apenas os serviços realizados neste atendimento. Estes procedimentos não substituem consulta médica ou exames laboratoriais.';
@@ -220,7 +255,10 @@ export class ServicosFarmaceuticosPage {
   }
 
   protected toggleOptionalStep(step: OptionalStep, enabled: boolean): void {
-    if (this.isFollowUpContinuation() && step === 'acompanhamento') {
+    if (
+      (this.formMode === ATTENDANCE_FORM_MODES.FOLLOW_UP_RETURN || this.editingReturn) &&
+      step === 'acompanhamento'
+    ) {
       return;
     }
 
@@ -238,6 +276,7 @@ export class ServicosFarmaceuticosPage {
   protected selectMedication(section: MedicationSection, medication: Medication): void {
     this.medicationDrafts[section].medicationId = medication.id;
     this.medicationDrafts[section].medicationConcentration = this.formatMedication(medication);
+    this.medicationDrafts[section].administrationRoute = medication.administrationRoute;
     delete this.medicationErrors[section].medicationConcentration;
     this.selectedMedications[section] = medication;
     this.loadInteractionWarnings(section);
@@ -260,9 +299,7 @@ export class ServicosFarmaceuticosPage {
     this.interactionWarnings[section] = [];
   }
 
-  protected medicationInteractionWarnings(
-    section: MedicationSection,
-  ): MedicationInteractionPair[] {
+  protected medicationInteractionWarnings(section: MedicationSection): MedicationInteractionPair[] {
     const medicationId = this.medicationDrafts[section].medicationId;
 
     if (!this.selectedPatientId || !medicationId) {
@@ -274,9 +311,9 @@ export class ServicosFarmaceuticosPage {
 
   private loadInteractionWarnings(section: MedicationSection): void {
     const medicationId = this.medicationDrafts[section].medicationId;
-    const patient = this.store.getPatient(this.selectedPatientId);
-    this.interactions.findPairs(medicationId ? [medicationId] : [], patient?.comorbidityIds ?? [])
-      .subscribe((pairs) => this.interactionWarnings[section] = pairs);
+    this.interactions
+      .findPairs(medicationId ? [medicationId] : [], this.patient().comorbidityIds ?? [])
+      .subscribe((pairs) => (this.interactionWarnings[section] = pairs));
   }
 
   protected hasBloodGlucoseWarning(): boolean {
@@ -322,19 +359,22 @@ export class ServicosFarmaceuticosPage {
     this.medicationItems[section] = [
       ...this.medicationItems[section],
       {
-        id: this.createId(),
+        id: this.createLocalMedicationKey(),
         medicationId: draft.medicationId,
         medicationConcentration: draft.medicationConcentration.trim(),
         batch: draft.batch.trim(),
         expirationDate: draft.expirationDate,
         dosage: draft.dosage.trim(),
+        administrationRoute: draft.administrationRoute,
+        prescriberName: draft.prescriberName.trim(),
+        prescriberRegistration: draft.prescriberRegistration.trim(),
       },
     ];
     this.medicationDrafts[section] = this.createEmptyMedicationDraft();
     this.medicationErrors[section] = {};
   }
 
-  protected removeMedication(section: MedicationSection, id: string): void {
+  protected removeMedication(section: MedicationSection, id: string | undefined): void {
     this.medicationItems[section] = this.medicationItems[section].filter((item) => item.id !== id);
   }
 
@@ -354,20 +394,29 @@ export class ServicosFarmaceuticosPage {
       return;
     }
 
+    if (this.formMode === ATTENDANCE_FORM_MODES.FOLLOW_UP_RETURN && !this.previousAttendance) {
+      this.errors['submit'] =
+        'Não foi possível carregar o contexto do retorno. Volte à listagem e tente novamente.';
+      return;
+    }
+
     if (!this.validateForm()) {
       return;
     }
 
     this.isSubmitting = true;
+    const patient = this.patient();
     const input = {
-      patient: {
-        ...this.patient,
-        cpf: onlyDigits(this.patient.cpf),
-        cellPhone: onlyDigits(this.patient.cellPhone),
-        cep: onlyDigits(this.patient.cep ?? ''),
-        phone: onlyDigits(this.patient.phone),
-      },
-      selectedServices: this.selectedServices(),
+      patientId: this.selectedPatientId || undefined,
+      patient: this.selectedPatientId
+        ? undefined
+        : {
+            ...patient,
+            cpf: onlyDigits(patient.cpf),
+            cellPhone: onlyDigits(patient.cellPhone),
+            cep: onlyDigits(patient.cep ?? ''),
+            phone: onlyDigits(patient.phone),
+          },
       care: this.enabledSteps['cuidados-farmaceuticos'] ? { ...this.care } : null,
       injectable: this.enabledSteps['aplicacao-injetaveis'] ? this.injectableData() : null,
       inhalotherapy: this.enabledSteps.inaloterapia ? this.inhalotherapyData() : null,
@@ -375,61 +424,41 @@ export class ServicosFarmaceuticosPage {
         ? this.complementaryServicesData()
         : null,
       followUp:
-        !this.isFollowUpContinuation() && this.enabledSteps.acompanhamento
+        this.formMode !== ATTENDANCE_FORM_MODES.FOLLOW_UP_RETURN &&
+        !this.editingReturn &&
+        this.enabledSteps.acompanhamento
           ? this.followUpData()
           : null,
     };
 
-    const attendance = this.previousAttendance
-      ? this.store.createFollowUpReturn(this.previousAttendance.id, input)
-      : this.store.createAttendance(input);
-
-    if (!attendance) {
-      this.errors['submit'] =
-        'Não foi possível prosseguir o atendimento. Atualize a listagem e tente novamente.';
-      this.isSubmitting = false;
-      return;
-    }
-
-    void this.router.navigateByUrl('/atendimentos');
-  }
-
-  private selectedServices(): PharmaceuticalServiceKey[] {
-    const services: PharmaceuticalServiceKey[] = [];
-
-    if (this.enabledSteps['cuidados-farmaceuticos']) {
-      services.push('cuidados-farmaceuticos');
-    }
-
-    if (this.enabledSteps['aplicacao-injetaveis']) {
-      services.push('aplicacao-injetaveis');
-    }
-
-    if (this.enabledSteps.inaloterapia) {
-      services.push('inaloterapia');
-    }
-
-    if (this.enabledSteps['servicos-acompanhamento']) {
-      services.push('servicos-farmaceuticos');
-    }
-
-    return services;
+    const request = this.isEditing()
+      ? this.service.update(this.editingAttendanceId, input)
+      : this.formMode === ATTENDANCE_FORM_MODES.FOLLOW_UP_RETURN && this.previousAttendance
+        ? this.service.createReturn(this.previousAttendance.id, input)
+        : this.service.create(input);
+    request.subscribe({
+      next: () => void this.router.navigateByUrl('/atendimentos'),
+      error: () => {
+        this.errors['submit'] =
+          'Não foi possível salvar o atendimento. Verifique os dados e tente novamente.';
+        this.isSubmitting = false;
+      },
+    });
   }
 
   private injectableData(): InjectableServiceData {
     return {
-      medications: this.medicationItems.injectable,
-      administrationRoute: this.injectable.administrationRoute,
-      prescriberName: this.injectable.prescriberName,
-      crmCro: this.injectable.crmCro,
+      medications: this.medicationItems.injectable.map((item) =>
+        this.requestMedication(item, true),
+      ),
     };
   }
 
   private inhalotherapyData(): InhalotherapyServiceData {
     return {
-      medications: this.medicationItems.inhalotherapy,
-      prescriberName: this.inhalotherapy.prescriberName,
-      crmCro: this.inhalotherapy.crmCro,
+      medications: this.medicationItems.inhalotherapy.map((item) =>
+        this.requestMedication(item, true),
+      ),
     };
   }
 
@@ -439,9 +468,9 @@ export class ServicosFarmaceuticosPage {
       pharmacotherapeuticFollowUp: this.complementary.pharmacotherapeuticFollowUp,
       minorDisorderIndication: this.complementary.minorDisorderIndication,
       signsAndSymptoms: this.complementary.signsAndSymptoms,
-      medications: this.medicationItems.complementary,
-      recordNumber: this.complementary.recordNumber,
-      attendanceDate: this.complementary.attendanceDate,
+      medications: this.medicationItems.complementary.map((item) =>
+        this.requestMedication(item, false),
+      ),
     };
   }
 
@@ -454,21 +483,22 @@ export class ServicosFarmaceuticosPage {
 
   private validateForm(): boolean {
     this.clearErrors();
-    const cpf = onlyDigits(this.patient.cpf);
+    const patient = this.patient();
+    const cpf = onlyDigits(patient.cpf);
 
     if (cpf.length !== 11) {
       this.errors['patient.cpf'] = 'Informe um CPF com 11 dígitos.';
     }
 
-    if (!this.patient.name.trim()) {
+    if (!patient.name.trim()) {
       this.errors['patient.name'] = 'Nome do paciente é obrigatório.';
     }
 
-    if (!this.patient.birthDate) {
+    if (!patient.birthDate) {
       this.errors['patient.birthDate'] = 'Data de nascimento é obrigatória.';
     }
 
-    if (onlyDigits(this.patient.cellPhone).length < 10) {
+    if (onlyDigits(patient.cellPhone).length < 10) {
       this.errors['patient.cellPhone'] = 'Telefone celular é obrigatório.';
     }
 
@@ -504,21 +534,93 @@ export class ServicosFarmaceuticosPage {
   }
 
   private fillPatientFromCurrentRecord(patient: Patient): void {
-    const currentPatient = this.store.getPatient(patient.id) ?? patient;
+    this.patient.set({
+      name: patient.name,
+      cpf: maskCpf(patient.cpf),
+      birthDate: patient.birthDate,
+      cellPhone: maskBrazilianPhone(patient.cellPhone),
+      gender: patient.gender,
+      cep: maskCep(patient.cep ?? ''),
+      address: patient.address,
+      neighborhood: patient.neighborhood ?? '',
+      city: patient.city,
+      state: patient.state,
+      phone: maskBrazilianPhone(patient.phone),
+      responsibleName: patient.responsibleName,
+      comorbidityIds: [...patient.comorbidityIds],
+    });
+  }
 
-    this.patient.name = currentPatient.name;
-    this.patient.cpf = maskCpf(currentPatient.cpf);
-    this.patient.birthDate = currentPatient.birthDate;
-    this.patient.cellPhone = maskBrazilianPhone(currentPatient.cellPhone);
-    this.patient.gender = currentPatient.gender;
-    this.patient.cep = maskCep(currentPatient.cep ?? '');
-    this.patient.address = currentPatient.address;
-    this.patient.neighborhood = currentPatient.neighborhood ?? '';
-    this.patient.city = currentPatient.city;
-    this.patient.state = currentPatient.state;
-    this.patient.phone = maskBrazilianPhone(currentPatient.phone);
-    this.patient.responsibleName = currentPatient.responsibleName;
-    this.patient.comorbidityIds = [...currentPatient.comorbidityIds];
+  private loadForEdit(id: string): void {
+    this.service.get(id).subscribe({
+      next: (attendance) => {
+        if (attendance.editAllowed === false) {
+          this.errors['submit'] = 'Este atendimento não pode ser editado.';
+          return;
+        }
+
+        this.editingAttendanceId = attendance.id;
+        this.editingReturn = (attendance.followUpLink?.returnNumber ?? 0) > 0;
+        this.selectedPatientId = attendance.patient.id;
+        this.fillPatientFromCurrentRecord(attendance.patient);
+        this.enabledSteps['cuidados-farmaceuticos'] = Boolean(attendance.care);
+        this.enabledSteps['aplicacao-injetaveis'] = Boolean(attendance.injectable);
+        this.enabledSteps.inaloterapia = Boolean(attendance.inhalotherapy);
+        this.enabledSteps['servicos-acompanhamento'] = Boolean(attendance.complementaryServices);
+        this.enabledSteps.acompanhamento = Boolean(
+          attendance.followUp && attendance.followUpLink?.returnNumber === 0,
+        );
+
+        if (attendance.care) {
+          Object.assign(this.care, attendance.care);
+        }
+        if (attendance.injectable) {
+          this.medicationItems.injectable = [...attendance.injectable.medications];
+        }
+        if (attendance.inhalotherapy) {
+          this.medicationItems.inhalotherapy = [...attendance.inhalotherapy.medications];
+        }
+        if (attendance.complementaryServices) {
+          Object.assign(this.complementary, {
+            homeCare: attendance.complementaryServices.homeCare,
+            pharmacotherapeuticFollowUp:
+              attendance.complementaryServices.pharmacotherapeuticFollowUp,
+            minorDisorderIndication: attendance.complementaryServices.minorDisorderIndication,
+            signsAndSymptoms: attendance.complementaryServices.signsAndSymptoms,
+          });
+          this.medicationItems.complementary = [...attendance.complementaryServices.medications];
+        }
+        if (attendance.followUp && this.enabledSteps.acompanhamento) {
+          this.followUp.returnIntervalDays = String(attendance.followUp.returnIntervalDays);
+          this.followUp.returnCount = String(attendance.followUp.returnCount);
+        }
+        this.isInitialRecordLoading.set(false);
+      },
+      error: () => {
+        this.errors['submit'] = 'Não foi possível carregar o atendimento para edição.';
+        this.isInitialRecordLoading.set(false);
+      },
+    });
+  }
+
+  private requestMedication(
+    item: ServiceMedicationItem,
+    includesPrescriber: boolean,
+  ): ServiceMedicationItem {
+    const payload = { ...item };
+    delete payload.administrationRoute;
+
+    if (payload.id?.startsWith('new-')) {
+      delete payload.id;
+    }
+
+    if (includesPrescriber) {
+      return payload;
+    }
+
+    delete payload.prescriberName;
+    delete payload.prescriberRegistration;
+    return payload;
   }
 
   private validateMedicationDraft(section: MedicationSection): boolean {
@@ -559,6 +661,9 @@ export class ServicosFarmaceuticosPage {
       batch: '',
       expirationDate: '',
       dosage: '',
+      administrationRoute: '',
+      prescriberName: '',
+      prescriberRegistration: '',
     };
   }
 
@@ -597,7 +702,9 @@ export class ServicosFarmaceuticosPage {
     return `${label} está ${direction} que o valor de referência (${referenceLabel}).`;
   }
 
-  private createId(): string {
-    return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+  private createLocalMedicationKey(): string {
+    const key = `new-${this.nextLocalMedicationKey}`;
+    this.nextLocalMedicationKey += 1;
+    return key;
   }
 }

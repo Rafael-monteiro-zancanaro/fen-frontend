@@ -82,25 +82,23 @@ export interface CareServiceData {
 }
 
 export interface ServiceMedicationItem {
-  id: string;
+  id?: string;
   medicationId?: string;
   medicationConcentration: string;
   batch: string;
   expirationDate: string;
   dosage: string;
+  administrationRoute?: string;
+  prescriberName?: string;
+  prescriberRegistration?: string;
 }
 
 export interface InjectableServiceData {
   medications: ServiceMedicationItem[];
-  administrationRoute: string;
-  prescriberName: string;
-  crmCro: string;
 }
 
 export interface InhalotherapyServiceData {
   medications: ServiceMedicationItem[];
-  prescriberName: string;
-  crmCro: string;
 }
 
 export interface ComplementaryServicesData {
@@ -109,8 +107,6 @@ export interface ComplementaryServicesData {
   minorDisorderIndication: boolean;
   signsAndSymptoms: string;
   medications: ServiceMedicationItem[];
-  recordNumber: string;
-  attendanceDate: string;
 }
 
 export interface FollowUpData {
@@ -167,10 +163,14 @@ export interface PharmaceuticalServiceAttendance {
   complementaryServices: ComplementaryServicesData | null;
   followUp: FollowUpData | null;
   followUpLink: FollowUpLink | null;
+  followUpProgress?: FollowUpProgress;
+  followUpHistory?: FollowUpHistoryEntry[];
+  editAllowed?: boolean;
 }
 
 export interface CreatePharmaceuticalServiceAttendanceInput {
-  patient: PatientInput;
+  patientId?: string;
+  patient?: PatientInput;
   selectedServices: PharmaceuticalServiceKey[];
   care: CareServiceData | null;
   injectable: InjectableServiceData | null;

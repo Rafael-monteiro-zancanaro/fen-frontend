@@ -12,14 +12,14 @@ import {
   PharmaceuticalServiceAttendance,
   PharmaceuticalServiceKey,
   ServiceMedicationItem,
-} from './clinical-records';
+} from '../domain/clinical-records';
 
-interface TemporaryPharmaceuticalServiceState {
+interface PharmaceuticalServiceFixtureState {
   patients: Patient[];
   attendances: PharmaceuticalServiceAttendance[];
 }
 
-const STORAGE_KEY = 'fen-temporary-pharmaceutical-services';
+const STORAGE_KEY = 'fen-testing-pharmaceutical-services';
 
 export const PHARMACEUTICAL_SERVICE_LABELS: Record<PharmaceuticalServiceKey, string> = {
   'cuidados-farmaceuticos': 'Cuidados farmacêuticos',
@@ -35,8 +35,8 @@ export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
 };
 
 @Injectable({ providedIn: 'root' })
-export class TemporaryPharmaceuticalServiceStore {
-  private readonly state = signal<TemporaryPharmaceuticalServiceState>(this.readInitialState());
+export class PharmaceuticalServiceFixture {
+  private readonly state = signal<PharmaceuticalServiceFixtureState>(this.readInitialState());
 
   readonly patients = computed(() => this.state().patients);
   readonly attendances = computed(() => this.state().attendances);
@@ -112,7 +112,7 @@ export class TemporaryPharmaceuticalServiceStore {
   createAttendance(
     input: CreatePharmaceuticalServiceAttendanceInput,
   ): PharmaceuticalServiceAttendance {
-    const patient = this.upsertPatient(input.patient);
+    const patient = this.upsertPatient(input.patient!);
     const id = this.createId();
     const attendance: PharmaceuticalServiceAttendance = {
       id,
@@ -134,6 +134,14 @@ export class TemporaryPharmaceuticalServiceStore {
             returnNumber: 0,
           }
         : null,
+      followUpProgress: {
+        returnCount: input.followUp?.returnCount ?? 0,
+        completedReturns: 0,
+        nextReturnNumber: input.followUp ? 1 : null,
+        canContinue: Boolean(input.followUp),
+      },
+      followUpHistory: [],
+      editAllowed: true,
     };
 
     this.updateState({
@@ -169,7 +177,7 @@ export class TemporaryPharmaceuticalServiceStore {
       return undefined;
     }
 
-    const patient = this.upsertPatient(input.patient);
+    const patient = this.upsertPatient(input.patient!);
     const id = this.createId();
     const attendance: PharmaceuticalServiceAttendance = {
       id,
@@ -192,6 +200,15 @@ export class TemporaryPharmaceuticalServiceStore {
         previousAttendanceId: previousAttendance.id,
         returnNumber: nextReturnNumber,
       },
+      followUpProgress: {
+        returnCount: previousAttendance.followUp.returnCount,
+        completedReturns: nextReturnNumber,
+        nextReturnNumber:
+          nextReturnNumber < previousAttendance.followUp.returnCount ? nextReturnNumber + 1 : null,
+        canContinue: nextReturnNumber < previousAttendance.followUp.returnCount,
+      },
+      followUpHistory: [],
+      editAllowed: true,
     };
 
     this.updateState({
@@ -439,13 +456,13 @@ export class TemporaryPharmaceuticalServiceStore {
     return true;
   }
 
-  private updateState(nextState: TemporaryPharmaceuticalServiceState): void {
+  private updateState(nextState: PharmaceuticalServiceFixtureState): void {
     this.state.set(nextState);
     this.writeState(nextState);
   }
 
-  private readInitialState(): TemporaryPharmaceuticalServiceState {
-    const fallback: TemporaryPharmaceuticalServiceState = {
+  private readInitialState(): PharmaceuticalServiceFixtureState {
+    const fallback: PharmaceuticalServiceFixtureState = {
       patients: [],
       attendances: [],
     };
@@ -457,7 +474,7 @@ export class TemporaryPharmaceuticalServiceStore {
         return fallback;
       }
 
-      const parsedState = JSON.parse(rawState) as Partial<TemporaryPharmaceuticalServiceState>;
+      const parsedState = JSON.parse(rawState) as Partial<PharmaceuticalServiceFixtureState>;
 
       return {
         patients: Array.isArray(parsedState.patients)
@@ -477,7 +494,7 @@ export class TemporaryPharmaceuticalServiceStore {
     }
   }
 
-  private writeState(state: TemporaryPharmaceuticalServiceState): void {
+  private writeState(state: PharmaceuticalServiceFixtureState): void {
     try {
       globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
