@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { adminOnlyGuard } from './domain/admin-only.guard';
+import { ATTENDANCE_FORM_MODES } from './domain/attendance-form-mode';
 import { AtendimentosPage } from './pages/atendimentos-page/atendimentos-page';
 import { BuscaAvancadaAtendimentosPage } from './pages/busca-avancada-atendimentos-page/busca-avancada-atendimentos-page';
 import { AdminFuncionariosPage } from './pages/admin-funcionarios-page/admin-funcionarios-page';
@@ -55,10 +56,17 @@ export const routes: Routes = [
   {
     path: 'atendimentos/novo',
     component: ServicosFarmaceuticosPage,
+    data: { attendanceFormMode: ATTENDANCE_FORM_MODES.CREATE },
   },
   {
     path: 'atendimentos/:id/continuar',
     component: ServicosFarmaceuticosPage,
+    data: { attendanceFormMode: ATTENDANCE_FORM_MODES.FOLLOW_UP_RETURN },
+  },
+  {
+    path: 'atendimentos/:id/editar',
+    component: ServicosFarmaceuticosPage,
+    data: { attendanceFormMode: ATTENDANCE_FORM_MODES.EDIT },
   },
   {
     path: 'atendimentos/:id',

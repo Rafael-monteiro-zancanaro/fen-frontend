@@ -52,21 +52,18 @@ export interface AtendimentoPrintMedication {
   expirationDate: string;
   dosage: string;
   administrationRoute: string;
+  prescriberName: string;
+  prescriberRegistration: string;
 }
 
 export interface AtendimentoPrintMedicationService {
   medications: AtendimentoPrintMedication[];
-  prescriberName: string;
-  crmCro: string;
-  administrationRoute: string;
 }
 
 export interface AtendimentoPrintComplementaryServices {
   selectedItems: string[];
   signsAndSymptoms: string;
   medications: AtendimentoPrintMedication[];
-  recordNumber: string;
-  attendanceDate: string;
 }
 
 export interface AtendimentoPrintFollowUp {
@@ -139,21 +136,13 @@ function mapCare(care: CareServiceData): AtendimentoPrintCare {
 
 function mapInjectable(service: InjectableServiceData): AtendimentoPrintMedicationService {
   return {
-    medications: service.medications.map((item) =>
-      mapMedication(item, service.administrationRoute),
-    ),
-    prescriberName: service.prescriberName,
-    crmCro: service.crmCro,
-    administrationRoute: service.administrationRoute,
+    medications: service.medications.map(mapMedication),
   };
 }
 
 function mapInhalotherapy(service: InhalotherapyServiceData): AtendimentoPrintMedicationService {
   return {
-    medications: service.medications.map((item) => mapMedication(item, '')),
-    prescriberName: service.prescriberName,
-    crmCro: service.crmCro,
-    administrationRoute: '',
+    medications: service.medications.map(mapMedication),
   };
 }
 
@@ -177,22 +166,19 @@ function mapComplementaryServices(
   return {
     selectedItems,
     signsAndSymptoms: service.signsAndSymptoms,
-    medications: service.medications.map((item) => mapMedication(item, '')),
-    recordNumber: service.recordNumber,
-    attendanceDate: formatDate(service.attendanceDate),
+    medications: service.medications.map(mapMedication),
   };
 }
 
-function mapMedication(
-  item: ServiceMedicationItem,
-  administrationRoute: string,
-): AtendimentoPrintMedication {
+function mapMedication(item: ServiceMedicationItem): AtendimentoPrintMedication {
   return {
     medicationConcentration: item.medicationConcentration,
     batch: item.batch,
     expirationDate: formatDate(item.expirationDate),
     dosage: item.dosage,
-    administrationRoute,
+    administrationRoute: item.administrationRoute ?? '',
+    prescriberName: item.prescriberName ?? '',
+    prescriberRegistration: item.prescriberRegistration ?? '',
   };
 }
 

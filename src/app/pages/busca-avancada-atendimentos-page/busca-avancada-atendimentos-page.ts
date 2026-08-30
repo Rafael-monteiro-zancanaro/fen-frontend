@@ -5,23 +5,18 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import { bootstrapEye, bootstrapSearch, bootstrapXCircle } from '@ng-icons/bootstrap-icons';
 import { MedicationAutocomplete } from '../../components/medication-autocomplete/medication-autocomplete';
 import { PaginationControls } from '../../components/pagination-controls/pagination-controls';
-import {
-  AdvancedAttendanceSearchResult,
-  AttendanceStatus,
-  Medication,
-  ServiceMedicationItem,
-} from '../../domain/clinical-records';
-import {
-  ATTENDANCE_STATUS_LABELS,
-  TemporaryPharmaceuticalServiceStore,
-} from '../../domain/temporary-pharmaceutical-service-store';
+import { ATTENDANCE_STATUS_LABELS } from '../../domain/attendance-labels';
+import { AttendanceStatus, Medication, ServiceMedicationItem } from '../../domain/clinical-records';
 import {
   PAGE_SIZE_OPTIONS,
   PageSize,
   buildPagination,
   normalizePageSize,
-  paginateItems,
 } from '../../domain/pagination';
+import {
+  ServicoFarmaceuticoAdvancedResult,
+  ServicoFarmaceuticoService,
+} from '../../domain/servico-farmaceutico.service';
 import { maskCpf, onlyDigits } from '../../domain/text-masks';
 
 @Component({
@@ -47,21 +42,18 @@ export class BuscaAvancadaAtendimentosPage {
   protected readonly isLoading = signal(false);
   protected readonly warningMessage = signal('');
   protected readonly errorMessage = signal('');
-  protected readonly results = signal<AdvancedAttendanceSearchResult[]>([]);
+  protected readonly results = signal<ServicoFarmaceuticoAdvancedResult[]>([]);
+  protected readonly totalElements = signal(0);
   protected readonly currentPage = signal(1);
   protected readonly pageSize = signal<PageSize>(10);
   protected readonly pagination = computed(() =>
-    buildPagination(this.results().length, this.currentPage(), this.pageSize()),
-  );
-  protected readonly paginatedResults = computed(() =>
-    paginateItems(this.results(), this.currentPage(), this.pageSize()),
+    buildPagination(this.totalElements(), this.currentPage(), this.pageSize()),
   );
 
-  constructor(private readonly store: TemporaryPharmaceuticalServiceStore) {}
+  constructor(private readonly servicoFarmaceuticoService: ServicoFarmaceuticoService) {}
 
   protected updateCpf(input: HTMLInputElement): void {
     const maskedCpf = maskCpf(input.value);
-
     this.cpf.set(maskedCpf);
     input.value = maskedCpf;
     this.currentPage.set(1);
@@ -70,7 +62,6 @@ export class BuscaAvancadaAtendimentosPage {
   protected updateMedicationQuery(value: string): void {
     this.medicationQuery.set(value);
     this.currentPage.set(1);
-
     if (!value.trim()) {
       this.medicationId.set('');
     }
@@ -95,36 +86,16 @@ export class BuscaAvancadaAtendimentosPage {
     if (this.isLoading()) {
       return;
     }
-
-    this.warningMessage.set('');
-    this.errorMessage.set('');
-
     if (!this.hasAnyCriteria()) {
       this.hasSearched.set(false);
       this.results.set([]);
-      this.currentPage.set(1);
+      this.totalElements.set(0);
       this.warningMessage.set('Informe ao menos um critério para realizar a busca.');
       return;
     }
 
-    this.isLoading.set(true);
-
-    try {
-      this.results.set(
-        this.store.searchAttendancesAdvanced({
-          cpfPaciente: onlyDigits(this.cpf()),
-          medicamentoId: this.medicationId(),
-          lote: this.batch(),
-          dataAtendimento: this.attendanceDate(),
-        }),
-      );
-      this.hasSearched.set(true);
-      this.currentPage.set(1);
-    } catch {
-      this.errorMessage.set('Não foi possível realizar a busca. Tente novamente.');
-    } finally {
-      this.isLoading.set(false);
-    }
+    this.currentPage.set(1);
+    this.loadResults();
   }
 
   protected clearFilters(): void {
@@ -136,6 +107,7 @@ export class BuscaAvancadaAtendimentosPage {
     this.warningMessage.set('');
     this.errorMessage.set('');
     this.results.set([]);
+    this.totalElements.set(0);
     this.hasSearched.set(false);
     this.currentPage.set(1);
   }
@@ -143,15 +115,23 @@ export class BuscaAvancadaAtendimentosPage {
   protected updatePageSize(value: string | number): void {
     this.pageSize.set(normalizePageSize(Number(value)));
     this.currentPage.set(1);
+    if (this.hasSearched()) {
+      this.loadResults();
+    }
   }
 
   protected goToPreviousPage(): void {
-    this.currentPage.set(Math.max(1, this.pagination().currentPage - 1));
+    if (this.currentPage() > 1) {
+      this.currentPage.update((page) => page - 1);
+      this.loadResults();
+    }
   }
 
   protected goToNextPage(): void {
-    const pagination = this.pagination();
-    this.currentPage.set(Math.min(pagination.totalPages, pagination.currentPage + 1));
+    if (this.currentPage() < this.pagination().totalPages) {
+      this.currentPage.update((page) => page + 1);
+      this.loadResults();
+    }
   }
 
   protected formatCpf(cpf: string): string {
@@ -159,7 +139,8 @@ export class BuscaAvancadaAtendimentosPage {
   }
 
   protected formatDate(value: string): string {
-    return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(value));
+    const dateTime = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value;
+    return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(dateTime));
   }
 
   protected statusLabel(status: AttendanceStatus): string {
@@ -170,34 +151,47 @@ export class BuscaAvancadaAtendimentosPage {
     if (status === 'CONCLUIDO') {
       return 'badge badge-success';
     }
-
-    if (status === 'EXPIRADO') {
-      return 'badge badge-warning';
-    }
-
-    return 'badge badge-secondary';
+    return status === 'EXPIRADO' ? 'badge badge-warning' : 'badge badge-secondary';
   }
 
   protected totalLabel(): string {
-    const total = this.results().length;
-
+    const total = this.totalElements();
     return total === 1 ? '1 atendimento encontrado' : `${total} atendimentos encontrados`;
   }
 
-  protected matchedMedicationLabel(result: AdvancedAttendanceSearchResult): string {
-    const item = result.matchedMedications[0];
-
-    if (!item) {
-      return 'Não filtrado';
-    }
-
-    return item.medicationConcentration;
+  protected matchedMedicationLabel(result: ServicoFarmaceuticoAdvancedResult): string {
+    return result.matchedMedications[0]?.medicationConcentration ?? 'Não filtrado';
   }
 
-  protected matchedBatchLabel(result: AdvancedAttendanceSearchResult): string {
-    const item = result.matchedMedications[0];
+  protected matchedBatchLabel(result: ServicoFarmaceuticoAdvancedResult): string {
+    return result.matchedMedications[0]?.batch ?? '-';
+  }
 
-    return item?.batch || '-';
+  private loadResults(): void {
+    this.isLoading.set(true);
+    this.warningMessage.set('');
+    this.errorMessage.set('');
+    this.servicoFarmaceuticoService
+      .advancedSearch(
+        onlyDigits(this.cpf()),
+        this.medicationId(),
+        this.batch(),
+        this.attendanceDate(),
+        this.currentPage() - 1,
+        this.pageSize(),
+      )
+      .subscribe({
+        next: (page) => {
+          this.results.set(page.content);
+          this.totalElements.set(page.totalElements);
+          this.hasSearched.set(true);
+          this.isLoading.set(false);
+        },
+        error: () => {
+          this.errorMessage.set('Não foi possível realizar a busca. Tente novamente.');
+          this.isLoading.set(false);
+        },
+      });
   }
 
   private hasAnyCriteria(): boolean {

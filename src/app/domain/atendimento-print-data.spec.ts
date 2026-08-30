@@ -10,6 +10,9 @@ describe('buildAtendimentoPrintData', () => {
       batch: 'L123',
       expirationDate: '2027-02-10',
       dosage: '1 ampola',
+      administrationRoute: 'Intramuscular',
+      prescriberName: 'Dra. Julia',
+      prescriberRegistration: 'CRM 1234',
     };
     const inhalotherapyMedication: ServiceMedicationItem = {
       id: 'inhalotherapy-med-1',
@@ -18,6 +21,9 @@ describe('buildAtendimentoPrintData', () => {
       batch: 'N456',
       expirationDate: '2027-03-20',
       dosage: '5 ml',
+      administrationRoute: 'Inalatória',
+      prescriberName: 'Dr. Pedro',
+      prescriberRegistration: 'CRM 5678',
     };
     const complementaryMedication: ServiceMedicationItem = {
       id: 'complementary-med-1',
@@ -63,14 +69,9 @@ describe('buildAtendimentoPrintData', () => {
       },
       injectable: {
         medications: [injectableMedication],
-        administrationRoute: 'Intramuscular',
-        prescriberName: 'Dra. Julia',
-        crmCro: 'CRM 1234',
       },
       inhalotherapy: {
         medications: [inhalotherapyMedication],
-        prescriberName: 'Dr. Pedro',
-        crmCro: 'CRM 5678',
       },
       complementaryServices: {
         homeCare: true,
@@ -78,8 +79,6 @@ describe('buildAtendimentoPrintData', () => {
         minorDisorderIndication: true,
         signsAndSymptoms: 'Dor leve e febre baixa.',
         medications: [complementaryMedication],
-        recordNumber: 'F-001',
-        attendanceDate: '2026-08-18',
       },
       followUp: {
         returnIntervalDays: 7,
@@ -124,6 +123,8 @@ describe('buildAtendimentoPrintData', () => {
         expirationDate: '10/02/2027',
         dosage: '1 ampola',
         administrationRoute: 'Intramuscular',
+        prescriberName: 'Dra. Julia',
+        prescriberRegistration: 'CRM 1234',
       },
     ]);
     expect(data.inhalotherapy?.medications).toEqual([
@@ -132,7 +133,9 @@ describe('buildAtendimentoPrintData', () => {
         batch: 'N456',
         expirationDate: '20/03/2027',
         dosage: '5 ml',
-        administrationRoute: '',
+        administrationRoute: 'Inalatória',
+        prescriberName: 'Dr. Pedro',
+        prescriberRegistration: 'CRM 5678',
       },
     ]);
     expect(data.complementaryServices?.medications).toEqual([
@@ -142,6 +145,8 @@ describe('buildAtendimentoPrintData', () => {
         expirationDate: '30/04/2027',
         dosage: '1 comprimido a cada 8 horas',
         administrationRoute: '',
+        prescriberName: '',
+        prescriberRegistration: '',
       },
     ]);
     expect(data.complementaryServices?.selectedItems).toEqual([

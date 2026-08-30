@@ -17,7 +17,7 @@
 
   @if (isOpen()) {
     <div
-      class="combobox-content absolute left-0 right-0 top-[calc(100%+0.25rem)] max-h-64 overflow-y-auto"
+      class="combobox-content absolute left-0 right-0 top-[calc(100%+0.25rem)] z-50 max-h-64 overflow-y-auto"
       [id]="inputId + '-options'"
       role="listbox"
       [attr.data-medication-options]="section"
