@@ -1,6 +1,6 @@
 import { Component, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   bootstrapCheckLg,
@@ -50,6 +50,7 @@ export class AtendimentosPage {
   protected readonly successMessage = signal('');
   protected readonly searchTerm = signal('');
   protected readonly statusFilter = signal<AttendanceStatusFilter>('TODOS');
+  protected readonly returnsTodayFilter = signal(false);
   protected readonly currentPage = signal(1);
   protected readonly pageSize = signal<PageSize>(10);
   protected readonly totalElements = signal(0);
@@ -61,7 +62,10 @@ export class AtendimentosPage {
     buildPagination(this.totalElements(), this.currentPage(), this.pageSize()),
   );
   protected readonly hasActiveCriteria = computed(
-    () => this.statusFilter() !== 'TODOS' || Boolean(this.searchTerm().trim()),
+    () =>
+      this.statusFilter() !== 'TODOS' ||
+      this.returnsTodayFilter() ||
+      Boolean(this.searchTerm().trim()),
   );
   protected readonly isSystemEmpty = computed(
     () => this.totalElements() === 0 && !this.hasActiveCriteria(),
@@ -76,20 +80,28 @@ export class AtendimentosPage {
   constructor(
     private readonly servicoFarmaceuticoService: ServicoFarmaceuticoService,
     private readonly atendimentoPdfService: AtendimentoPdfService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
   ) {
-    this.loadAttendances();
+    this.route.queryParamMap.subscribe((params) => {
+      this.searchTerm.set(params.get('query') ?? '');
+      this.statusFilter.set(this.statusFromQueryParam(params.get('status')));
+      this.returnsTodayFilter.set(params.get('retornoHoje') === 'true');
+      this.currentPage.set(1);
+      this.loadAttendances();
+    });
   }
 
   protected updateSearchTerm(term: string): void {
-    this.searchTerm.set(term);
-    this.currentPage.set(1);
-    this.loadAttendances();
+    this.navigateWithCriteria({ query: term });
   }
 
   protected updateStatusFilter(filter: AttendanceStatusFilter): void {
-    this.statusFilter.set(filter);
-    this.currentPage.set(1);
-    this.loadAttendances();
+    this.navigateWithCriteria({ status: filter });
+  }
+
+  protected clearReturnsTodayFilter(): void {
+    this.navigateWithCriteria({ returnsToday: false });
   }
 
   protected updatePageSize(value: string | number): void {
@@ -219,7 +231,13 @@ export class AtendimentosPage {
     this.isLoading.set(true);
     this.errorMessage.set('');
     this.servicoFarmaceuticoService
-      .list(this.searchTerm(), this.statusFilter(), this.currentPage() - 1, this.pageSize())
+      .list(
+        this.searchTerm(),
+        this.statusFilter(),
+        this.returnsTodayFilter(),
+        this.currentPage() - 1,
+        this.pageSize(),
+      )
       .subscribe({
         next: (page) => {
           this.attendances.set(page.content);
@@ -237,5 +255,34 @@ export class AtendimentosPage {
 
   private localDateTime(value: string): string {
     return /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value;
+  }
+
+  private navigateWithCriteria(
+    criteria: Partial<{ query: string; status: AttendanceStatusFilter; returnsToday: boolean }>,
+  ): void {
+    const query = criteria.query ?? this.searchTerm();
+    const status = criteria.status ?? this.statusFilter();
+    const returnsToday = criteria.returnsToday ?? this.returnsTodayFilter();
+
+    this.searchTerm.set(query);
+    this.statusFilter.set(status);
+    this.returnsTodayFilter.set(returnsToday);
+    this.currentPage.set(1);
+    this.loadAttendances();
+
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        query: query.trim() || null,
+        status: status === 'TODOS' ? null : status,
+        retornoHoje: returnsToday ? 'true' : null,
+      },
+    });
+  }
+
+  private statusFromQueryParam(value: string | null): AttendanceStatusFilter {
+    return value === 'AGUARDANDO_RETORNO' || value === 'CONCLUIDO' || value === 'EXPIRADO'
+      ? value
+      : 'TODOS';
   }
 }

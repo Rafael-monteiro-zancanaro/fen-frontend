@@ -1,13 +1,28 @@
-import { Component } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
+import { Params, Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   bootstrapActivity,
   bootstrapCalendarCheck,
-  bootstrapCheckCircle,
   bootstrapClock,
   bootstrapExclamationTriangle,
 } from '@ng-icons/bootstrap-icons';
 import { BaseChartDirective } from 'ng2-charts';
+import {
+  ATTENDANCE_STATUS_LABELS,
+  PHARMACEUTICAL_SERVICE_LABELS,
+} from '../../domain/attendance-labels';
+import { AttendanceStatus, PharmaceuticalServiceKey } from '../../domain/clinical-records';
+import { DashboardService, DashboardSummary } from '../../domain/dashboard.service';
+
+interface DashboardCard {
+  id: string;
+  label: string;
+  detail: string;
+  value: number;
+  icon: string;
+  queryParams: Params;
+}
 
 @Component({
   selector: 'app-inicio-page',
@@ -16,7 +31,6 @@ import { BaseChartDirective } from 'ng2-charts';
     provideIcons({
       bootstrapActivity,
       bootstrapCalendarCheck,
-      bootstrapCheckCircle,
       bootstrapClock,
       bootstrapExclamationTriangle,
     }),
@@ -24,137 +38,149 @@ import { BaseChartDirective } from 'ng2-charts';
   templateUrl: './inicio-page.html',
 })
 export class InicioPage {
-  protected readonly summaryCards = [
-    { label: 'Atendimentos hoje', value: '18', detail: '6 em andamento', icon: 'bootstrapActivity' },
-    { label: 'Pendentes', value: '7', detail: '2 aguardando retorno', icon: 'bootstrapExclamationTriangle' },
-    { label: 'Finalizados no mes', value: '265', detail: 'Alta de 12%', icon: 'bootstrapCheckCircle' },
-    { label: 'Tempo medio', value: '32 min', detail: 'Triagem ate conclusao', icon: 'bootstrapClock' },
-  ];
+  protected readonly summary = signal<DashboardSummary | null>(null);
+  protected readonly isLoading = signal(true);
+  protected readonly errorMessage = signal('');
 
-  protected readonly typeSegments = [
-    { label: 'Consulta farmaceutica', value: 42, color: '#5d74f7' },
-    { label: 'Acompanhamento', value: 28, color: '#3f7657' },
-    { label: 'Orientacao', value: 18, color: '#d6c100' },
-    { label: 'Retorno', value: 12, color: '#aa5d75' },
-  ];
+  protected readonly summaryCards = computed<DashboardCard[]>(() => {
+    const indicators = this.summary()?.indicators;
+    if (!indicators) return [];
 
-  protected readonly monthlyBars = [42, 55, 61, 74, 68, 83, 91, 88, 96, 102, 117, 124];
-
-  protected readonly chartLabels = [
-    'Jan',
-    'Fev',
-    'Mar',
-    'Abr',
-    'Mai',
-    'Jun',
-    'Jul',
-    'Ago',
-    'Set',
-    'Out',
-    'Nov',
-    'Dez',
-  ];
-
-  protected readonly attendanceByMonthData = {
-    labels: this.chartLabels,
-    datasets: [
+    return [
       {
-        label: 'Atendimentos',
-        data: this.monthlyBars,
-        borderColor: '#7f384a',
-        backgroundColor: 'rgba(127, 56, 74, 0.18)',
-        fill: true,
-        tension: 0.35,
-        pointRadius: 3,
-        pointBackgroundColor: '#7f384a',
-      },
-    ],
-  };
-
-  protected readonly attendanceTypeData = {
-    labels: this.typeSegments.map((segment) => segment.label),
-    datasets: [
-      {
-        data: this.typeSegments.map((segment) => segment.value),
-        backgroundColor: this.typeSegments.map((segment) => segment.color),
-        borderColor: '#ffffff',
-        borderWidth: 3,
-      },
-    ],
-  };
-
-  protected readonly statusData = {
-    labels: this.chartLabels,
-    datasets: [
-      {
-        label: 'Finalizados',
-        data: [34, 45, 51, 63, 70, 78, 84, 91, 96, 104, 113, 121],
-        borderColor: '#3f7657',
-        backgroundColor: 'rgba(63, 118, 87, 0.12)',
-        tension: 0.35,
+        id: 'awaiting-return',
+        label: 'Aguardando retorno',
+        detail: 'Atendimentos com reconsulta pendente',
+        value: indicators.awaitingReturn,
+        icon: 'bootstrapClock',
+        queryParams: { status: 'AGUARDANDO_RETORNO' },
       },
       {
-        label: 'Pendentes',
-        data: [12, 14, 11, 16, 18, 15, 17, 19, 21, 20, 18, 16],
-        borderColor: '#b4233b',
-        backgroundColor: 'rgba(180, 35, 59, 0.12)',
-        tension: 0.35,
+        id: 'returns-today',
+        label: 'Reconsultas hoje',
+        detail: 'Retornos previstos para a data atual',
+        value: indicators.returnsToday,
+        icon: 'bootstrapCalendarCheck',
+        queryParams: { retornoHoje: 'true' },
       },
-    ],
-  };
+      {
+        id: 'total-attendances',
+        label: 'Atendimentos totais',
+        detail: 'Histórico de serviços farmacêuticos',
+        value: indicators.totalAttendances,
+        icon: 'bootstrapActivity',
+        queryParams: {},
+      },
+      {
+        id: 'expired-attendances',
+        label: 'Atendimentos expirados',
+        detail: 'Reconsultas com prazo vencido',
+        value: indicators.expired,
+        icon: 'bootstrapExclamationTriangle',
+        queryParams: { status: 'EXPIRADO' },
+      },
+    ];
+  });
 
-  protected readonly lineChartOptions = {
+  protected readonly serviceTypesChartData = computed(() => {
+    const types = this.summary()?.serviceTypes ?? [];
+    return {
+      labels: types.map((item) => this.serviceTypeLabel(item.type)),
+      datasets: [
+        {
+          label: 'Atendimentos',
+          data: types.map((item) => item.count),
+          backgroundColor: ['#7f384a', '#aa5d75', '#42677d', '#3f7657'],
+          borderRadius: 6,
+        },
+      ],
+    };
+  });
+
+  protected readonly statusesChartData = computed(() => {
+    const statuses = this.summary()?.statuses ?? [];
+    return {
+      labels: statuses.map((item) => ATTENDANCE_STATUS_LABELS[item.status]),
+      datasets: [
+        {
+          label: 'Atendimentos',
+          data: statuses.map((item) => item.count),
+          backgroundColor: ['#3f7657', '#7f384a', '#9a6700'],
+          borderRadius: 6,
+        },
+      ],
+    };
+  });
+
+  protected readonly barChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        labels: {
-          boxWidth: 12,
-          color: '#27272a',
-          font: {
-            size: 12,
-            weight: 600,
-          },
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (context: { parsed: { y: number | null } }) =>
+            `Quantidade: ${context.parsed.y ?? 0}`,
         },
       },
     },
     scales: {
       x: {
-        grid: {
-          color: '#f0f0f1',
-        },
-        ticks: {
-          color: '#71717a',
-        },
+        grid: { display: false },
+        ticks: { color: '#71717a' },
       },
       y: {
         beginAtZero: true,
-        grid: {
-          color: '#e4e4e7',
-        },
-        ticks: {
-          color: '#71717a',
-        },
+        ticks: { precision: 0, color: '#71717a' },
+        grid: { color: '#e4e4e7' },
       },
     },
   };
 
-  protected readonly doughnutChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: '62%',
-    plugins: {
-      legend: {
-        position: 'bottom' as const,
-        labels: {
-          boxWidth: 12,
-          color: '#27272a',
-          font: {
-            size: 12,
-            weight: 600,
-          },
-        },
+  constructor(
+    private readonly dashboardService: DashboardService,
+    private readonly router: Router,
+  ) {
+    this.loadDashboard();
+  }
+
+  protected retry(): void {
+    this.loadDashboard();
+  }
+
+  protected navigateToAttendances(queryParams: Params): void {
+    void this.router.navigate(['/atendimentos'], { queryParams });
+  }
+
+  protected hasServiceTypeData(): boolean {
+    return (this.summary()?.serviceTypes ?? []).some((item) => item.count > 0);
+  }
+
+  protected hasStatusData(): boolean {
+    return (this.summary()?.statuses ?? []).some((item) => item.count > 0);
+  }
+
+  private loadDashboard(): void {
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+    this.dashboardService.getSummary().subscribe({
+      next: (summary) => {
+        this.summary.set(summary);
+        this.isLoading.set(false);
       },
-    },
-  };
+      error: () => {
+        this.summary.set(null);
+        this.errorMessage.set('Não foi possível carregar o dashboard. Tente novamente.');
+        this.isLoading.set(false);
+      },
+    });
+  }
+
+  protected serviceTypeLabel(type: PharmaceuticalServiceKey): string {
+    return PHARMACEUTICAL_SERVICE_LABELS[type];
+  }
+
+  protected statusLabel(status: AttendanceStatus): string {
+    return ATTENDANCE_STATUS_LABELS[status];
+  }
 }

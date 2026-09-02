@@ -57,6 +57,7 @@ export class ServicoFarmaceuticoService {
   list(
     query: string,
     status: AttendanceStatusFilter,
+    retornoHoje: boolean,
     page: number,
     size: number,
   ): Observable<ApiPage<ServicoFarmaceuticoSummary>> {
@@ -64,6 +65,9 @@ export class ServicoFarmaceuticoService {
 
     if (status !== 'TODOS') {
       params = params.set('status', status);
+    }
+    if (retornoHoje) {
+      params = params.set('retornoHoje', true);
     }
 
     return this.http.get<ApiPage<ServicoFarmaceuticoSummary>>(this.resourceUrl, { params });
