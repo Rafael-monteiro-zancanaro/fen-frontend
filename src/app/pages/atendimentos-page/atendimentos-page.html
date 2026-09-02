@@ -73,6 +73,21 @@
             </div>
           </div>
 
+          @if (returnsTodayFilter()) {
+            <div
+              data-returns-today-filter
+              class="mb-4 flex flex-wrap items-center gap-2 rounded-lg bg-app-surface-subtle p-3"
+            >
+              <span class="badge badge-primary">Reconsultas hoje</span>
+              <span class="text-sm text-app-muted-foreground">
+                Exibindo atendimentos com retorno previsto para hoje.
+              </span>
+              <button class="btn btn-ghost btn-sm" type="button" (click)="clearReturnsTodayFilter()">
+                Remover filtro
+              </button>
+            </div>
+          }
+
           <div class="data-table-toolbar">
             <div class="field min-w-64 flex-1">
               <label for="attendanceSearch" class="label">Pesquisar atendimentos</label>

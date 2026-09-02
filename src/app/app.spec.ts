@@ -245,6 +245,26 @@ const clinicalRecordsTestInterceptor: HttpInterceptorFn = (request) => {
       );
     }
   }
+  if (url.pathname === '/api/dashboard') {
+    return of(
+      new HttpResponse({
+        body: {
+          indicators: { awaitingReturn: 2, returnsToday: 1, totalAttendances: 8, expired: 3 },
+          serviceTypes: [
+            { type: 'cuidados-farmaceuticos', count: 4 },
+            { type: 'aplicacao-injetaveis', count: 2 },
+            { type: 'inaloterapia', count: 1 },
+            { type: 'servicos-farmaceuticos', count: 0 },
+          ],
+          statuses: [
+            { status: 'CONCLUIDO', count: 3 },
+            { status: 'AGUARDANDO_RETORNO', count: 2 },
+            { status: 'EXPIRADO', count: 3 },
+          ],
+        },
+      }),
+    );
+  }
   if (url.pathname.startsWith('/api/recuperacoes-senha')) {
     if (request.method === 'GET' && id)
       return of(
@@ -505,15 +525,12 @@ describe('App', () => {
     );
     expect(compiled.querySelector('header nav')?.textContent).not.toContain('Cadastro');
     expect(compiled.querySelector('main[data-page="inicio"] h1')?.textContent).toContain(
-      'Painel de atendimentos',
+      'Dashboard',
     );
     expect(compiled.querySelectorAll('[data-dashboard-card]').length).toBe(4);
     expect(compiled.querySelectorAll('ng-icon').length).toBeGreaterThanOrEqual(4);
     expect(
-      compiled.querySelector('[data-chart="atendimentos-mes"] canvas[baseChart]'),
-    ).toBeTruthy();
-    expect(
-      compiled.querySelector('[data-chart="tipos-atendimento"] canvas[baseChart]'),
+      compiled.querySelector('[data-chart="tipos-servico"] canvas[baseChart]'),
     ).toBeTruthy();
     expect(
       compiled.querySelector('[data-chart="status-atendimentos"] canvas[baseChart]'),
