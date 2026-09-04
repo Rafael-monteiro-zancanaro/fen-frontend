@@ -14,6 +14,12 @@
     </div>
 
     <form class="card w-full" aria-labelledby="login-title" (submit)="enter(); $event.preventDefault()">
+      @if (registrationMessage) {
+        <div class="alert alert-success">
+          <span class="marker marker-success"></span>
+          <div><p class="alert-title">{{ registrationMessage }}</p></div>
+        </div>
+      }
       <div class="card-content flex flex-col gap-4">
         <div class="field">
           <label for="email" class="label label-required">E-mail</label>

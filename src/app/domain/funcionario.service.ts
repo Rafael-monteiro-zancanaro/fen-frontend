@@ -9,6 +9,7 @@ export type InternshipType = 'Obrigatório' | 'Não obrigatório';
 export type EmployeeStatus = 'Ativo' | 'Pendente';
 export interface BasePharmacyEmployee {
   id: string;
+  userId: string;
   name: string;
   email: string;
   cpf: string;
@@ -31,6 +32,7 @@ export interface InternEmployee extends BasePharmacyEmployee {
 export type PharmacyEmployee = PharmacistEmployee | InternEmployee;
 interface ApiEmployee {
   id: string;
+  usuarioId: string;
   nome: string;
   email: string;
   cpf?: string;
@@ -63,9 +65,13 @@ export class FuncionarioService {
       .patch<ApiEmployee>(`${this.url}/${id}/responsavel-tecnico`, { responsavelTecnico })
       .pipe(map((e) => this.toEmployee(e)));
   }
+  efetivar(usuarioId: string): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/api/admin/usuarios/${usuarioId}/aprovar`, null);
+  }
   private toEmployee(e: ApiEmployee): PharmacyEmployee {
     const base: BasePharmacyEmployee = {
       id: e.id,
+      userId: e.usuarioId,
       name: e.nome,
       email: e.email,
       cpf: e.cpf ?? '',

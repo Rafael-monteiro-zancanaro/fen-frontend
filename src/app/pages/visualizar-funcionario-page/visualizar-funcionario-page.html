@@ -107,22 +107,24 @@
             </div>
           </div>
 
-          <div class="card-footer justify-end">
-            <button
-              class="btn"
-              [class.btn-primary]="!currentEmployee.isTechnicalResponsible"
-              [class.btn-danger]="currentEmployee.isTechnicalResponsible"
-              type="button"
-              data-toggle-technical-responsible
-              (click)="openTechnicalResponsibleDialog()"
-            >
-              {{
-                currentEmployee.isTechnicalResponsible
-                  ? 'Remover responsabilidade técnica'
-                  : 'Definir como responsável técnico'
-              }}
-            </button>
-          </div>
+          @if (canManageTechnicalResponsible(currentEmployee)) {
+            <div class="card-footer justify-end">
+              <button
+                class="btn"
+                [class.btn-primary]="!currentEmployee.isTechnicalResponsible"
+                [class.btn-danger]="currentEmployee.isTechnicalResponsible"
+                type="button"
+                data-toggle-technical-responsible
+                (click)="openTechnicalResponsibleDialog()"
+              >
+                {{
+                  currentEmployee.isTechnicalResponsible
+                    ? 'Remover responsabilidade técnica'
+                    : 'Definir como responsável técnico'
+                }}
+              </button>
+            </div>
+          }
         </section>
       } @else {
         <section class="card">

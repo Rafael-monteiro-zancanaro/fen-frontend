@@ -22,6 +22,9 @@ export class AdminFuncionariosPage {
   protected readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal('');
+  protected readonly successMessage = signal('');
+  protected readonly isApproving = signal(false);
+  protected readonly employeeToApprove = signal<PharmacyEmployee | undefined>(undefined);
   protected readonly searchTerm = signal('');
   protected readonly currentPage = signal(1);
   protected readonly pageSize = signal<PageSize>(10);
@@ -77,6 +80,39 @@ export class AdminFuncionariosPage {
   protected isTechnicalResponsible(employee: PharmacyEmployee): boolean {
     return employee.role !== 'ESTAGIARIO' && employee.isTechnicalResponsible;
   }
+
+  protected openApprovalDialog(employee: PharmacyEmployee): void {
+    this.errorMessage.set('');
+    this.successMessage.set('');
+    this.employeeToApprove.set(employee);
+  }
+
+  protected closeApprovalDialog(): void {
+    if (!this.isApproving()) {
+      this.employeeToApprove.set(undefined);
+    }
+  }
+
+  protected confirmApproval(): void {
+    const employee = this.employeeToApprove();
+    if (!employee || employee.status !== 'Pendente' || this.isApproving()) {
+      return;
+    }
+    this.isApproving.set(true);
+    this.employeeService.efetivar(employee.userId).subscribe({
+      next: () => {
+        this.isApproving.set(false);
+        this.employeeToApprove.set(undefined);
+        this.successMessage.set('Cadastro efetivado com sucesso.');
+        this.load();
+      },
+      error: () => {
+        this.isApproving.set(false);
+        this.errorMessage.set('Não foi possível efetivar o cadastro.');
+      },
+    });
+  }
+
   private load(): void {
     this.isLoading.set(true);
     this.errorMessage.set('');

@@ -15,6 +15,8 @@ export class LoginPage {
   protected senha = '';
   protected error = '';
   protected loading = false;
+  protected readonly registrationMessage =
+    typeof history === 'undefined' ? '' : (history.state?.registrationMessage ?? '');
 
   protected enter(): void {
     if (this.loading) return;

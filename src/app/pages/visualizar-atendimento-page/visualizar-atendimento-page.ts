@@ -38,7 +38,13 @@ export class VisualizarAtendimentoPage {
     private readonly servicoFarmaceuticoService: ServicoFarmaceuticoService,
     private readonly atendimentoPdfService: AtendimentoPdfService,
   ) {
-    const id = route.snapshot.paramMap.get('id');
+    route.paramMap.subscribe((params) => this.loadAttendance(params.get('id')));
+  }
+
+  private loadAttendance(id: string | null): void {
+    this.isLoading.set(true);
+    this.attendance.set(null);
+
     if (!id) {
       this.isLoading.set(false);
       return;
