@@ -1600,6 +1600,65 @@ describe('App', () => {
     ).toBeTruthy();
   });
 
+  it('should open the selected previous attendance from the follow-up history', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
+    const initialAttendance = attendanceStore.createAttendance({
+      patient: {
+        name: 'Bruna Santos',
+        cpf: '44455566677',
+        birthDate: '1990-06-06',
+        cellPhone: '44922222222',
+        gender: 'feminino',
+        address: 'Rua A',
+        city: 'Maringá',
+        state: 'PR',
+        phone: '',
+        responsibleName: '',
+      },
+      selectedServices: ['inaloterapia'],
+      care: null,
+      injectable: null,
+      inhalotherapy: { medications: [] },
+      complementaryServices: null,
+      followUp: {
+        returnIntervalDays: 7,
+        returnCount: 1,
+      },
+    });
+    const firstReturn = attendanceStore.createFollowUpReturn(initialAttendance.id, {
+      patient: initialAttendance.patient,
+      selectedServices: ['cuidados-farmaceuticos'],
+      care: {
+        bloodGlucose: '98',
+        systolicPressure: '',
+        diastolicPressure: '',
+        bodyTemperature: '',
+      },
+      injectable: null,
+      inhalotherapy: null,
+      complementaryServices: null,
+      followUp: null,
+    });
+
+    await router.navigateByUrl(`/atendimentos/${firstReturn!.id}`);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const previousAttendanceLink = fixture.nativeElement.querySelector(
+      `[data-follow-up-history-link="${initialAttendance.id}"]`,
+    ) as HTMLAnchorElement;
+
+    previousAttendanceLink.click();
+    await fixture.whenStable();
+
+    expect(router.url).toBe(`/atendimentos/${initialAttendance.id}`);
+    expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain(
+      `#${initialAttendance.codigo}`,
+    );
+  });
+
   it('should render the pharmaceutical services form with patient lookup and optional steps', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
