@@ -11,7 +11,6 @@ export interface UsuarioRegisterRequest {
   senha: string;
   role: 'FARMACEUTICO' | 'ESTAGIARIO';
   crf?: string;
-  responsavelTecnico?: boolean;
   tipoEstagio?: 'OBRIGATORIO' | 'NAO_OBRIGATORIO';
   supervisorId?: string;
   inicioVigencia?: string;

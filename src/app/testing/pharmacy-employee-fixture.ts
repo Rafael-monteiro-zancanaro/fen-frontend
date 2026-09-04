@@ -4,6 +4,7 @@ import { PharmacyEmployee } from '../domain/funcionario.service';
 const EMPLOYEES: PharmacyEmployee[] = [
   {
     id: 'employee-admin-marina',
+    userId: 'user-admin-marina',
     name: 'Marina Almeida',
     email: 'marina.admin@uem.br',
     cpf: '12345678901',
@@ -15,6 +16,7 @@ const EMPLOYEES: PharmacyEmployee[] = [
   },
   {
     id: 'employee-farmaceutico-carlos',
+    userId: 'user-farmaceutico-carlos',
     name: 'Carlos Mendes',
     email: 'carlos.farmacia@uem.br',
     cpf: '23456789012',
@@ -26,6 +28,7 @@ const EMPLOYEES: PharmacyEmployee[] = [
   },
   {
     id: 'employee-estagiario-julia',
+    userId: 'user-estagiario-julia',
     name: 'Julia Ferreira',
     email: 'julia.estagio@uem.br',
     cpf: '34567890123',

@@ -18,6 +18,13 @@
       </div>
     }
 
+    @if (successMessage()) {
+      <div class="alert alert-success">
+        <span class="marker marker-success"></span>
+        <div><p class="alert-title">{{ successMessage() }}</p></div>
+      </div>
+    }
+
     @if (isLoading()) {
       <section class="card p-5">
         <div class="skeleton h-6 w-52"></div>
@@ -83,7 +90,11 @@
                       <td>{{ employee.email }}</td>
                       <td>{{ roleLabel(employee) }}</td>
                       <td>
-                        <span class="badge badge-success">{{ employee.status }}</span>
+                        <span
+                          class="badge"
+                          [class.badge-warning]="employee.status === 'Pendente'"
+                          [class.badge-success]="employee.status === 'Ativo'"
+                        >{{ employee.status }}</span>
                       </td>
                       <td>
                         <div class="flex flex-nowrap gap-2" data-employee-actions>
@@ -95,6 +106,16 @@
                           >
                             <ng-icon name="bootstrapEye" size="1rem" />
                           </a>
+                          @if (employee.status === 'Pendente') {
+                            <button
+                              class="btn btn-primary btn-sm"
+                              type="button"
+                              data-approve-employee
+                              (click)="openApprovalDialog(employee)"
+                            >
+                              Efetivar
+                            </button>
+                          }
                         </div>
                       </td>
                     </tr>
@@ -117,4 +138,28 @@
       </section>
     }
   </section>
+
+  @if (employeeToApprove(); as employee) {
+    <div class="alert-dialog-overlay" (click)="closeApprovalDialog()"></div>
+    <section class="alert-dialog" data-approve-dialog role="alertdialog" aria-modal="true">
+      <div class="alert-dialog-header">
+        <h2 class="alert-dialog-title">Efetivar cadastro de {{ employee.name }}?</h2>
+        <p class="alert-dialog-description">
+          Após a efetivação, este funcionário poderá acessar o sistema.
+        </p>
+      </div>
+      <div class="alert-dialog-footer">
+        <button class="btn btn-secondary" type="button" (click)="closeApprovalDialog()">Cancelar</button>
+        <button
+          class="btn btn-primary"
+          type="button"
+          data-confirm-approval
+          [disabled]="isApproving()"
+          (click)="confirmApproval()"
+        >
+          Efetivar
+        </button>
+      </div>
+    </section>
+  }
 </main>

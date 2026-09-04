@@ -5,7 +5,7 @@ import { environment } from '../../environments/environment';
 import { FuncionarioService } from './funcionario.service';
 
 describe('FuncionarioService', () => {
-  it('sends pagination filters and the minimal technical-responsibility payload', () => {
+  it('sends pagination filters, approves the existing user, and changes technical responsibility', () => {
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
@@ -17,6 +17,11 @@ describe('FuncionarioService', () => {
     );
     expect(list.request.method).toBe('GET');
     list.flush({ content: [], number: 1, size: 20, totalElements: 0, totalPages: 0 });
+    service.efetivar('usuario-uuid').subscribe();
+    const approval = http.expectOne(`${environment.apiUrl}/api/admin/usuarios/usuario-uuid/aprovar`);
+    expect(approval.request.method).toBe('POST');
+    expect(approval.request.body).toBeNull();
+    approval.flush(null);
     service.alterarResponsavelTecnico('uuid', true).subscribe();
     const patch = http.expectOne(
       `${environment.apiUrl}/api/admin/funcionarios/uuid/responsavel-tecnico`,

@@ -54,7 +54,7 @@ export class VisualizarFuncionarioPage {
   }
 
   protected canManageTechnicalResponsible(employee: PharmacyEmployee): boolean {
-    return employee.role !== 'ESTAGIARIO';
+    return employee.role !== 'ESTAGIARIO' && employee.status === 'Ativo';
   }
 
   protected isTechnicalResponsible(employee: PharmacyEmployee): boolean {

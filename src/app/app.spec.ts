@@ -469,7 +469,7 @@ describe('App', () => {
 
     expect(compiled.querySelector('h1')?.textContent).toContain('Novo por aqui?');
     expect(compiled.querySelector('label[for="nome"]')?.textContent).toContain('Nome completo');
-    expect(compiled.querySelector('input#cpf')?.getAttribute('maxlength')).toBe('11');
+    expect(compiled.querySelector('input#cpf')?.getAttribute('maxlength')).toBe('14');
     expect(
       compiled.querySelector('main[data-page="cadastro"]')?.classList.contains('items-start'),
     ).toBe(true);
@@ -498,7 +498,7 @@ describe('App', () => {
 
     expect(compiled.querySelector('label[for="tipoEstagio"]')?.textContent).toContain('Tipo de');
     expect(compiled.querySelector('label[for="inicioVigencia"]')?.textContent).toContain(
-      'Inicio da vig',
+      'Início da vig',
     );
     expect(compiled.querySelector('label[for="fimVigencia"]')?.textContent).toContain('Fim da vig');
     expect(compiled.querySelector('label[for="supervisor"]')?.textContent).toContain('Supervisor');
