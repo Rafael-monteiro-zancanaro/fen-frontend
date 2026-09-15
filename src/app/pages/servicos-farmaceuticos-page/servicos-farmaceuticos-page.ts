@@ -19,6 +19,7 @@ import {
   CareServiceData,
   ComplementaryServicesData,
   FollowUpData,
+  FollowUpExtensionData,
   FollowUpProgress,
   InjectableServiceData,
   InhalotherapyServiceData,
@@ -174,7 +175,10 @@ export class ServicosFarmaceuticosPage {
             codigo: context.previousAttendanceCode,
             patient: context.patient,
           } as PharmaceuticalServiceAttendance;
-          this.followUpContext = context.followUpProgress;
+          this.followUpContext = {
+            ...context.followUpProgress,
+            canExtendFollowUp: context.canExtendFollowUp,
+          };
           this.fillPatientFromCurrentRecord(context.patient);
           this.selectedPatientId = context.patient.id;
           this.isInitialRecordLoading.set(false);
@@ -189,7 +193,10 @@ export class ServicosFarmaceuticosPage {
   }
 
   protected steps(): typeof this.allSteps {
-    if (this.formMode !== ATTENDANCE_FORM_MODES.FOLLOW_UP_RETURN && !this.editingReturn) {
+    if (
+      (this.formMode !== ATTENDANCE_FORM_MODES.FOLLOW_UP_RETURN || this.canExtendFollowUp()) &&
+      !this.editingReturn
+    ) {
       return this.allSteps;
     }
 
@@ -214,6 +221,10 @@ export class ServicosFarmaceuticosPage {
 
   protected isEditingReturn(): boolean {
     return this.editingReturn;
+  }
+
+  protected canExtendFollowUp(): boolean {
+    return this.isFollowUpContinuation() && this.followUpContext?.canExtendFollowUp === true;
   }
 
   protected pageTitle(): string {
@@ -256,7 +267,8 @@ export class ServicosFarmaceuticosPage {
 
   protected toggleOptionalStep(step: OptionalStep, enabled: boolean): void {
     if (
-      (this.formMode === ATTENDANCE_FORM_MODES.FOLLOW_UP_RETURN || this.editingReturn) &&
+      ((this.formMode === ATTENDANCE_FORM_MODES.FOLLOW_UP_RETURN && !this.canExtendFollowUp()) ||
+        this.editingReturn) &&
       step === 'acompanhamento'
     ) {
       return;
@@ -386,7 +398,9 @@ export class ServicosFarmaceuticosPage {
       return '';
     }
 
-    return `O paciente deverá retornar a cada ${interval} dias, ${count} vezes.`;
+    return this.canExtendFollowUp()
+      ? `O acompanhamento será prolongado com mais ${count} retornos, a cada ${interval} dias.`
+      : `O paciente deverá retornar a cada ${interval} dias, ${count} vezes.`;
   }
 
   protected submit(): void {
@@ -429,6 +443,11 @@ export class ServicosFarmaceuticosPage {
         this.enabledSteps.acompanhamento
           ? this.followUpData()
           : null,
+      ...((this.canExtendFollowUp() && this.enabledSteps.acompanhamento)
+        ? {
+            followUpExtension: this.followUpExtensionData(),
+          }
+        : {}),
     };
 
     const request = this.isEditing()
@@ -481,6 +500,13 @@ export class ServicosFarmaceuticosPage {
     };
   }
 
+  private followUpExtensionData(): FollowUpExtensionData {
+    return {
+      additionalReturns: Number(this.followUp.returnCount),
+      returnIntervalDays: Number(this.followUp.returnIntervalDays),
+    };
+  }
+
   private validateForm(): boolean {
     this.clearErrors();
     const patient = this.patient();
@@ -526,7 +552,9 @@ export class ServicosFarmaceuticosPage {
       }
 
       if (!Number.isInteger(count) || count <= 0) {
-        this.errors['returnCount'] = 'Informe uma quantidade positiva de retornos.';
+        this.errors['returnCount'] = this.canExtendFollowUp()
+          ? 'Informe uma quantidade positiva de retornos adicionais.'
+          : 'Informe uma quantidade positiva de retornos.';
       }
     }
 
