@@ -37,6 +37,7 @@ export interface ContinuationContext {
     nextReturnNumber: number | null;
     canContinue: boolean;
   };
+  canExtendFollowUp: boolean;
 }
 
 export interface ServicoFarmaceuticoAdvancedResult {

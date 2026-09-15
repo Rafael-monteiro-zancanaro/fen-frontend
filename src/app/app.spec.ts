@@ -200,12 +200,23 @@ const clinicalRecordsTestInterceptor: HttpInterceptorFn = (request) => {
                 previousAttendanceCode: attendance.codigo,
                 patient: attendance.patient,
                 followUpProgress: progress,
+                canExtendFollowUp:
+                  progress.nextReturnNumber !== null &&
+                  progress.nextReturnNumber === progress.returnCount,
               }
             : null,
         }),
       );
     }
     if (request.method === 'POST' && parts[3] === 'retornos') {
+      const progress = patientStore.followUpProgress(id);
+      if (
+        request.body &&
+        'followUpExtension' in (request.body as object) &&
+        progress.nextReturnNumber !== progress.returnCount
+      ) {
+        return of(new HttpResponse({ status: 400, body: null }));
+      }
       const attendance = patientStore.createFollowUpReturn(id, inputWithPatient);
       return of(new HttpResponse({ status: attendance ? 201 : 409, body: toDetail(attendance) }));
     }
@@ -1148,6 +1159,104 @@ describe('App', () => {
     expect(followUpReturn.followUp).toEqual(initialAttendance.followUp);
     expect(followUpReturn.status).toBe('AGUARDANDO_RETORNO');
     expect(attendanceStore.getAttendance(initialAttendance.id)?.status).toBe('CONCLUIDO');
+  });
+
+  it('should show the follow-up step as an extension on the last planned return', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
+    const initialAttendance = attendanceStore.createAttendance({
+      patient: {
+        name: 'Carla Mendes',
+        cpf: '22233344455',
+        birthDate: '1987-04-12',
+        cellPhone: '44944444444',
+        gender: 'feminino',
+        address: 'Rua B',
+        city: 'Maringá',
+        state: 'PR',
+        phone: '',
+        responsibleName: '',
+      },
+      selectedServices: ['cuidados-farmaceuticos'],
+      care: null,
+      injectable: null,
+      inhalotherapy: null,
+      complementaryServices: null,
+      followUp: { returnIntervalDays: 7, returnCount: 1 },
+    });
+
+    await router.navigateByUrl(`/atendimentos/${initialAttendance.id}/continuar`);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('#acompanhamento')).toBeTruthy();
+    expect(compiled.querySelector('#acompanhamento .card-title')?.textContent).toContain(
+      'Prolongar acompanhamento',
+    );
+    compiled.querySelector<HTMLInputElement>('#enableAcompanhamento')?.click();
+    fixture.detectChanges();
+    expect(compiled.querySelector('label[for="quantidadeRetornos"]')?.textContent).toContain(
+      'Quantidade de retornos adicionais',
+    );
+  });
+
+  it('should send additional returns when extending the last planned follow-up return', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
+    const initialAttendance = attendanceStore.createAttendance({
+      patient: {
+        name: 'Marcos Rocha',
+        cpf: '33344455566',
+        birthDate: '1984-03-21',
+        cellPhone: '44955555555',
+        gender: 'masculino',
+        address: 'Rua C',
+        city: 'Maringá',
+        state: 'PR',
+        phone: '',
+        responsibleName: '',
+      },
+      selectedServices: ['cuidados-farmaceuticos'],
+      care: null,
+      injectable: null,
+      inhalotherapy: null,
+      complementaryServices: null,
+      followUp: { returnIntervalDays: 7, returnCount: 1 },
+    });
+
+    await router.navigateByUrl(`/atendimentos/${initialAttendance.id}/continuar`);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    compiled.querySelector<HTMLInputElement>('#enableAcompanhamento')?.click();
+    fixture.detectChanges();
+
+    const interval = compiled.querySelector<HTMLInputElement>('#intervaloRetornos');
+    const additionalReturns = compiled.querySelector<HTMLInputElement>('#quantidadeRetornos');
+    if (!interval || !additionalReturns) {
+      throw new Error('Os campos de prolongamento não foram renderizados.');
+    }
+    interval.value = '7';
+    interval.dispatchEvent(new Event('input'));
+    additionalReturns.value = '2';
+    additionalReturns.dispatchEvent(new Event('input'));
+    compiled.querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const extendedReturn = attendanceStore.attendances()[0];
+    expect(router.url).toBe('/atendimentos');
+    expect(extendedReturn.status).toBe('AGUARDANDO_RETORNO');
+    expect(extendedReturn.followUp?.returnCount).toBe(3);
+    expect(attendanceStore.followUpProgress(extendedReturn.id)).toEqual({
+      returnCount: 3,
+      completedReturns: 1,
+      nextReturnNumber: 2,
+      canContinue: true,
+    });
   });
 
   it('restores saved attendance fields, active steps and medications in edit mode', async () => {

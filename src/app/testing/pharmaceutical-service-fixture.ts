@@ -177,6 +177,23 @@ export class PharmaceuticalServiceFixture {
       return undefined;
     }
 
+    const extension = input.followUpExtension;
+    if (
+      extension &&
+      (nextReturnNumber !== previousAttendance.followUp.returnCount ||
+        extension.additionalReturns <= 0 ||
+        extension.returnIntervalDays <= 0)
+    ) {
+      return undefined;
+    }
+
+    const followUp = extension
+      ? {
+          returnIntervalDays: extension.returnIntervalDays,
+          returnCount: previousAttendance.followUp.returnCount + extension.additionalReturns,
+        }
+      : previousAttendance.followUp;
+
     const patient = this.upsertPatient(input.patient!);
     const id = this.createId();
     const attendance: PharmaceuticalServiceAttendance = {
@@ -185,7 +202,7 @@ export class PharmaceuticalServiceFixture {
       patient,
       selectedServices: input.selectedServices,
       status:
-        nextReturnNumber < previousAttendance.followUp.returnCount
+        nextReturnNumber < followUp.returnCount
           ? 'AGUARDANDO_RETORNO'
           : 'CONCLUIDO',
       createdAt: new Date().toISOString(),
@@ -193,7 +210,7 @@ export class PharmaceuticalServiceFixture {
       injectable: input.injectable,
       inhalotherapy: input.inhalotherapy,
       complementaryServices: input.complementaryServices,
-      followUp: previousAttendance.followUp,
+      followUp,
       followUpLink: {
         chainId: previousAttendance.followUpLink.chainId,
         originAttendanceId: previousAttendance.followUpLink.originAttendanceId,
@@ -201,11 +218,11 @@ export class PharmaceuticalServiceFixture {
         returnNumber: nextReturnNumber,
       },
       followUpProgress: {
-        returnCount: previousAttendance.followUp.returnCount,
+        returnCount: followUp.returnCount,
         completedReturns: nextReturnNumber,
         nextReturnNumber:
-          nextReturnNumber < previousAttendance.followUp.returnCount ? nextReturnNumber + 1 : null,
-        canContinue: nextReturnNumber < previousAttendance.followUp.returnCount,
+          nextReturnNumber < followUp.returnCount ? nextReturnNumber + 1 : null,
+        canContinue: nextReturnNumber < followUp.returnCount,
       },
       followUpHistory: [],
       editAllowed: true,
@@ -216,8 +233,15 @@ export class PharmaceuticalServiceFixture {
       attendances: [
         attendance,
         ...this.state().attendances.map((currentAttendance) =>
-          currentAttendance.id === previousAttendance.id
-            ? { ...currentAttendance, status: 'CONCLUIDO' as AttendanceStatus }
+          currentAttendance.followUpLink?.chainId === previousAttendance.followUpLink?.chainId
+            ? {
+                ...currentAttendance,
+                followUp,
+                status:
+                  currentAttendance.id === previousAttendance.id
+                    ? ('CONCLUIDO' as AttendanceStatus)
+                    : currentAttendance.status,
+              }
             : currentAttendance,
         ),
       ],

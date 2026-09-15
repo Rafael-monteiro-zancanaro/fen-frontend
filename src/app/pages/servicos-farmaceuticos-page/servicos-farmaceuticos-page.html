@@ -825,7 +825,7 @@
           }
         </section>
 
-        @if (!isFollowUpContinuation() && !isEditingReturn()) {
+        @if ((!isFollowUpContinuation() || canExtendFollowUp()) && !isEditingReturn()) {
           <section id="acompanhamento" data-service-step class="card scroll-mt-24">
             <div class="card-header">
               <label class="flex items-center gap-3">
@@ -838,7 +838,7 @@
                 />
                 <span>
                   <span class="text-xs font-bold uppercase text-uem-700">06</span>
-                  <span class="card-title block">Acompanhamento</span>
+                  <span class="card-title block">{{ canExtendFollowUp() ? 'Prolongar acompanhamento' : 'Acompanhamento' }}</span>
                 </span>
               </label>
             </div>
@@ -848,7 +848,7 @@
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div class="field">
                     <label for="intervaloRetornos" class="label label-required"
-                      >Intervalo para retorno</label
+                      >{{ canExtendFollowUp() ? 'Intervalo para os próximos retornos' : 'Intervalo para retorno' }}</label
                     >
                     <input
                       id="intervaloRetornos"
@@ -867,7 +867,7 @@
                   </div>
                   <div class="field">
                     <label for="quantidadeRetornos" class="label label-required"
-                      >Quantidade de retornos</label
+                      >{{ canExtendFollowUp() ? 'Quantidade de retornos adicionais' : 'Quantidade de retornos' }}</label
                     >
                     <input
                       id="quantidadeRetornos"

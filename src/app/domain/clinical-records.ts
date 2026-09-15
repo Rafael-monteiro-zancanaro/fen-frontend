@@ -114,6 +114,11 @@ export interface FollowUpData {
   returnCount: number;
 }
 
+export interface FollowUpExtensionData {
+  additionalReturns: number;
+  returnIntervalDays: number;
+}
+
 export interface FollowUpLink {
   chainId: string;
   originAttendanceId: string;
@@ -126,6 +131,7 @@ export interface FollowUpProgress {
   completedReturns: number;
   nextReturnNumber: number | null;
   canContinue: boolean;
+  canExtendFollowUp?: boolean;
 }
 
 export type FollowUpHistoryStatus = AttendanceStatus | 'PENDENTE';
@@ -177,4 +183,5 @@ export interface CreatePharmaceuticalServiceAttendanceInput {
   inhalotherapy: InhalotherapyServiceData | null;
   complementaryServices: ComplementaryServicesData | null;
   followUp: FollowUpData | null;
+  followUpExtension?: FollowUpExtensionData | null;
 }
