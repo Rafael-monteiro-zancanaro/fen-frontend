@@ -257,6 +257,15 @@
           </div>
         </section>
       }
+      <section class="card" data-attachments>
+        <div class="card-header"><h2 class="card-title">Anexos ({{ attachments().length }})</h2><p class="card-description">Arquivos vinculados somente a este atendimento.</p></div>
+        <div class="card-content grid gap-4">
+          <input class="input" type="file" multiple (change)="selectAttachments($event)" [disabled]="isUploading()" />
+          @if (selectedFiles().length) { <button class="btn btn-primary w-fit" type="button" [disabled]="isUploading()" (click)="uploadAttachments(currentAttendance.id)">@if (isUploading()) { <span class="spinner size-4"></span> Enviando... } @else { <ng-icon name="bootstrapUpload" size="1rem" /> Enviar {{ selectedFiles().length }} arquivo(s) }</button> }
+          @if (attachmentMessage()) { <div class="alert alert-info">{{ attachmentMessage() }}</div> }
+          @if (attachments().length) { @for (attachment of attachments(); track attachment.id) { <div class="item"><ng-icon name="bootstrapPaperclip" size="1rem" /><div class="item-content"><p class="item-title">{{ attachment.nomeOriginal }}</p><p class="item-description">{{ formatSize(attachment.tamanho) }} · {{ formatDate(attachment.createdAt) }}</p></div><button class="btn btn-secondary btn-icon btn-sm" type="button" (click)="downloadAttachment(currentAttendance.id, attachment)"><ng-icon name="bootstrapDownload" size="1rem" /></button><button class="btn btn-danger btn-icon btn-sm" type="button" (click)="askDeleteAttachment(attachment)"><ng-icon name="bootstrapTrash" size="1rem" /></button></div> } } @else { <div class="empty"><h3 class="empty-title">Nenhum anexo</h3><p class="empty-description">Selecione arquivos para vinculá-los a este atendimento.</p></div> }
+        </div>
+      </section>
     } @else {
       <section class="empty">
         <h1 class="empty-title">Atendimento não encontrado</h1>
@@ -265,6 +274,8 @@
       </section>
     }
   </section>
+
+  @if (attachmentPendingDelete(); as attachment) { <div class="alert-dialog-overlay" (click)="cancelDeleteAttachment()"></div><section class="alert-dialog" role="alertdialog" aria-modal="true"><div class="alert-dialog-header"><h2 class="alert-dialog-title">Remover anexo?</h2><p class="alert-dialog-description">Remover o anexo "{{ attachment.nomeOriginal }}"?</p></div><div class="alert-dialog-footer"><button class="btn btn-secondary" type="button" (click)="cancelDeleteAttachment()">Cancelar</button><button class="btn btn-danger" type="button" (click)="confirmDeleteAttachment(attendance()!.id)">Remover</button></div></section> }
 
   <ng-template #medicationTable let-items="items" let-showPrescription="showPrescription">
     @if (hasMedicationItems(items)) {

@@ -477,7 +477,7 @@ export class ServicosFarmaceuticosPage {
         ? this.service.createReturn(this.previousAttendance.id, input)
         : this.service.create(input);
     request.subscribe({
-      next: () => void this.router.navigateByUrl('/atendimentos'),
+      next: (attendance) => void this.router.navigate(['/atendimentos', attendance.id]),
       error: () => {
         this.errors['submit'] =
           'Não foi possível salvar o atendimento. Verifique os dados e tente novamente.';
