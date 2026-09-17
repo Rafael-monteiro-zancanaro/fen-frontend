@@ -181,6 +181,15 @@ export interface PharmaceuticalServiceAttendance {
   followUpProgress?: FollowUpProgress;
   followUpHistory?: FollowUpHistoryEntry[];
   editAllowed?: boolean;
+  attachmentCount?: number;
+}
+
+export interface AttendanceAttachment {
+  id: string;
+  nomeOriginal: string;
+  contentType: string;
+  tamanho: number;
+  createdAt: string;
 }
 
 export interface CreatePharmaceuticalServiceAttendanceInput {

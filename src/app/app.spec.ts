@@ -1153,7 +1153,7 @@ describe('App', () => {
 
     const followUpReturn = attendanceStore.attendances()[0];
 
-    expect(router.url).toBe('/atendimentos');
+    expect(router.url).toBe(`/atendimentos/${followUpReturn.id}`);
     expect(followUpReturn.id).not.toBe(initialAttendance.id);
     expect(followUpReturn.codigo).toBeGreaterThan(initialAttendance.codigo);
     expect(followUpReturn.patient.id).toBe(initialAttendance.patient.id);
@@ -1251,7 +1251,7 @@ describe('App', () => {
     await fixture.whenStable();
 
     const extendedReturn = attendanceStore.attendances()[0];
-    expect(router.url).toBe('/atendimentos');
+    expect(router.url).toBe(`/atendimentos/${extendedReturn.id}`);
     expect(extendedReturn.status).toBe('AGUARDANDO_RETORNO');
     expect(extendedReturn.followUp?.returnCount).toBe(3);
     expect(attendanceStore.followUpProgress(extendedReturn.id)).toEqual({
@@ -2026,7 +2026,7 @@ describe('App', () => {
 
     const attendance = attendanceStore.attendances()[0];
 
-    expect(router.url).toBe('/atendimentos');
+    expect(router.url).toBe(`/atendimentos/${attendance.id}`);
     expect(attendance.patient.name).toBe('Novo Paciente');
     expect(attendance.status).toBe('AGUARDANDO_RETORNO');
     expect(attendance.inhalotherapy?.medications).toHaveLength(2);

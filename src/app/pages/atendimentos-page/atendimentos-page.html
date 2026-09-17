@@ -119,6 +119,7 @@
                     <th>CPF</th>
                     <th>Data</th>
                     <th>Serviço(s)</th>
+                    <th>Anexos</th>
                     <th>Situação</th>
                     <th>Acompanhamento</th>
                     <th class="w-64">Ações</th>
@@ -134,6 +135,11 @@
                       <td>{{ formatCpf(attendance.patientCpf) }}</td>
                       <td>{{ formatDate(attendance.attendanceDate) }}</td>
                       <td>{{ serviceLabels(attendance) }}</td>
+                      <td>
+                        @if (attendance.attachmentCount > 0) {
+                          <span class="badge badge-secondary"><ng-icon name="bootstrapPaperclip" size="0.875rem" /> {{ attendance.attachmentCount }} {{ attendance.attachmentCount === 1 ? 'anexo' : 'anexos' }}</span>
+                        }
+                      </td>
                       <td>
                         <span [class]="statusBadgeClass(attendance.status)">
                           {{ statusLabel(attendance.status) }}

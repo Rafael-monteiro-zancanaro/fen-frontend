@@ -7,6 +7,7 @@ import {
   bootstrapEye,
   bootstrapPencil,
   bootstrapPrinter,
+  bootstrapPaperclip,
 } from '@ng-icons/bootstrap-icons';
 import { PaginationControls } from '../../components/pagination-controls/pagination-controls';
 import { AtendimentoPdfService } from '../../domain/atendimento-pdf.service';
@@ -39,6 +40,7 @@ import {
       bootstrapEye,
       bootstrapPencil,
       bootstrapPrinter,
+      bootstrapPaperclip,
     }),
   ],
   templateUrl: './atendimentos-page.html',

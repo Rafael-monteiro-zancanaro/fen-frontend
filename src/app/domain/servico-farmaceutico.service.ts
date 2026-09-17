@@ -9,6 +9,7 @@ import {
   Patient,
   PharmaceuticalServiceAttendance,
   ServiceMedicationItem,
+  AttendanceAttachment,
 } from './clinical-records';
 import { ApiPage } from './api-page';
 
@@ -25,6 +26,7 @@ export interface ServicoFarmaceuticoSummary {
   nextReturnNumber: number | null;
   returnCount: number | null;
   editAllowed: boolean;
+  attachmentCount: number;
 }
 
 export interface ContinuationContext {
@@ -135,5 +137,23 @@ export class ServicoFarmaceuticoService {
       `${this.resourceUrl}/${id}/encerrar`,
       {},
     );
+  }
+
+  listAttachments(id: string): Observable<AttendanceAttachment[]> {
+    return this.http.get<AttendanceAttachment[]>(`${this.resourceUrl}/${id}/anexos`);
+  }
+
+  uploadAttachment(id: string, file: File): Observable<AttendanceAttachment> {
+    const body = new FormData();
+    body.append('file', file);
+    return this.http.post<AttendanceAttachment>(`${this.resourceUrl}/${id}/anexos`, body);
+  }
+
+  downloadAttachment(id: string, attachmentId: string): Observable<Blob> {
+    return this.http.get(`${this.resourceUrl}/${id}/anexos/${attachmentId}`, { responseType: 'blob' });
+  }
+
+  deleteAttachment(id: string, attachmentId: string): Observable<void> {
+    return this.http.delete<void>(`${this.resourceUrl}/${id}/anexos/${attachmentId}`);
   }
 }
