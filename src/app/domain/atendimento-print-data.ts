@@ -17,6 +17,7 @@ export interface AtendimentoPrintData {
   injectable: AtendimentoPrintMedicationService | null;
   inhalotherapy: AtendimentoPrintMedicationService | null;
   complementaryServices: AtendimentoPrintComplementaryServices | null;
+  pharmacotherapeuticFollowUp: AtendimentoPrintPharmacotherapeuticFollowUp | null;
   followUp: AtendimentoPrintFollowUp | null;
 }
 
@@ -66,6 +67,11 @@ export interface AtendimentoPrintComplementaryServices {
   medications: AtendimentoPrintMedication[];
 }
 
+export interface AtendimentoPrintPharmacotherapeuticFollowUp {
+  signsAndSymptoms: string;
+  medications: AtendimentoPrintMedication[];
+}
+
 export interface AtendimentoPrintFollowUp {
   returnIntervalDays: number;
   returnCount: number;
@@ -77,6 +83,7 @@ const SERVICE_SELECTIONS = [
   { key: 'aplicacao-injetaveis', label: 'Aplicação de injetáveis' },
   { key: 'inaloterapia', label: 'Inaloterapia' },
   { key: 'servicos-farmaceuticos', label: 'Serviços farmacêuticos' },
+  { key: 'acompanhamento-farmacoterapeutico', label: 'Farmacoterapia' },
 ] as const;
 
 export function buildAtendimentoPrintData(
@@ -109,6 +116,9 @@ export function buildAtendimentoPrintData(
     inhalotherapy: attendance.inhalotherapy ? mapInhalotherapy(attendance.inhalotherapy) : null,
     complementaryServices: attendance.complementaryServices
       ? mapComplementaryServices(attendance.complementaryServices)
+      : null,
+    pharmacotherapeuticFollowUp: attendance.pharmacotherapeuticFollowUp
+      ? mapPharmacotherapeuticFollowUp(attendance.pharmacotherapeuticFollowUp)
       : null,
     followUp: attendance.followUp
       ? {
@@ -155,16 +165,22 @@ function mapComplementaryServices(
     selectedItems.push('Assistência farmacêutica domiciliar');
   }
 
-  if (service.pharmacotherapeuticFollowUp) {
-    selectedItems.push('Acompanhamento farmacoterapêutico');
-  }
-
   if (service.minorDisorderIndication) {
     selectedItems.push('Indicação farmacêutica em transtornos menores');
   }
 
   return {
     selectedItems,
+    signsAndSymptoms: service.signsAndSymptoms,
+    medications: service.medications.map(mapMedication),
+  };
+}
+
+function mapPharmacotherapeuticFollowUp(service: {
+  signsAndSymptoms: string;
+  medications: ServiceMedicationItem[];
+}): AtendimentoPrintPharmacotherapeuticFollowUp {
+  return {
     signsAndSymptoms: service.signsAndSymptoms,
     medications: service.medications.map(mapMedication),
   };

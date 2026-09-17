@@ -229,6 +229,38 @@
     </section>
   }
 
+  @if (data().pharmacotherapeuticFollowUp; as pharmacotherapeuticFollowUp) {
+    <section class="print-section avoid-break">
+      <h3>Farmacoterapia</h3>
+      <p>
+        {{ pharmacotherapeuticFollowUp.signsAndSymptoms || 'Sem sinais e sintomas informados.' }}
+      </p>
+      <table class="print-table medication-table">
+        <thead>
+          <tr>
+            <th>Medicamento/concentração</th>
+            <th>Lote</th>
+            <th>Validade</th>
+            <th>Posologia</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (
+            medication of pharmacotherapeuticFollowUp.medications;
+            track medication.medicationConcentration
+          ) {
+            <tr>
+              <td>{{ medication.medicationConcentration }}</td>
+              <td>{{ medication.batch }}</td>
+              <td>{{ medication.expirationDate }}</td>
+              <td>{{ medication.dosage }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
   @if (data().followUp; as followUp) {
     <section class="print-section avoid-break">
       <h3>Acompanhamento</h3>

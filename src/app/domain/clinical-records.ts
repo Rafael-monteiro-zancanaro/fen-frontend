@@ -37,7 +37,11 @@ export type AttendanceStatus = 'CONCLUIDO' | 'AGUARDANDO_RETORNO' | 'EXPIRADO';
 export type AttendanceStatusFilter = AttendanceStatus | 'TODOS';
 
 export type PharmaceuticalServiceKey =
-  'cuidados-farmaceuticos' | 'aplicacao-injetaveis' | 'inaloterapia' | 'servicos-farmaceuticos';
+  | 'cuidados-farmaceuticos'
+  | 'aplicacao-injetaveis'
+  | 'inaloterapia'
+  | 'servicos-farmaceuticos'
+  | 'acompanhamento-farmacoterapeutico';
 
 export interface Patient {
   id: string;
@@ -103,8 +107,12 @@ export interface InhalotherapyServiceData {
 
 export interface ComplementaryServicesData {
   homeCare: boolean;
-  pharmacotherapeuticFollowUp: boolean;
   minorDisorderIndication: boolean;
+  signsAndSymptoms: string;
+  medications: ServiceMedicationItem[];
+}
+
+export interface PharmacotherapeuticFollowUpServiceData {
   signsAndSymptoms: string;
   medications: ServiceMedicationItem[];
 }
@@ -167,6 +175,7 @@ export interface PharmaceuticalServiceAttendance {
   injectable: InjectableServiceData | null;
   inhalotherapy: InhalotherapyServiceData | null;
   complementaryServices: ComplementaryServicesData | null;
+  pharmacotherapeuticFollowUp: PharmacotherapeuticFollowUpServiceData | null;
   followUp: FollowUpData | null;
   followUpLink: FollowUpLink | null;
   followUpProgress?: FollowUpProgress;
@@ -182,6 +191,7 @@ export interface CreatePharmaceuticalServiceAttendanceInput {
   injectable: InjectableServiceData | null;
   inhalotherapy: InhalotherapyServiceData | null;
   complementaryServices: ComplementaryServicesData | null;
+  pharmacotherapeuticFollowUp?: PharmacotherapeuticFollowUpServiceData | null;
   followUp: FollowUpData | null;
   followUpExtension?: FollowUpExtensionData | null;
 }

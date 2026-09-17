@@ -166,7 +166,6 @@ describe('PharmaceuticalServiceFixture', () => {
       inhalotherapy: null,
       complementaryServices: {
         homeCare: false,
-        pharmacotherapeuticFollowUp: true,
         minorDisorderIndication: false,
         signsAndSymptoms: 'Acompanhamento de uso de medicamento',
         medications: [
@@ -240,7 +239,6 @@ describe('PharmaceuticalServiceFixture', () => {
       inhalotherapy: null,
       complementaryServices: {
         homeCare: false,
-        pharmacotherapeuticFollowUp: true,
         minorDisorderIndication: false,
         signsAndSymptoms: 'Acompanhamento',
         medications: [
@@ -586,7 +584,6 @@ describe('PharmaceuticalServiceFixture', () => {
       inhalotherapy: null,
       complementaryServices: {
         homeCare: false,
-        pharmacotherapeuticFollowUp: true,
         minorDisorderIndication: false,
         signsAndSymptoms: '',
         medications: [
@@ -613,7 +610,6 @@ describe('PharmaceuticalServiceFixture', () => {
       inhalotherapy: null,
       complementaryServices: {
         homeCare: false,
-        pharmacotherapeuticFollowUp: true,
         minorDisorderIndication: false,
         signsAndSymptoms: '',
         medications: [

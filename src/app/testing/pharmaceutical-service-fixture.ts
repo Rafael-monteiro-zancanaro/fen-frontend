@@ -26,6 +26,7 @@ export const PHARMACEUTICAL_SERVICE_LABELS: Record<PharmaceuticalServiceKey, str
   'aplicacao-injetaveis': 'Aplicação de injetáveis',
   inaloterapia: 'Inaloterapia',
   'servicos-farmaceuticos': 'Serviços farmacêuticos',
+  'acompanhamento-farmacoterapeutico': 'Acompanhamento farmacoterapêutico',
 };
 
 export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
@@ -125,6 +126,7 @@ export class PharmaceuticalServiceFixture {
       injectable: input.injectable,
       inhalotherapy: input.inhalotherapy,
       complementaryServices: input.complementaryServices,
+      pharmacotherapeuticFollowUp: input.pharmacotherapeuticFollowUp ?? null,
       followUp: input.followUp,
       followUpLink: input.followUp
         ? {
@@ -210,6 +212,7 @@ export class PharmaceuticalServiceFixture {
       injectable: input.injectable,
       inhalotherapy: input.inhalotherapy,
       complementaryServices: input.complementaryServices,
+      pharmacotherapeuticFollowUp: input.pharmacotherapeuticFollowUp ?? null,
       followUp,
       followUpLink: {
         chainId: previousAttendance.followUpLink.chainId,
@@ -579,6 +582,7 @@ export class PharmaceuticalServiceFixture {
       ...(attendance.injectable?.medications ?? []),
       ...(attendance.inhalotherapy?.medications ?? []),
       ...(attendance.complementaryServices?.medications ?? []),
+      ...(attendance.pharmacotherapeuticFollowUp?.medications ?? []),
     ];
   }
 

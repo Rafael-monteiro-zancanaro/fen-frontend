@@ -5,6 +5,7 @@ export const PHARMACEUTICAL_SERVICE_LABELS: Record<PharmaceuticalServiceKey, str
   'aplicacao-injetaveis': 'Aplicação de injetáveis',
   inaloterapia: 'Inaloterapia',
   'servicos-farmaceuticos': 'Serviços farmacêuticos',
+  'acompanhamento-farmacoterapeutico': 'Farmacoterapia',
 };
 
 export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {

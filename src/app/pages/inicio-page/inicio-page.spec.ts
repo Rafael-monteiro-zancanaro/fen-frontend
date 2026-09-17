@@ -31,6 +31,7 @@ describe('InicioPage', () => {
     expect(awaiting?.textContent).toContain('2');
     expect(page.querySelectorAll('[data-dashboard-card]').length).toBe(4);
     expect(page.textContent).toContain('Cuidados farmacêuticos');
+    expect(page.textContent).toContain('Farmacoterapia');
     expect(page.textContent).toContain('Expirado');
 
     awaiting?.click();
@@ -102,6 +103,7 @@ function response(): DashboardSummary {
       { type: 'aplicacao-injetaveis', count: 2 },
       { type: 'inaloterapia', count: 1 },
       { type: 'servicos-farmaceuticos', count: 0 },
+      { type: 'acompanhamento-farmacoterapeutico', count: 2 },
     ],
     statuses: [
       { status: 'CONCLUIDO', count: 3 },

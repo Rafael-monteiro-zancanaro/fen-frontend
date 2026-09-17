@@ -180,6 +180,10 @@ const clinicalRecordsTestInterceptor: HttpInterceptorFn = (request) => {
       (request.body as { complementaryServices?: unknown }).complementaryServices
         ? ['servicos-farmaceuticos']
         : []),
+      ...(request.body &&
+      (request.body as { pharmacotherapeuticFollowUp?: unknown }).pharmacotherapeuticFollowUp
+        ? ['acompanhamento-farmacoterapeutico']
+        : []),
     ] as Parameters<typeof patientStore.createAttendance>[0]['selectedServices'];
     const inputWithPatient = {
       ...(request.body as object),
@@ -266,6 +270,7 @@ const clinicalRecordsTestInterceptor: HttpInterceptorFn = (request) => {
             { type: 'aplicacao-injetaveis', count: 2 },
             { type: 'inaloterapia', count: 1 },
             { type: 'servicos-farmaceuticos', count: 0 },
+            { type: 'acompanhamento-farmacoterapeutico', count: 2 },
           ],
           statuses: [
             { status: 'CONCLUIDO', count: 3 },
@@ -1002,7 +1007,6 @@ describe('App', () => {
       inhalotherapy: null,
       complementaryServices: {
         homeCare: false,
-        pharmacotherapeuticFollowUp: true,
         minorDisorderIndication: false,
         signsAndSymptoms: 'Acompanhamento',
         medications: [
@@ -1074,7 +1078,6 @@ describe('App', () => {
       inhalotherapy: null,
       complementaryServices: {
         homeCare: false,
-        pharmacotherapeuticFollowUp: true,
         minorDisorderIndication: false,
         signsAndSymptoms: 'Acompanhamento',
         medications: [
@@ -1278,7 +1281,13 @@ describe('App', () => {
         phone: '4433332222',
         responsibleName: '',
       },
-      selectedServices: ['cuidados-farmaceuticos', 'aplicacao-injetaveis', 'inaloterapia'],
+      selectedServices: [
+        'cuidados-farmaceuticos',
+        'aplicacao-injetaveis',
+        'inaloterapia',
+        'servicos-farmaceuticos',
+        'acompanhamento-farmacoterapeutico',
+      ],
       care: {
         bloodGlucose: '96',
         systolicPressure: '118',
@@ -1326,7 +1335,34 @@ describe('App', () => {
           },
         ],
       },
-      complementaryServices: null,
+      complementaryServices: {
+        homeCare: true,
+        minorDisorderIndication: false,
+        signsAndSymptoms: 'Dor leve',
+        medications: [
+          {
+            id: 'med-item-4',
+            medicationId: 'medicamento-4',
+            medicationConcentration: 'Paracetamol — 750 mg',
+            batch: 'SVC-01',
+            expirationDate: '2027-04-04',
+            dosage: '1 comprimido',
+          },
+        ],
+      },
+      pharmacotherapeuticFollowUp: {
+        signsAndSymptoms: 'Pressão arterial instável',
+        medications: [
+          {
+            id: 'med-item-5',
+            medicationId: 'medicamento-5',
+            medicationConcentration: 'Losartana — 50 mg',
+            batch: 'AFT-01',
+            expirationDate: '2027-05-05',
+            dosage: 'Uso contínuo',
+          },
+        ],
+      },
       followUp: { returnIntervalDays: 7, returnCount: 3 },
     });
 
@@ -1345,6 +1381,15 @@ describe('App', () => {
       true,
     );
     expect(compiled.querySelector<HTMLInputElement>('#enableInaloterapia')?.checked).toBe(true);
+    expect(compiled.querySelector<HTMLInputElement>('#enableServicosFarmaceuticos')?.checked).toBe(
+      true,
+    );
+    expect(
+      compiled.querySelector<HTMLInputElement>('#enableAcompanhamentoFarmacoterapeutico')?.checked,
+    ).toBe(true);
+    expect(
+      compiled.querySelector<HTMLTextAreaElement>('#sinaisSintomasFarmacoterapia')?.value,
+    ).toBe('Pressão arterial instável');
     expect(compiled.querySelectorAll('[data-medication-item="injectable"]').length).toBe(2);
     expect(compiled.textContent).toContain('Dipirona — 500 mg · A1 · 01/01/2027 · 1 ampola');
     expect(compiled.textContent).toContain('Dra. Ana · CRM/CRO: CRM 123');
@@ -1352,6 +1397,12 @@ describe('App', () => {
     expect(compiled.textContent).toContain('Dra. Beatriz · CRM/CRO: CRM 456');
     expect(compiled.textContent).toContain('Salbutamol — 2,5 mg · C3 · 03/03/2027 · 2 jatos');
     expect(compiled.textContent).toContain('Dr. Carlos · CRM/CRO: CRM 789');
+    expect(compiled.querySelectorAll('[data-medication-item="complementary"]').length).toBe(1);
+    expect(
+      compiled.querySelectorAll('[data-medication-item="pharmacotherapeuticFollowUp"]').length,
+    ).toBe(1);
+    expect(compiled.textContent).toContain('Paracetamol — 750 mg · SVC-01');
+    expect(compiled.textContent).toContain('Losartana — 50 mg · AFT-01');
     expect(compiled.querySelector<HTMLInputElement>('#intervaloRetornos')?.value).toBe('7');
     expect(compiled.querySelector<HTMLInputElement>('#quantidadeRetornos')?.value).toBe('3');
   });
@@ -1810,13 +1861,18 @@ describe('App', () => {
     expect(
       compiled.querySelector('main[data-page="servicos-farmaceuticos"] p.leading-6')?.textContent,
     ).toContain('Estes procedimentos não substituem consulta médica ou exames laboratoriais.');
-    expect(compiled.querySelectorAll('[data-service-step]').length).toBe(6);
+    expect(compiled.querySelectorAll('[data-service-step]').length).toBe(7);
     expect(compiled.querySelector('#identificacao-usuario')).toBeTruthy();
     expect(compiled.querySelector('#cuidados-farmaceuticos')).toBeTruthy();
     expect(compiled.querySelector('#aplicacao-injetaveis')).toBeTruthy();
     expect(compiled.querySelector('#inaloterapia')).toBeTruthy();
     expect(compiled.querySelector('#servicos-acompanhamento')).toBeTruthy();
+    expect(compiled.querySelector('#acompanhamento-farmacoterapeutico')).toBeTruthy();
+    expect(compiled.querySelector('#acompanhamento-farmacoterapeutico')?.textContent).toContain(
+      'Farmacoterapia',
+    );
     expect(compiled.querySelector('#acompanhamento')).toBeTruthy();
+    expect(compiled.querySelector('[name="pharmacotherapeuticFollowUp"]')).toBeNull();
     expect(compiled.querySelector('#revisao-assinatura')).toBeNull();
     expect(compiled.querySelector('#numeroFicha')).toBeNull();
     expect(compiled.querySelector('#dataAtendimento')).toBeNull();
@@ -1852,6 +1908,13 @@ describe('App', () => {
     expect(compiled.querySelector('label[for="medicamentoInaloterapia"]')?.textContent).toContain(
       'Medicamento/concentração',
     );
+
+    compiled.querySelector<HTMLInputElement>('#enableAcompanhamentoFarmacoterapeutico')?.click();
+    fixture.detectChanges();
+
+    expect(
+      compiled.querySelector('label[for="sinaisSintomasFarmacoterapia"]')?.textContent,
+    ).toContain('Sinais e sintomas');
 
     compiled.querySelector<HTMLInputElement>('#enableAcompanhamento')?.click();
     fixture.detectChanges();
@@ -2300,7 +2363,7 @@ describe('App', () => {
       compiled.querySelector('[data-field-error="inhalotherapy-dosage"]')?.textContent,
     ).toContain('Informe a posologia.');
 
-    enableAndSelectMedication('#enableServicosFarmaceuticos', '#medicamentoAcompanhamento');
+    enableAndSelectMedication('#enableServicosFarmaceuticos', '#medicamentoServicosFarmaceuticos');
     compiled
       .querySelector<HTMLButtonElement>('button[data-add-medication="complementary"]')
       ?.click();
@@ -2315,6 +2378,19 @@ describe('App', () => {
     expect(
       compiled.querySelector('[data-field-error="complementary-dosage"]')?.textContent,
     ).toContain('Informe a posologia.');
+
+    enableAndSelectMedication(
+      '#enableAcompanhamentoFarmacoterapeutico',
+      '#medicamentoAcompanhamentoFarmacoterapeutico',
+    );
+    compiled
+      .querySelector<HTMLButtonElement>('button[data-add-medication="pharmacotherapeuticFollowUp"]')
+      ?.click();
+    fixture.detectChanges();
+
+    expect(
+      compiled.querySelector('[data-field-error="pharmacotherapeuticFollowUp-batch"]')?.textContent,
+    ).toContain('Informe o lote.');
   });
 
   it('should show non-blocking warnings for values above reference ranges', async () => {

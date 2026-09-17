@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -26,6 +26,7 @@ import {
   Medication,
   Patient,
   PatientInput,
+  PharmacotherapeuticFollowUpServiceData,
   PharmaceuticalServiceAttendance,
   ServiceMedicationItem,
 } from '../../domain/clinical-records';
@@ -39,9 +40,14 @@ type OptionalStep =
   | 'aplicacao-injetaveis'
   | 'inaloterapia'
   | 'servicos-acompanhamento'
+  | 'acompanhamento-farmacoterapeutico'
   | 'acompanhamento';
 
-type MedicationSection = 'injectable' | 'inhalotherapy' | 'complementary';
+type MedicationSection =
+  | 'injectable'
+  | 'inhalotherapy'
+  | 'complementary'
+  | 'pharmacotherapeuticFollowUp';
 
 interface MedicationDraft {
   medicationId: string;
@@ -56,7 +62,7 @@ interface MedicationDraft {
 
 @Component({
   selector: 'app-servicos-farmaceuticos-page',
-  imports: [DatePipe, FormsModule, MedicationAutocomplete, NgIcon, PatientForm, RouterLink],
+  imports: [DatePipe, FormsModule, MedicationAutocomplete, NgIcon, NgTemplateOutlet, PatientForm, RouterLink],
   providers: [
     provideIcons({
       bootstrapArrowDownCircle,
@@ -78,13 +84,19 @@ export class ServicosFarmaceuticosPage {
     { number: '03', title: 'Aplicação de injetáveis', id: 'aplicacao-injetaveis' },
     { number: '04', title: 'Inaloterapia', id: 'inaloterapia' },
     { number: '05', title: 'Serviços farmacêuticos', id: 'servicos-acompanhamento' },
-    { number: '06', title: 'Acompanhamento', id: 'acompanhamento' },
+    {
+      number: '06',
+      title: 'Farmacoterapia',
+      id: 'acompanhamento-farmacoterapeutico',
+    },
+    { number: '07', title: 'Acompanhamento', id: 'acompanhamento' },
   ];
   protected readonly enabledSteps: Record<OptionalStep, boolean> = {
     'cuidados-farmaceuticos': false,
     'aplicacao-injetaveis': false,
     inaloterapia: false,
     'servicos-acompanhamento': false,
+    'acompanhamento-farmacoterapeutico': false,
     acompanhamento: false,
   };
   protected readonly patient = signal<PatientInput>({
@@ -109,8 +121,10 @@ export class ServicosFarmaceuticosPage {
   };
   protected readonly complementary = {
     homeCare: false,
-    pharmacotherapeuticFollowUp: false,
     minorDisorderIndication: false,
+    signsAndSymptoms: '',
+  };
+  protected readonly pharmacotherapy = {
     signsAndSymptoms: '',
   };
   protected readonly followUp = {
@@ -121,17 +135,20 @@ export class ServicosFarmaceuticosPage {
     injectable: this.createEmptyMedicationDraft(),
     inhalotherapy: this.createEmptyMedicationDraft(),
     complementary: this.createEmptyMedicationDraft(),
+    pharmacotherapeuticFollowUp: this.createEmptyMedicationDraft(),
   };
   protected readonly medicationItems: Record<MedicationSection, ServiceMedicationItem[]> = {
     injectable: [],
     inhalotherapy: [],
     complementary: [],
+    pharmacotherapeuticFollowUp: [],
   };
   private readonly selectedMedications: Partial<Record<MedicationSection, Medication>> = {};
   private readonly interactionWarnings: Record<MedicationSection, MedicationInteractionPair[]> = {
     injectable: [],
     inhalotherapy: [],
     complementary: [],
+    pharmacotherapeuticFollowUp: [],
   };
   protected readonly errors: Record<string, string> = {};
   protected readonly medicationErrors: Record<
@@ -141,6 +158,7 @@ export class ServicosFarmaceuticosPage {
     injectable: {},
     inhalotherapy: {},
     complementary: {},
+    pharmacotherapeuticFollowUp: {},
   };
   protected previousAttendance: PharmaceuticalServiceAttendance | undefined;
   protected followUpContext: FollowUpProgress | undefined;
@@ -437,6 +455,9 @@ export class ServicosFarmaceuticosPage {
       complementaryServices: this.enabledSteps['servicos-acompanhamento']
         ? this.complementaryServicesData()
         : null,
+      pharmacotherapeuticFollowUp: this.enabledSteps['acompanhamento-farmacoterapeutico']
+        ? this.pharmacotherapeuticFollowUpData()
+        : null,
       followUp:
         this.formMode !== ATTENDANCE_FORM_MODES.FOLLOW_UP_RETURN &&
         !this.editingReturn &&
@@ -484,10 +505,18 @@ export class ServicosFarmaceuticosPage {
   private complementaryServicesData(): ComplementaryServicesData {
     return {
       homeCare: this.complementary.homeCare,
-      pharmacotherapeuticFollowUp: this.complementary.pharmacotherapeuticFollowUp,
       minorDisorderIndication: this.complementary.minorDisorderIndication,
       signsAndSymptoms: this.complementary.signsAndSymptoms,
       medications: this.medicationItems.complementary.map((item) =>
+        this.requestMedication(item, false),
+      ),
+    };
+  }
+
+  private pharmacotherapeuticFollowUpData(): PharmacotherapeuticFollowUpServiceData {
+    return {
+      signsAndSymptoms: this.pharmacotherapy.signsAndSymptoms,
+      medications: this.medicationItems.pharmacotherapeuticFollowUp.map((item) =>
         this.requestMedication(item, false),
       ),
     };
@@ -543,6 +572,13 @@ export class ServicosFarmaceuticosPage {
       this.errors['complementaryMedications'] = 'Adicione ao menos um medicamento.';
     }
 
+    if (
+      this.enabledSteps['acompanhamento-farmacoterapeutico'] &&
+      this.medicationItems.pharmacotherapeuticFollowUp.length === 0
+    ) {
+      this.errors['pharmacotherapeuticFollowUpMedications'] = 'Adicione ao menos um medicamento.';
+    }
+
     if (this.enabledSteps.acompanhamento) {
       const interval = Number(this.followUp.returnIntervalDays);
       const count = Number(this.followUp.returnCount);
@@ -595,6 +631,9 @@ export class ServicosFarmaceuticosPage {
         this.enabledSteps['aplicacao-injetaveis'] = Boolean(attendance.injectable);
         this.enabledSteps.inaloterapia = Boolean(attendance.inhalotherapy);
         this.enabledSteps['servicos-acompanhamento'] = Boolean(attendance.complementaryServices);
+        this.enabledSteps['acompanhamento-farmacoterapeutico'] = Boolean(
+          attendance.pharmacotherapeuticFollowUp,
+        );
         this.enabledSteps.acompanhamento = Boolean(
           attendance.followUp && attendance.followUpLink?.returnNumber === 0,
         );
@@ -611,12 +650,17 @@ export class ServicosFarmaceuticosPage {
         if (attendance.complementaryServices) {
           Object.assign(this.complementary, {
             homeCare: attendance.complementaryServices.homeCare,
-            pharmacotherapeuticFollowUp:
-              attendance.complementaryServices.pharmacotherapeuticFollowUp,
             minorDisorderIndication: attendance.complementaryServices.minorDisorderIndication,
             signsAndSymptoms: attendance.complementaryServices.signsAndSymptoms,
           });
           this.medicationItems.complementary = [...attendance.complementaryServices.medications];
+        }
+        if (attendance.pharmacotherapeuticFollowUp) {
+          this.pharmacotherapy.signsAndSymptoms =
+            attendance.pharmacotherapeuticFollowUp.signsAndSymptoms;
+          this.medicationItems.pharmacotherapeuticFollowUp = [
+            ...attendance.pharmacotherapeuticFollowUp.medications,
+          ];
         }
         if (attendance.followUp && this.enabledSteps.acompanhamento) {
           this.followUp.returnIntervalDays = String(attendance.followUp.returnIntervalDays);

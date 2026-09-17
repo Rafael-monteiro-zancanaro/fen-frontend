@@ -58,6 +58,7 @@ describe('buildAtendimentoPrintData', () => {
         'aplicacao-injetaveis',
         'inaloterapia',
         'servicos-farmaceuticos',
+        'acompanhamento-farmacoterapeutico',
       ],
       status: 'CONCLUIDO',
       createdAt: '2026-08-18T15:30:00.000Z',
@@ -75,10 +76,22 @@ describe('buildAtendimentoPrintData', () => {
       },
       complementaryServices: {
         homeCare: true,
-        pharmacotherapeuticFollowUp: false,
         minorDisorderIndication: true,
         signsAndSymptoms: 'Dor leve e febre baixa.',
         medications: [complementaryMedication],
+      },
+      pharmacotherapeuticFollowUp: {
+        signsAndSymptoms: 'Pressão arterial instável.',
+        medications: [
+          {
+            id: 'pharmacotherapeutic-med-1',
+            medicationId: 'med-4',
+            medicationConcentration: 'Losartana 50 mg',
+            batch: 'AFT-01',
+            expirationDate: '2027-06-30',
+            dosage: '1 comprimido ao dia',
+          },
+        ],
       },
       followUp: {
         returnIntervalDays: 7,
@@ -91,7 +104,6 @@ describe('buildAtendimentoPrintData', () => {
         returnNumber: 2,
       },
     };
-
     const data = buildAtendimentoPrintData(attendance);
 
     expect(data.codigo).toBe(1042);
@@ -153,6 +165,10 @@ describe('buildAtendimentoPrintData', () => {
       'Assistência farmacêutica domiciliar',
       'Indicação farmacêutica em transtornos menores',
     ]);
+    expect(data.pharmacotherapeuticFollowUp?.medications[0].batch).toBe('AFT-01');
+    expect(data.pharmacotherapeuticFollowUp?.signsAndSymptoms).toBe(
+      'Pressão arterial instável.',
+    );
     expect(data.followUp).toEqual({
       returnIntervalDays: 7,
       returnCount: 3,
