@@ -170,6 +170,29 @@
         </section>
       }
 
+      @if (currentAttendance.pharmacotherapeuticFollowUp) {
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">Farmacoterapia</h2>
+          </div>
+          <div class="card-content grid gap-4">
+            <p>
+              {{
+                currentAttendance.pharmacotherapeuticFollowUp.signsAndSymptoms ||
+                  'Sem sinais e sintomas informados.'
+              }}
+            </p>
+            <ng-container
+              [ngTemplateOutlet]="medicationTable"
+              [ngTemplateOutletContext]="{
+                items: currentAttendance.pharmacotherapeuticFollowUp.medications,
+                showPrescription: false,
+              }"
+            />
+          </div>
+        </section>
+      }
+
       @if (currentAttendance.followUp) {
         <section class="card" data-follow-up-history>
           <div class="card-header">
