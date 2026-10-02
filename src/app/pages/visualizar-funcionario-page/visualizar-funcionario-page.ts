@@ -77,7 +77,10 @@ export class VisualizarFuncionarioPage {
 
     this.isUpdatingTechnicalResponsible.set(true);
     const employee = this.employee();
-    if (!employee || employee.role === 'ESTAGIARIO') return;
+    if (!employee || employee.role === 'ESTAGIARIO') {
+      this.isUpdatingTechnicalResponsible.set(false);
+      return;
+    }
     this.employeeService
       .alterarResponsavelTecnico(this.employeeId, !employee.isTechnicalResponsible)
       .subscribe({

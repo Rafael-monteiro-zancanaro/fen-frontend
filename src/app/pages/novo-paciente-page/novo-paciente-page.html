@@ -31,16 +31,16 @@
         <a class="btn btn-secondary" routerLink="/pacientes">Voltar</a>
       </div>
 
-      @if (saveError) {
+      @if (saveError()) {
         <div class="alert alert-danger">
           <span class="marker marker-danger"></span>
           <div>
-            <p class="alert-title">{{ saveError }}</p>
+            <p class="alert-title">{{ saveError() }}</p>
           </div>
         </div>
       }
 
-      <form class="grid gap-5" (submit)="savePatient(); $event.preventDefault()">
+      <form #patientFormElement class="grid gap-5" (submit)="savePatient(); $event.preventDefault()">
         <section class="card">
           <div class="card-header">
             <h2 class="card-title">Dados do paciente</h2>
@@ -48,7 +48,7 @@
           <div class="card-content">
             <app-patient-form
               [patient]="patient()"
-              [errors]="errors"
+              [errors]="errors()"
               [cpfLookupEnabled]="!isEditMode()"
             />
           </div>
@@ -158,8 +158,10 @@
           class="card-footer flex-col items-stretch rounded-xl border sm:flex-row sm:justify-end"
         >
           <a class="btn btn-secondary w-full sm:w-auto" routerLink="/pacientes">Cancelar</a>
-          <button class="btn btn-primary w-full sm:w-auto" type="submit">
-            {{ isEditMode() ? 'Salvar alterações' : 'Salvar paciente' }}
+          <button class="btn btn-primary w-full sm:w-auto" type="submit" [disabled]="isSubmitting()">
+            @if (isSubmitting()) { <span class="spinner" aria-hidden="true"></span> Salvando... } @else {
+              {{ isEditMode() ? 'Salvar alterações' : 'Salvar paciente' }}
+            }
           </button>
         </div>
       </form>

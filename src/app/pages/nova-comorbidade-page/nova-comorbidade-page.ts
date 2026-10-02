@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Medication } from '../../domain/clinical-records';
@@ -6,6 +6,8 @@ import { ComorbidityService } from '../../domain/comorbidity.service';
 import { MEDICATION_AUTOCOMPLETE_DEBOUNCE, MedicationService } from '../../domain/medication.service';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
+import { focusFirstInvalidField } from '../../domain/form-validation-focus';
 
 @Component({
   selector: 'app-nova-comorbidade-page',
@@ -13,6 +15,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   templateUrl: './nova-comorbidade-page.html',
 })
 export class NovaComorbidadePage {
+  @ViewChild('comorbidityForm') private comorbidityForm?: ElementRef<HTMLFormElement>;
   private readonly route = inject(ActivatedRoute);
   protected readonly submitted = signal(false);
   protected readonly recordNotFound = signal(false);
@@ -90,6 +93,7 @@ export class NovaComorbidadePage {
     this.submitted.set(true);
 
     if (!this.name.trim()) {
+      this.focusFirstInvalidField();
       return;
     }
     if (this.saving()) return;
@@ -101,13 +105,23 @@ export class NovaComorbidadePage {
     };
 
     if (this.comorbidityId) {
-      this.service.update(this.comorbidityId, input).subscribe({ next: () => void this.router.navigateByUrl('/comorbidades'), error: () => { this.saving.set(false); this.saveError.set(true); } });
+      this.service.update(this.comorbidityId, input).pipe(
+        finalize(() => this.saving.set(false)),
+      ).subscribe({ next: () => void this.router.navigateByUrl('/comorbidades'), error: () => this.saveError.set(true) });
     } else {
-      this.service.create(input).subscribe({ next: () => void this.router.navigateByUrl('/comorbidades'), error: () => { this.saving.set(false); this.saveError.set(true); } });
+      this.service.create(input).pipe(
+        finalize(() => this.saving.set(false)),
+      ).subscribe({ next: () => void this.router.navigateByUrl('/comorbidades'), error: () => this.saveError.set(true) });
     }
   }
 
   protected isNameInvalid(): boolean {
     return this.submitted() && !this.name.trim();
+  }
+
+  private focusFirstInvalidField(): void {
+    if (this.comorbidityForm) {
+      focusFirstInvalidField(this.comorbidityForm.nativeElement);
+    }
   }
 }

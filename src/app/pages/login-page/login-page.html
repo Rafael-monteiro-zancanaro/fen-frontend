@@ -13,7 +13,7 @@
       </div>
     </div>
 
-    <form class="card w-full" aria-labelledby="login-title" (submit)="enter(); $event.preventDefault()">
+    <form #loginForm="ngForm" #loginFormElement class="card w-full" aria-labelledby="login-title" (ngSubmit)="enter()">
       @if (registrationMessage) {
         <div class="alert alert-success">
           <span class="marker marker-success"></span>
@@ -32,7 +32,15 @@
             required
             name="email"
             [(ngModel)]="email"
+            #emailControl="ngModel"
+            [attr.aria-invalid]="shouldShowError(emailControl) ? 'true' : null"
+            [attr.aria-describedby]="shouldShowError(emailControl) ? 'emailError' : null"
           />
+          @if (shouldShowError(emailControl)) {
+            <p id="emailError" class="field-error">
+              {{ emailControl.errors?.['required'] ? 'E-mail é obrigatório.' : 'Informe um e-mail válido.' }}
+            </p>
+          }
         </div>
 
         <div class="field">
@@ -50,7 +58,13 @@
             required
             name="senha"
             [(ngModel)]="senha"
+            #senhaControl="ngModel"
+            [attr.aria-invalid]="shouldShowError(senhaControl) ? 'true' : null"
+            [attr.aria-describedby]="shouldShowError(senhaControl) ? 'senhaError' : null"
           />
+          @if (shouldShowError(senhaControl)) {
+            <p id="senhaError" class="field-error">Senha é obrigatória.</p>
+          }
         </div>
 
         <label class="flex items-center gap-2 text-sm text-app-muted-foreground">
@@ -58,13 +72,13 @@
           Manter meu acesso neste dispositivo
         </label>
 
-        @if (error) { <p class="field-error">{{ error }}</p> }
+        @if (error()) { <p class="field-error">{{ error() }}</p> }
       </div>
 
       <div class="card-footer flex-col items-stretch sm:flex-row sm:justify-between">
         <a class="btn btn-link text-sm" routerLink="/cadastro">Cadastrar novo usuario</a>
-        <button class="btn btn-primary w-full sm:w-auto" type="submit" [disabled]="loading">
-          Entrar
+        <button class="btn btn-primary w-full sm:w-auto" type="submit" [disabled]="loading()">
+          @if (loading()) { <span class="spinner" aria-hidden="true"></span> Entrando... } @else { Entrar }
         </button>
       </div>
     </form>

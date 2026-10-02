@@ -144,7 +144,7 @@
             [disabled]="operationInProgressId() === pending.request.id"
             (click)="confirmAction()"
           >
-            Aprovar
+            @if (operationInProgressId() === pending.request.id) { <span class="spinner" aria-hidden="true"></span> Aprovando... } @else { Aprovar }
           </button>
         } @else {
           <button
@@ -154,7 +154,7 @@
             [disabled]="operationInProgressId() === pending.request.id"
             (click)="confirmAction()"
           >
-            Rejeitar
+            @if (operationInProgressId() === pending.request.id) { <span class="spinner" aria-hidden="true"></span> Rejeitando... } @else { Rejeitar }
           </button>
         }
       </div>

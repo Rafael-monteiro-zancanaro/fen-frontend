@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PatientForm } from '../../components/patient-form/patient-form';
@@ -6,6 +6,8 @@ import { ComorbiditySummary, PatientInput } from '../../domain/clinical-records'
 import { maskBrazilianPhone, maskCep, maskCpf, onlyDigits } from '../../domain/text-masks';
 import { ComorbidityService } from '../../domain/comorbidity.service';
 import { PatientService } from '../../domain/patient.service';
+import { focusFirstInvalidField } from '../../domain/form-validation-focus';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-novo-paciente-page',
@@ -13,14 +15,16 @@ import { PatientService } from '../../domain/patient.service';
   templateUrl: './novo-paciente-page.html',
 })
 export class NovoPacientePage implements OnInit {
+  @ViewChild('patientFormElement') private patientFormElement?: ElementRef<HTMLFormElement>;
   private readonly route = inject(ActivatedRoute);
   private readonly patientId = this.route.snapshot.paramMap.get('id');
   protected readonly isEditMode = computed(() => Boolean(this.patientId));
   protected readonly recordNotFound = signal(false);
   protected readonly comorbiditySearchTerm = signal('');
   protected readonly selectedComorbidityIds = signal<string[]>([]);
-  protected readonly errors: Record<string, string> = {};
-  protected saveError = '';
+  protected readonly errors = signal<Record<string, string>>({});
+  protected readonly saveError = signal('');
+  protected readonly isSubmitting = signal(false);
   protected readonly patient = signal<PatientInput>({
     name: '',
     cpf: '',
@@ -117,12 +121,18 @@ export class NovoPacientePage implements OnInit {
   }
 
   protected savePatient(): void {
-    this.clearErrors();
-    this.saveError = '';
-
-    if (!this.validatePatient()) {
+    if (this.isSubmitting()) {
       return;
     }
+    this.clearErrors();
+    this.saveError.set('');
+
+    if (!this.validatePatient()) {
+      this.focusFirstInvalidField();
+      return;
+    }
+
+    this.isSubmitting.set(true);
 
     const input = {
       ...this.patient(),
@@ -134,47 +144,57 @@ export class NovoPacientePage implements OnInit {
     };
 
     if (this.patientId) {
-      this.patientService.update(this.patientId, input).subscribe({
+      this.patientService.update(this.patientId, input).pipe(
+        finalize(() => this.isSubmitting.set(false)),
+      ).subscribe({
         next: () => void this.router.navigateByUrl('/pacientes'),
-        error: () =>
-          (this.saveError =
-            'Não foi possível salvar. Verifique se o CPF já pertence a outro paciente.'),
+        error: () => this.saveError.set(
+          'Não foi possível salvar. Verifique se o CPF já pertence a outro paciente.',
+        ),
       });
       return;
     }
 
-    this.patientService.create(input).subscribe({
+    this.patientService.create(input).pipe(
+      finalize(() => this.isSubmitting.set(false)),
+    ).subscribe({
       next: (patient) => void this.router.navigateByUrl(`/pacientes/${patient.id}/editar`),
-      error: () => (this.saveError = 'Não foi possível salvar. Verifique os dados informados.'),
+      error: () => this.saveError.set('Não foi possível salvar. Verifique os dados informados.'),
     });
   }
 
   private validatePatient(): boolean {
     const patient = this.patient();
     const cpf = onlyDigits(patient.cpf);
+    const errors: Record<string, string> = {};
 
     if (cpf.length !== 11) {
-      this.errors['patient.cpf'] = 'Informe um CPF com 11 dígitos.';
+      errors['patient.cpf'] = 'Informe um CPF com 11 dígitos.';
     }
 
     if (!patient.name.trim()) {
-      this.errors['patient.name'] = 'Nome do paciente é obrigatório.';
+      errors['patient.name'] = 'Nome do paciente é obrigatório.';
     }
 
     if (!patient.birthDate) {
-      this.errors['patient.birthDate'] = 'Data de nascimento é obrigatória.';
+      errors['patient.birthDate'] = 'Data de nascimento é obrigatória.';
     }
 
     if (onlyDigits(patient.cellPhone).length < 10) {
-      this.errors['patient.cellPhone'] = 'Telefone celular é obrigatório.';
+      errors['patient.cellPhone'] = 'Telefone celular é obrigatório.';
     }
 
-    return Object.keys(this.errors).length === 0;
+    this.errors.set(errors);
+    return Object.keys(errors).length === 0;
   }
 
   private clearErrors(): void {
-    for (const key of Object.keys(this.errors)) {
-      delete this.errors[key];
+    this.errors.set({});
+  }
+
+  private focusFirstInvalidField(): void {
+    if (this.patientFormElement) {
+      focusFirstInvalidField(this.patientFormElement.nativeElement);
     }
   }
 }

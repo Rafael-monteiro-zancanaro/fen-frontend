@@ -1,7 +1,9 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MedicationService } from '../../domain/medication.service';
+import { finalize } from 'rxjs';
+import { focusFirstInvalidField } from '../../domain/form-validation-focus';
 
 @Component({
   selector: 'app-novo-medicamento-page',
@@ -9,6 +11,7 @@ import { MedicationService } from '../../domain/medication.service';
   templateUrl: './novo-medicamento-page.html',
 })
 export class NovoMedicamentoPage implements OnInit {
+  @ViewChild('medicationForm') private medicationForm?: ElementRef<HTMLFormElement>;
   private readonly route = inject(ActivatedRoute);
   protected readonly submitted = signal(false);
   protected readonly recordNotFound = signal(false);
@@ -44,6 +47,7 @@ export class NovoMedicamentoPage implements OnInit {
     this.submitted.set(true);
 
     if (!this.isValid()) {
+      this.focusFirstInvalidField();
       return;
     }
     if (this.saving()) return;
@@ -56,9 +60,13 @@ export class NovoMedicamentoPage implements OnInit {
     };
 
     if (this.medicationId) {
-      this.service.update(this.medicationId, input).subscribe({ next: () => void this.router.navigateByUrl('/medicamentos'), error: () => { this.saving.set(false); this.saveError.set(true); } });
+      this.service.update(this.medicationId, input).pipe(
+        finalize(() => this.saving.set(false)),
+      ).subscribe({ next: () => void this.router.navigateByUrl('/medicamentos'), error: () => this.saveError.set(true) });
     } else {
-      this.service.create(input).subscribe({ next: () => void this.router.navigateByUrl('/medicamentos'), error: () => { this.saving.set(false); this.saveError.set(true); } });
+      this.service.create(input).pipe(
+        finalize(() => this.saving.set(false)),
+      ).subscribe({ next: () => void this.router.navigateByUrl('/medicamentos'), error: () => this.saveError.set(true) });
     }
   }
 
@@ -78,5 +86,11 @@ export class NovoMedicamentoPage implements OnInit {
     return Boolean(
       this.name.trim() && this.measurementUnit.trim() && this.administrationRoute.trim(),
     );
+  }
+
+  private focusFirstInvalidField(): void {
+    if (this.medicationForm) {
+      focusFirstInvalidField(this.medicationForm.nativeElement);
+    }
   }
 }
