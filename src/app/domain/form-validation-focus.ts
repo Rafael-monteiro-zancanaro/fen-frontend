@@ -16,7 +16,9 @@ export function focusFirstInvalidField(
       return;
     }
 
-    field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (typeof field.scrollIntoView === 'function') {
+      field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
     try {
       field.focus({ preventScroll: true });
     } catch {

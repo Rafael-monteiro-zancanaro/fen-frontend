@@ -1,6 +1,8 @@
-import { Component, signal } from '@angular/core';
+import { Component, ElementRef, ViewChild, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
+import { focusFirstInvalidField } from '../../domain/form-validation-focus';
 import { PasswordRecoveryService } from '../../domain/password-recovery.service';
 
 @Component({
@@ -9,6 +11,7 @@ import { PasswordRecoveryService } from '../../domain/password-recovery.service'
   templateUrl: './recuperar-senha-page.html',
 })
 export class RecuperarSenhaPage {
+  @ViewChild('recoveryForm') private recoveryForm?: ElementRef<HTMLFormElement>;
   protected readonly submitted = signal(false);
   protected readonly requestSent = signal(false);
   protected readonly isSubmitting = signal(false);
@@ -22,19 +25,23 @@ export class RecuperarSenhaPage {
   protected submitRequest(): void {
     this.submitted.set(true);
     this.requestSent.set(false);
+    this.errorMessage.set('');
 
     if (!this.isValid()) {
+      this.focusFirstInvalidField();
       return;
     }
 
     if (this.isSubmitting()) return;
     this.isSubmitting.set(true);
-    this.recoveryService.create(this.email, this.newPassword).subscribe({
+    this.recoveryService.create(this.email, this.newPassword).pipe(
+      finalize(() => this.isSubmitting.set(false)),
+    ).subscribe({
       next: () => {
         this.newPassword = ''; this.confirmation = ''; this.email = '';
-        this.submitted.set(false); this.requestSent.set(true); this.isSubmitting.set(false);
+        this.submitted.set(false); this.requestSent.set(true);
       },
-      error: () => { this.errorMessage.set('Não foi possível enviar a solicitação. Verifique o e-mail e tente novamente.'); this.isSubmitting.set(false); },
+      error: () => this.errorMessage.set('Não foi possível enviar a solicitação. Verifique o e-mail e tente novamente.'),
     });
   }
 
@@ -85,5 +92,11 @@ export class RecuperarSenhaPage {
 
   private isValidEmail(): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email.trim());
+  }
+
+  private focusFirstInvalidField(): void {
+    if (this.recoveryForm) {
+      focusFirstInvalidField(this.recoveryForm.nativeElement);
+    }
   }
 }

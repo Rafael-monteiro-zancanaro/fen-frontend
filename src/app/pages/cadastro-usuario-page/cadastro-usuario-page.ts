@@ -3,6 +3,7 @@ import { FormsModule, NgForm, NgModel } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { onlyDigits, maskCpf } from '../../domain/text-masks';
+import { focusFirstInvalidField } from '../../domain/form-validation-focus';
 import { Supervisor, UsuarioRegisterRequest, UsuarioService } from '../../domain/usuario.service';
 
 type UserProfile = 'farmaceutico' | 'estagiario';
@@ -73,8 +74,8 @@ export class CadastroUsuarioPage {
     input.value = cpf;
   }
 
-  protected shouldShowError(control: NgModel): boolean {
-    return Boolean(control.invalid && (control.touched || this.submitted()));
+  protected shouldShowError(control: NgModel, field?: string): boolean {
+    return Boolean(this.fieldErrors()[field ?? control.name ?? ''] || (control.invalid && (control.touched || this.submitted())));
   }
 
   protected fieldError(control: NgModel, field: string, messages: Record<string, string>): string {
@@ -124,7 +125,9 @@ export class CadastroUsuarioPage {
         this.fieldErrors.set(body?.fieldErrors ?? {});
         this.error.set(body?.message ?? 'Não foi possível realizar o cadastro.');
         this.loading.set(false);
-        this.focusFirstInvalidField();
+        if (Object.keys(this.fieldErrors()).length > 0) {
+          this.focusFirstInvalidField();
+        }
       },
     });
   }
@@ -151,13 +154,9 @@ export class CadastroUsuarioPage {
   }
 
   private focusFirstInvalidField(): void {
-    queueMicrotask(() => {
-      const element = this.cadastroFormElement?.nativeElement.querySelector<HTMLElement>('.ng-invalid');
-      element?.focus();
-      if (typeof element?.scrollIntoView === 'function') {
-        element.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      }
-    });
+    if (this.cadastroFormElement) {
+      focusFirstInvalidField(this.cadastroFormElement.nativeElement);
+    }
   }
 
   private hasInvalidRegistration(): boolean {
