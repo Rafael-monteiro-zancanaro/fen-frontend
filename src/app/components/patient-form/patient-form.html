@@ -23,9 +23,10 @@
           [readOnly]="cpfReadonly"
           (input)="updateCpf($any($event.target))"
           [attr.aria-invalid]="errors['patient.cpf'] ? 'true' : null"
+          [attr.aria-describedby]="errors['patient.cpf'] ? 'cpfUsuarioError' : null"
         />
         @if (errors['patient.cpf']) {
-          <p class="field-error">{{ errors['patient.cpf'] }}</p>
+          <p id="cpfUsuarioError" class="field-error">{{ errors['patient.cpf'] }}</p>
         }
       </div>
       @if (cpfLookupEnabled) {
@@ -52,9 +53,10 @@
           [(ngModel)]="patient.name"
           (input)="patient.name = $any($event.target).value"
           [attr.aria-invalid]="errors['patient.name'] ? 'true' : null"
+          [attr.aria-describedby]="errors['patient.name'] ? 'nomeUsuarioError' : null"
         />
         @if (errors['patient.name']) {
-          <p class="field-error">{{ errors['patient.name'] }}</p>
+          <p id="nomeUsuarioError" class="field-error">{{ errors['patient.name'] }}</p>
         }
       </div>
 
@@ -94,9 +96,10 @@
           [(ngModel)]="patient.birthDate"
           (input)="patient.birthDate = $any($event.target).value"
           [attr.aria-invalid]="errors['patient.birthDate'] ? 'true' : null"
+          [attr.aria-describedby]="errors['patient.birthDate'] ? 'dataNascimentoUsuarioError' : null"
         />
         @if (errors['patient.birthDate']) {
-          <p class="field-error">{{ errors['patient.birthDate'] }}</p>
+          <p id="dataNascimentoUsuarioError" class="field-error">{{ errors['patient.birthDate'] }}</p>
         }
       </div>
 
@@ -112,9 +115,10 @@
           [value]="patient.cellPhone"
           (input)="updateCellPhone($any($event.target))"
           [attr.aria-invalid]="errors['patient.cellPhone'] ? 'true' : null"
+          [attr.aria-describedby]="errors['patient.cellPhone'] ? 'celularUsuarioError' : null"
         />
         @if (errors['patient.cellPhone']) {
-          <p class="field-error">{{ errors['patient.cellPhone'] }}</p>
+          <p id="celularUsuarioError" class="field-error">{{ errors['patient.cellPhone'] }}</p>
         }
       </div>
 
