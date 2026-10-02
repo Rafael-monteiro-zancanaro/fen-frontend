@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { vi } from 'vitest';
 import { FuncionarioService, PharmacyEmployee } from '../../domain/funcionario.service';
 import { AdminFuncionariosPage } from './admin-funcionarios-page';
@@ -53,6 +53,21 @@ describe('AdminFuncionariosPage', () => {
     expect(service.list).toHaveBeenCalledTimes(2);
     expect(host.textContent).toContain('Ativo');
     expect(host.querySelector('[data-approve-employee]')).toBeNull();
+  });
+
+  it('shows loading and blocks a second approval while the request is pending', () => {
+    const host = fixture.nativeElement as HTMLElement;
+    const approval = new Subject<void>();
+    service.efetivar.mockReturnValue(approval);
+    host.querySelector<HTMLButtonElement>('[data-approve-employee]')?.click();
+    fixture.detectChanges();
+    host.querySelector<HTMLButtonElement>('[data-confirm-approval]')?.click();
+    fixture.detectChanges();
+
+    const button = host.querySelector<HTMLButtonElement>('[data-confirm-approval]')!;
+    expect(button.disabled).toBe(true);
+    expect(button.querySelector('.spinner')).not.toBeNull();
+    expect(button.textContent).toContain('Efetivando');
   });
 
   function page(employee: PharmacyEmployee) {

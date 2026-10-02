@@ -208,7 +208,7 @@
           [disabled]="isUpdatingTechnicalResponsible()"
           (click)="confirmTechnicalResponsibleChange()"
         >
-          Confirmar
+          @if (isUpdatingTechnicalResponsible()) { <span class="spinner" aria-hidden="true"></span> Confirmando... } @else { Confirmar }
         </button>
       </div>
     </section>

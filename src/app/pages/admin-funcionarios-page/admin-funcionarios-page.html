@@ -157,7 +157,7 @@
           [disabled]="isApproving()"
           (click)="confirmApproval()"
         >
-          Efetivar
+          @if (isApproving()) { <span class="spinner" aria-hidden="true"></span> Efetivando... } @else { Efetivar }
         </button>
       </div>
     </section>
