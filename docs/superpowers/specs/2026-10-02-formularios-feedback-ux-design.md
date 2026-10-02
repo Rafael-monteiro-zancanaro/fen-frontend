@@ -40,7 +40,7 @@ O submit inválido nunca invoca a API. Todos os erros pertinentes são exibidos,
 
 ### Foco e scroll compartilhados
 
-Será criado um utilitário pequeno em `src/app/domain/` para receber o elemento raiz de um formulário e, opcionalmente, um callback que torna a área relevante visível. Ele agenda a procura após a atualização atual do DOM com `afterNextRender`/`requestAnimationFrame`, encontra o primeiro elemento focável com `aria-invalid="true"` em ordem de DOM, confirma que ele está visível e executa `scrollIntoView({ behavior: 'smooth', block: 'center' })` seguido de foco com `preventScroll` quando suportado.
+Será criado um utilitário pequeno em `src/app/domain/` para receber o elemento raiz de um formulário e, opcionalmente, um callback que torna a área relevante visível. Ele agenda a procura após a atualização atual do DOM por `requestAnimationFrame` ou mecanismo Angular equivalente quando o contexto exigir, encontra o primeiro elemento focável com `aria-invalid="true"` em ordem de DOM, confirma que ele está visível e executa `scrollIntoView({ behavior: 'smooth', block: 'center' })` seguido de foco com `preventScroll` quando suportado.
 
 O utilitário não terá IDs de páginas, não fará consulta global ao documento e não usará `setTimeout` arbitrário. Cada página fornecerá sua própria raiz via `ViewChild` quando precisar desse comportamento.
 
@@ -48,7 +48,7 @@ O utilitário não terá IDs de páginas, não fará consulta global ao document
 
 O formulário continuará validando apenas os Steps ativos. A ordem de erro será a ordem visual das seções: identificação do paciente, cuidados farmacêuticos, injetáveis, inaloterapia, serviços farmacêuticos, farmacoterapia e acompanhamento.
 
-Antes de focar um erro, o componente garantirá que o Step correspondente esteja ativo/renderizado. No estado atual, os campos que podem falhar só existem em Steps ativos; portanto, não haverá scroll para conteúdo oculto. A mesma extensão permite reabrir o Step se uma futura interação o tornar colapsável.
+Antes de consultar o DOM, o componente determinará pelo próprio estado de validação qual é o primeiro erro e a qual Step semântico ele pertence. Então garantirá que esse Step ativo esteja expandido/renderizado; somente após a atualização do DOM o utilitário localizará, rolará e focará o campo. Assim, um Step ativo mas colapsado não depende de o campo já existir na busca inicial por `[aria-invalid="true"]`. Steps inativos continuam sem validação e não participam dessa ordenação.
 
 O Step do paciente é sempre a primeira seção. Em especial, ausência de `birthDate` deverá produzir a mensagem junto a `#dataNascimentoUsuario`, impedir o request, deixar o Step disponível e levá-lo ao foco/scroll.
 
