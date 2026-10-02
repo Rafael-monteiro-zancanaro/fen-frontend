@@ -1925,6 +1925,30 @@ describe('App', () => {
     );
   });
 
+  it('should reveal the patient birth-date error and focus it before submitting an attendance', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    const attendanceStore = TestBed.inject(PharmaceuticalServiceFixture);
+
+    await router.navigateByUrl('/atendimentos/novo');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const focus = vi.spyOn(HTMLInputElement.prototype, 'focus');
+
+    compiled.querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
+    fixture.detectChanges();
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+    expect(attendanceStore.attendances()).toHaveLength(0);
+    expect(compiled.querySelector('#identificacao-usuario')).toBeTruthy();
+    expect(compiled.querySelector('#dataNascimentoUsuarioError')?.textContent).toContain(
+      'Data de nascimento é obrigatória',
+    );
+    expect(focus).toHaveBeenCalled();
+    focus.mockRestore();
+  });
+
   it('should create an attendance with multiple medications and follow-up from the form', async () => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);

@@ -54,7 +54,7 @@
         </div>
       </div>
     } @else {
-      <form class="grid gap-5" (ngSubmit)="submit()">
+      <form #serviceForm class="grid gap-5" (ngSubmit)="submit()">
         <section id="identificacao-usuario" data-service-step class="card scroll-mt-24">
           <div class="card-header">
             <div class="flex items-center gap-3">
@@ -910,9 +910,10 @@
                       [(ngModel)]="followUp.returnIntervalDays"
                       (input)="followUp.returnIntervalDays = $any($event.target).value"
                       [attr.aria-invalid]="errors['returnIntervalDays'] ? 'true' : null"
+                      [attr.aria-describedby]="errors['returnIntervalDays'] ? 'returnIntervalDaysError' : null"
                     />
                     @if (errors['returnIntervalDays']) {
-                      <p class="field-error">{{ errors['returnIntervalDays'] }}</p>
+                      <p id="returnIntervalDaysError" class="field-error">{{ errors['returnIntervalDays'] }}</p>
                     }
                   </div>
                   <div class="field">
@@ -929,9 +930,10 @@
                       [(ngModel)]="followUp.returnCount"
                       (input)="followUp.returnCount = $any($event.target).value"
                       [attr.aria-invalid]="errors['returnCount'] ? 'true' : null"
+                      [attr.aria-describedby]="errors['returnCount'] ? 'returnCountError' : null"
                     />
                     @if (errors['returnCount']) {
-                      <p class="field-error">{{ errors['returnCount'] }}</p>
+                      <p id="returnCountError" class="field-error">{{ errors['returnCount'] }}</p>
                     }
                   </div>
                 </div>
@@ -960,9 +962,10 @@
 
         <div class="card-footer justify-between">
           <a class="btn btn-secondary" routerLink="/atendimentos">Cancelar</a>
-          <button class="btn btn-primary" type="submit" [disabled]="isSubmitting">
-            <ng-icon name="bootstrapSave" size="1rem" />
-            Salvar atendimento
+          <button class="btn btn-primary" type="submit" [disabled]="isSubmitting()">
+            @if (isSubmitting()) { <span class="spinner" aria-hidden="true"></span> Salvando atendimento... } @else {
+              <ng-icon name="bootstrapSave" size="1rem" /> Salvar atendimento
+            }
           </button>
         </div>
       </form>

@@ -1,5 +1,5 @@
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
-import { Component, signal } from '@angular/core';
+import { Component, ElementRef, ViewChild, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -34,6 +34,8 @@ import { maskBrazilianPhone, maskCep, maskCpf, onlyDigits } from '../../domain/t
 import { InteractionService, MedicationInteractionPair } from '../../domain/interaction.service';
 import { ATTENDANCE_FORM_MODES, AttendanceFormMode } from '../../domain/attendance-form-mode';
 import { ServicoFarmaceuticoService } from '../../domain/servico-farmaceutico.service';
+import { finalize } from 'rxjs';
+import { focusFirstInvalidField } from '../../domain/form-validation-focus';
 
 type OptionalStep =
   | 'cuidados-farmaceuticos'
@@ -78,6 +80,7 @@ interface MedicationDraft {
   templateUrl: './servicos-farmaceuticos-page.html',
 })
 export class ServicosFarmaceuticosPage {
+  @ViewChild('serviceForm') private serviceForm?: ElementRef<HTMLFormElement>;
   protected readonly allSteps = [
     { number: '01', title: 'Identificação do usuário', id: 'identificacao-usuario' },
     { number: '02', title: 'Cuidados farmacêuticos', id: 'cuidados-farmaceuticos' },
@@ -163,7 +166,7 @@ export class ServicosFarmaceuticosPage {
   protected previousAttendance: PharmaceuticalServiceAttendance | undefined;
   protected followUpContext: FollowUpProgress | undefined;
   protected selectedPatientId = '';
-  protected isSubmitting = false;
+  protected readonly isSubmitting = signal(false);
   protected readonly isInitialRecordLoading = signal(false);
   private readonly formMode: AttendanceFormMode;
   private editingAttendanceId = '';
@@ -382,6 +385,7 @@ export class ServicosFarmaceuticosPage {
 
   protected addMedication(section: MedicationSection): void {
     if (!this.validateMedicationDraft(section)) {
+      this.focusFirstInvalidInStep(this.stepForMedication(section));
       return;
     }
 
@@ -422,7 +426,7 @@ export class ServicosFarmaceuticosPage {
   }
 
   protected submit(): void {
-    if (this.isSubmitting) {
+    if (this.isSubmitting()) {
       return;
     }
 
@@ -433,10 +437,11 @@ export class ServicosFarmaceuticosPage {
     }
 
     if (!this.validateForm()) {
+      this.focusFirstInvalidInStep(this.firstInvalidStep());
       return;
     }
 
-    this.isSubmitting = true;
+    this.isSubmitting.set(true);
     const patient = this.patient();
     const input = {
       patientId: this.selectedPatientId || undefined,
@@ -476,12 +481,13 @@ export class ServicosFarmaceuticosPage {
       : this.formMode === ATTENDANCE_FORM_MODES.FOLLOW_UP_RETURN && this.previousAttendance
         ? this.service.createReturn(this.previousAttendance.id, input)
         : this.service.create(input);
-    request.subscribe({
+    request.pipe(
+      finalize(() => this.isSubmitting.set(false)),
+    ).subscribe({
       next: (attendance) => void this.router.navigate(['/atendimentos', attendance.id]),
       error: () => {
         this.errors['submit'] =
           'Não foi possível salvar o atendimento. Verifique os dados e tente novamente.';
-        this.isSubmitting = false;
       },
     });
   }
@@ -718,6 +724,52 @@ export class ServicosFarmaceuticosPage {
     this.medicationErrors[section] = errors;
 
     return Object.keys(errors).length === 0;
+  }
+
+  private firstInvalidStep(): string {
+    const orderedErrors: Array<[string, string]> = [
+      ['patient.cpf', 'identificacao-usuario'],
+      ['patient.name', 'identificacao-usuario'],
+      ['patient.birthDate', 'identificacao-usuario'],
+      ['patient.cellPhone', 'identificacao-usuario'],
+      ['injectableMedications', 'aplicacao-injetaveis'],
+      ['inhalotherapyMedications', 'inaloterapia'],
+      ['complementaryMedications', 'servicos-acompanhamento'],
+      ['pharmacotherapeuticFollowUpMedications', 'acompanhamento-farmacoterapeutico'],
+      ['returnIntervalDays', 'acompanhamento'],
+      ['returnCount', 'acompanhamento'],
+    ];
+
+    return orderedErrors.find(([error]) => this.errors[error])?.[1] ?? 'identificacao-usuario';
+  }
+
+  private stepForMedication(section: MedicationSection): string {
+    return {
+      injectable: 'aplicacao-injetaveis',
+      inhalotherapy: 'inaloterapia',
+      complementary: 'servicos-acompanhamento',
+      pharmacotherapeuticFollowUp: 'acompanhamento-farmacoterapeutico',
+    }[section];
+  }
+
+  private focusFirstInvalidInStep(stepId: string): void {
+    if (!this.serviceForm) {
+      return;
+    }
+
+    const step = this.serviceForm.nativeElement.querySelector<HTMLElement>(
+      `[data-service-step="${stepId}"]`,
+    );
+    focusFirstInvalidField(step ?? this.serviceForm.nativeElement, {
+      beforeLocate: () => this.ensureStepExpanded(stepId),
+    });
+  }
+
+  private ensureStepExpanded(stepId: string): void {
+    const optionalStep = stepId as OptionalStep;
+    if (optionalStep in this.enabledSteps && this.enabledSteps[optionalStep]) {
+      this.enabledSteps[optionalStep] = true;
+    }
   }
 
   private clearErrors(): void {
