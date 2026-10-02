@@ -28,7 +28,7 @@
         <a class="btn btn-secondary" routerLink="/medicamentos">Voltar</a>
       </div>
 
-      <form class="card w-full max-w-3xl" (submit)="saveMedication(); $event.preventDefault()">
+      <form #medicationForm class="card w-full max-w-3xl" (submit)="saveMedication(); $event.preventDefault()">
       <div class="card-content grid gap-4">
         <div class="field">
           <label for="medicationName" class="label label-required">Nome do medicamento</label>
@@ -39,10 +39,11 @@
             name="medicationName"
             [(ngModel)]="name"
             [attr.aria-invalid]="isNameInvalid()"
+            [attr.aria-describedby]="isNameInvalid() ? 'medicationNameError' : null"
             autocomplete="off"
           />
           @if (isNameInvalid()) {
-            <p class="field-error" data-field-error="medication-name">
+            <p id="medicationNameError" class="field-error" data-field-error="medication-name">
               Nome do medicamento é obrigatório.
             </p>
           }
@@ -56,12 +57,13 @@
               class="input"
               type="text"
               name="measurementUnit"
-              [(ngModel)]="measurementUnit"
-              [attr.aria-invalid]="isMeasurementUnitInvalid()"
+            [(ngModel)]="measurementUnit"
+            [attr.aria-invalid]="isMeasurementUnitInvalid()"
+            [attr.aria-describedby]="isMeasurementUnitInvalid() ? 'measurementUnitError' : null"
               autocomplete="off"
             />
             @if (isMeasurementUnitInvalid()) {
-              <p class="field-error" data-field-error="measurement-unit">
+            <p id="measurementUnitError" class="field-error" data-field-error="measurement-unit">
                 Concentração é obrigatória.
               </p>
             }
@@ -74,12 +76,13 @@
               class="input"
               type="text"
               name="administrationRoute"
-              [(ngModel)]="administrationRoute"
-              [attr.aria-invalid]="isAdministrationRouteInvalid()"
+            [(ngModel)]="administrationRoute"
+            [attr.aria-invalid]="isAdministrationRouteInvalid()"
+            [attr.aria-describedby]="isAdministrationRouteInvalid() ? 'administrationRouteError' : null"
               autocomplete="off"
             />
             @if (isAdministrationRouteInvalid()) {
-              <p class="field-error" data-field-error="administration-route">
+            <p id="administrationRouteError" class="field-error" data-field-error="administration-route">
                 Via de administração é obrigatória.
               </p>
             }
@@ -90,7 +93,7 @@
       <div class="card-footer flex-col items-stretch sm:flex-row sm:justify-end">
         <a class="btn btn-secondary w-full sm:w-auto" routerLink="/medicamentos">Cancelar</a>
         <button class="btn btn-primary w-full sm:w-auto" type="submit" [disabled]="saving()">
-          {{ isEditMode() ? 'Salvar alterações' : 'Salvar medicamento' }}
+          @if (saving()) { <span class="spinner" aria-hidden="true"></span> Salvando... } @else { {{ isEditMode() ? 'Salvar alterações' : 'Salvar medicamento' }} }
         </button>
       </div>
       </form>

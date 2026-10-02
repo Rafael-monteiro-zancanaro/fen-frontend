@@ -28,7 +28,7 @@
         <a class="btn btn-secondary" routerLink="/comorbidades">Voltar</a>
       </div>
 
-      <form class="grid gap-5" (submit)="saveComorbidity(); $event.preventDefault()">
+      <form #comorbidityForm class="grid gap-5" (submit)="saveComorbidity(); $event.preventDefault()">
       <section class="card">
         <div class="card-header">
           <h2 class="card-title">Dados da comorbidade</h2>
@@ -44,10 +44,11 @@
               name="comorbidityName"
               [(ngModel)]="name"
               [attr.aria-invalid]="isNameInvalid()"
+              [attr.aria-describedby]="isNameInvalid() ? 'comorbidityNameError' : null"
               autocomplete="off"
             />
             @if (isNameInvalid()) {
-              <p class="field-error" data-field-error="comorbidity-name">
+              <p id="comorbidityNameError" class="field-error" data-field-error="comorbidity-name">
                 Nome da comorbidade é obrigatório.
               </p>
             }
@@ -152,7 +153,7 @@
       <div class="card-footer flex-col items-stretch rounded-xl border sm:flex-row sm:justify-end">
         <a class="btn btn-secondary w-full sm:w-auto" routerLink="/comorbidades">Cancelar</a>
         <button class="btn btn-primary w-full sm:w-auto" type="submit" [disabled]="saving()">
-          {{ isEditMode() ? 'Salvar alterações' : 'Salvar comorbidade' }}
+          @if (saving()) { <span class="spinner" aria-hidden="true"></span> Salvando... } @else { {{ isEditMode() ? 'Salvar alterações' : 'Salvar comorbidade' }} }
         </button>
       </div>
       </form>
