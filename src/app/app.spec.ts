@@ -1937,7 +1937,6 @@ describe('App', () => {
     const focus = vi.spyOn(HTMLInputElement.prototype, 'focus');
 
     compiled.querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
-    fixture.detectChanges();
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
     expect(attendanceStore.attendances()).toHaveLength(0);

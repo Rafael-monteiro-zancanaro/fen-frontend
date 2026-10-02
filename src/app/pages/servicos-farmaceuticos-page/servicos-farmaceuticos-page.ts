@@ -153,16 +153,16 @@ export class ServicosFarmaceuticosPage {
     complementary: [],
     pharmacotherapeuticFollowUp: [],
   };
-  protected readonly errors: Record<string, string> = {};
-  protected readonly medicationErrors: Record<
+  private readonly errorsState = signal<Record<string, string>>({});
+  private readonly medicationErrorsState = signal<Record<
     MedicationSection,
     Partial<Record<keyof MedicationDraft, string>>
-  > = {
+  >>({
     injectable: {},
     inhalotherapy: {},
     complementary: {},
     pharmacotherapeuticFollowUp: {},
-  };
+  });
   protected previousAttendance: PharmaceuticalServiceAttendance | undefined;
   protected followUpContext: FollowUpProgress | undefined;
   protected selectedPatientId = '';
@@ -172,6 +172,14 @@ export class ServicosFarmaceuticosPage {
   private editingAttendanceId = '';
   private editingReturn = false;
   private nextLocalMedicationKey = 1;
+
+  protected get errors(): Record<string, string> {
+    return this.errorsState();
+  }
+
+  protected get medicationErrors(): Record<MedicationSection, Partial<Record<keyof MedicationDraft, string>>> {
+    return this.medicationErrorsState();
+  }
 
   constructor(
     private readonly service: ServicoFarmaceuticoService,
@@ -205,8 +213,7 @@ export class ServicosFarmaceuticosPage {
           this.isInitialRecordLoading.set(false);
         },
         error: () => {
-          this.errors['submit'] =
-            'Não foi possível prosseguir o atendimento. Atualize a listagem e tente novamente.';
+          this.setError('submit', 'Não foi possível prosseguir o atendimento. Atualize a listagem e tente novamente.');
           this.isInitialRecordLoading.set(false);
         },
       });
@@ -310,7 +317,10 @@ export class ServicosFarmaceuticosPage {
     this.medicationDrafts[section].medicationId = medication.id;
     this.medicationDrafts[section].medicationConcentration = this.formatMedication(medication);
     this.medicationDrafts[section].administrationRoute = medication.administrationRoute;
-    delete this.medicationErrors[section].medicationConcentration;
+    this.updateMedicationErrors(section, (errors) => {
+      const { medicationConcentration: _, ...remaining } = errors;
+      return remaining;
+    });
     this.selectedMedications[section] = medication;
     this.loadInteractionWarnings(section);
   }
@@ -405,7 +415,7 @@ export class ServicosFarmaceuticosPage {
       },
     ];
     this.medicationDrafts[section] = this.createEmptyMedicationDraft();
-    this.medicationErrors[section] = {};
+    this.updateMedicationErrors(section, () => ({}));
   }
 
   protected removeMedication(section: MedicationSection, id: string | undefined): void {
@@ -431,8 +441,7 @@ export class ServicosFarmaceuticosPage {
     }
 
     if (this.formMode === ATTENDANCE_FORM_MODES.FOLLOW_UP_RETURN && !this.previousAttendance) {
-      this.errors['submit'] =
-        'Não foi possível carregar o contexto do retorno. Volte à listagem e tente novamente.';
+      this.setError('submit', 'Não foi possível carregar o contexto do retorno. Volte à listagem e tente novamente.');
       return;
     }
 
@@ -486,8 +495,7 @@ export class ServicosFarmaceuticosPage {
     ).subscribe({
       next: (attendance) => void this.router.navigate(['/atendimentos', attendance.id]),
       error: () => {
-        this.errors['submit'] =
-          'Não foi possível salvar o atendimento. Verifique os dados e tente novamente.';
+        this.setError('submit', 'Não foi possível salvar o atendimento. Verifique os dados e tente novamente.');
       },
     });
   }
@@ -548,41 +556,41 @@ export class ServicosFarmaceuticosPage {
     const cpf = onlyDigits(patient.cpf);
 
     if (cpf.length !== 11) {
-      this.errors['patient.cpf'] = 'Informe um CPF com 11 dígitos.';
+      this.setError('patient.cpf', 'Informe um CPF com 11 dígitos.');
     }
 
     if (!patient.name.trim()) {
-      this.errors['patient.name'] = 'Nome do paciente é obrigatório.';
+      this.setError('patient.name', 'Nome do paciente é obrigatório.');
     }
 
     if (!patient.birthDate) {
-      this.errors['patient.birthDate'] = 'Data de nascimento é obrigatória.';
+      this.setError('patient.birthDate', 'Data de nascimento é obrigatória.');
     }
 
     if (onlyDigits(patient.cellPhone).length < 10) {
-      this.errors['patient.cellPhone'] = 'Telefone celular é obrigatório.';
+      this.setError('patient.cellPhone', 'Telefone celular é obrigatório.');
     }
 
     if (this.enabledSteps['aplicacao-injetaveis'] && this.medicationItems.injectable.length === 0) {
-      this.errors['injectableMedications'] = 'Adicione ao menos um medicamento.';
+      this.setError('injectableMedications', 'Adicione ao menos um medicamento.');
     }
 
     if (this.enabledSteps.inaloterapia && this.medicationItems.inhalotherapy.length === 0) {
-      this.errors['inhalotherapyMedications'] = 'Adicione ao menos um medicamento.';
+      this.setError('inhalotherapyMedications', 'Adicione ao menos um medicamento.');
     }
 
     if (
       this.enabledSteps['servicos-acompanhamento'] &&
       this.medicationItems.complementary.length === 0
     ) {
-      this.errors['complementaryMedications'] = 'Adicione ao menos um medicamento.';
+      this.setError('complementaryMedications', 'Adicione ao menos um medicamento.');
     }
 
     if (
       this.enabledSteps['acompanhamento-farmacoterapeutico'] &&
       this.medicationItems.pharmacotherapeuticFollowUp.length === 0
     ) {
-      this.errors['pharmacotherapeuticFollowUpMedications'] = 'Adicione ao menos um medicamento.';
+      this.setError('pharmacotherapeuticFollowUpMedications', 'Adicione ao menos um medicamento.');
     }
 
     if (this.enabledSteps.acompanhamento) {
@@ -590,13 +598,13 @@ export class ServicosFarmaceuticosPage {
       const count = Number(this.followUp.returnCount);
 
       if (!Number.isInteger(interval) || interval <= 0) {
-        this.errors['returnIntervalDays'] = 'Informe um intervalo positivo em dias.';
+        this.setError('returnIntervalDays', 'Informe um intervalo positivo em dias.');
       }
 
       if (!Number.isInteger(count) || count <= 0) {
-        this.errors['returnCount'] = this.canExtendFollowUp()
+        this.setError('returnCount', this.canExtendFollowUp()
           ? 'Informe uma quantidade positiva de retornos adicionais.'
-          : 'Informe uma quantidade positiva de retornos.';
+          : 'Informe uma quantidade positiva de retornos.');
       }
     }
 
@@ -625,7 +633,7 @@ export class ServicosFarmaceuticosPage {
     this.service.get(id).subscribe({
       next: (attendance) => {
         if (attendance.editAllowed === false) {
-          this.errors['submit'] = 'Este atendimento não pode ser editado.';
+          this.setError('submit', 'Este atendimento não pode ser editado.');
           return;
         }
 
@@ -675,7 +683,7 @@ export class ServicosFarmaceuticosPage {
         this.isInitialRecordLoading.set(false);
       },
       error: () => {
-        this.errors['submit'] = 'Não foi possível carregar o atendimento para edição.';
+        this.setError('submit', 'Não foi possível carregar o atendimento para edição.');
         this.isInitialRecordLoading.set(false);
       },
     });
@@ -721,7 +729,7 @@ export class ServicosFarmaceuticosPage {
       errors.dosage = 'Informe a posologia.';
     }
 
-    this.medicationErrors[section] = errors;
+    this.updateMedicationErrors(section, () => errors);
 
     return Object.keys(errors).length === 0;
   }
@@ -773,9 +781,21 @@ export class ServicosFarmaceuticosPage {
   }
 
   private clearErrors(): void {
-    for (const key of Object.keys(this.errors)) {
-      delete this.errors[key];
-    }
+    this.errorsState.set({});
+  }
+
+  private setError(key: string, message: string): void {
+    this.errorsState.update((errors) => ({ ...errors, [key]: message }));
+  }
+
+  private updateMedicationErrors(
+    section: MedicationSection,
+    update: (errors: Partial<Record<keyof MedicationDraft, string>>) => Partial<Record<keyof MedicationDraft, string>>,
+  ): void {
+    this.medicationErrorsState.update((errors) => ({
+      ...errors,
+      [section]: update(errors[section]),
+    }));
   }
 
   private createEmptyMedicationDraft(): MedicationDraft {
